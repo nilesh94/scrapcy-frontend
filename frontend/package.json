@@ -2,8 +2,7 @@
   "name": "scrapcy-frontend",
   "version": "0.1.0",
   "scripts": {
-    "build": "react-scripts build" 
-    /* This command is the one Render will execute */
+    "build": "react-scripts build"
   },
   "dependencies": {
     "react": "^18.2.0",
