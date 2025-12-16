@@ -1,0 +1,102 @@
+/* src/components/HomePage/HomePage.css */
+
+.home-page-container {
+  max-width: 1200px;
+  margin: 20px auto;
+  padding: 0 20px;
+}
+
+/* --- 1. Hero Section Styling --- */
+
+.hero-section {
+  background-color: var(--color-white);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px var(--color-shadow);
+  padding: 60px;
+  margin-bottom: 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 10px solid var(--color-primary);
+}
+
+.hero-content {
+  max-width: 60%;
+}
+
+.hero-content h1 {
+  font-size: 2.5em;
+  color: var(--color-primary-dark);
+  margin-bottom: 10px;
+}
+
+.hero-subtitle {
+  font-size: 1.1em;
+  color: var(--color-text);
+  margin-bottom: 25px;
+}
+
+.hero-image-placeholder {
+  background-color: var(--color-light-bg);
+  padding: 30px;
+  border-radius: 8px;
+  text-align: center;
+  border: 1px dashed var(--color-primary);
+}
+
+.hero-image-placeholder span {
+  font-size: 3em;
+  display: block;
+}
+
+/* --- 2. Features Section Styling (Coming Soon Cards) --- */
+
+.features-section {
+  display: flex;
+  gap: 30px;
+  justify-content: center;
+  margin-bottom: 40px;
+}
+
+.feature-card {
+  background-color: var(--color-white);
+  border-radius: 10px;
+  box-shadow: 0 2px 8px var(--color-shadow);
+  padding: 30px 20px;
+  text-align: center;
+  flex: 1;
+  min-width: 250px;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--color-primary);
+}
+
+.card-icon {
+  font-size: 2.5em;
+  margin-bottom: 15px;
+}
+
+.feature-card h3 {
+  color: var(--color-primary-dark);
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+
+.feature-card p {
+  font-size: 0.9em;
+  color: #666;
+}
+
+.coming-soon-badge {
+  position: absolute;
+  top: 15px;
+  right: -35px;
+  background-color: red;
+  color: white;
+  padding: 3px 30px;
+  font-size: 0.7em;
+  font-weight: bold;
+  transform: rotate(45deg);
+  transform-origin: 0 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
