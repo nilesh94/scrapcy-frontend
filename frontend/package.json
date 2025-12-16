@@ -1,5 +1,5 @@
 {
-  "name": "auction-frontend",
+  "name": "scrapcy-frontend",
   "version": "0.1.0",
   "scripts": {
     "build": "react-scripts build"
