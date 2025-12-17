@@ -1,45 +1,9 @@
-/* src/index.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-/* Define the sky-blue color palette */
-:root {
-  --color-primary: #87ceeb; /* Sky Blue */
-  --color-primary-dark: #4682b4; /* Steel Blue for darker accents */
-  --color-light-bg: #e6f7ff; /* Very light blue background */
-  --color-text: #333333;
-  --color-white: #ffffff;
-  --color-shadow: rgba(0, 0, 0, 0.1);
-}
-
-body {
-  margin: 0;
-  font-family: 'Arial', sans-serif;
-  background-color: var(--color-light-bg);
-  color: var(--color-text);
-  line-height: 1.6;
-}
-
-#root {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-}
-
-.App {
-  flex-grow: 1;
-}
-
-/* Base Button Style */
-.btn {
-  background-color: var(--color-primary-dark);
-  color: var(--color-white);
-  border: none;
-  padding: 10px 20px;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 1em;
-  transition: background-color 0.3s ease;
-}
-
-.btn:hover {
-  background-color: var(--color-primary);
+@layer utilities {
+  .pause-on-hover:hover {
+    animation-play-state: paused;
+  }
 }
