@@ -7,10 +7,10 @@ const Home = () => {
   const [userRole, setUserRole] = useState('guest');
 
   const prices = [
-    { id: 1, metal: "Copper No.1", price: "$3.85/lb", change: "+1.2%", contact: "Global Copper Ltd - 987-654-3210" },
-    { id: 2, metal: "Aluminum Siding", price: "$0.68/lb", change: "-0.5%", contact: "Alu-Recycle India - 888-222-1111" },
-    { id: 3, metal: "HMS 1&2 Steel", price: "$380/MT", change: "+2.1%", contact: "Steel Yard Mumbai - 777-444-5555" },
-    { id: 4, metal: "Yellow Brass", price: "$2.15/lb", change: "+0.4%", contact: "Brass Traders Inc - 666-999-0000" },
+    { id: 1, metal: "Copper No.1", price: "₹766.20/kg", change: "+1.2%", contact: "Global Copper Ltd - 987-654-3210" },
+    { id: 2, metal: "Aluminum Siding", price: "₹135.33/kg", change: "-0.5%", contact: "Alu-Recycle India - 888-222-1111" },
+    { id: 3, metal: "HMS 1&2 Steel", price: "₹34,302/MT", change: "+2.1%", contact: "Steel Yard Mumbai - 777-444-5555" },
+    { id: 4, metal: "Yellow Brass", price: "₹427.88/kg", change: "+0.4%", contact: "Brass Traders Inc - 666-999-0000" },
   ];
 
   const handleUnlockPrice = (id) => {
