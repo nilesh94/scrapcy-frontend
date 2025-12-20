@@ -10,7 +10,8 @@ import Home from './pages/Home';
 import Register from './pages/Register';
 import Login from './pages/Login';
 import CompanyDashboard from './pages/CompanyDashboard';
-import PriceTracker from './components/PriceTracker/PriceTracker'; // <--- NEW IMPORT
+import PriceTracker from './components/PriceTracker/PriceTracker';
+import Auction from './pages/Auction';
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
           
           {/* Dedicated Price Tracker Page */}
           <Route path="/tracker" element={<PriceTracker />} /> 
+          <Route path="/auction" element={<Auction />} />
 
           {/* Auth & Dashboard Pages */}
           <Route path="/register" element={<Register />} />
