@@ -9,7 +9,11 @@ const PriceCard = ({ item, averagePrice, isUnlocked, onUnlock, className = "" })
   const getPriceComparison = () => {
     // If no average is provided (fallback), treat as Avg
     if (!averagePrice) return { 
-        status: 'Avg', badgeClass: 'bg-gray-500 text-white', icon: <Minus size={16} strokeWidth={3} />, needle: '0deg', gaugeColor: 'bg-gray-500' 
+        status: 'Avg', 
+        badgeClass: 'bg-gray-500 text-white', 
+        icon: <Minus size={16} strokeWidth={3} />, 
+        needle: '0deg', 
+        arcColor: 'border-gray-300' // Gray Arc
     };
 
     const diff = item.price - averagePrice;
@@ -21,7 +25,7 @@ const PriceCard = ({ item, averagePrice, isUnlocked, onUnlock, className = "" })
         badgeClass: 'bg-red-600 text-white', 
         icon: <ArrowUpRight size={16} strokeWidth={3} />, 
         needle: '45deg',
-        gaugeColor: 'bg-red-600'
+        arcColor: 'border-red-500' // Red Arc
       };
     }
     if (diff < -threshold) {
@@ -30,7 +34,7 @@ const PriceCard = ({ item, averagePrice, isUnlocked, onUnlock, className = "" })
         badgeClass: 'bg-green-600 text-white', 
         icon: <ArrowDownRight size={16} strokeWidth={3} />, 
         needle: '-45deg',
-        gaugeColor: 'bg-green-600'
+        arcColor: 'border-green-500' // Green Arc
       };
     }
     return { 
@@ -38,11 +42,11 @@ const PriceCard = ({ item, averagePrice, isUnlocked, onUnlock, className = "" })
       badgeClass: 'bg-gray-500 text-white', 
       icon: <Minus size={16} strokeWidth={3} />, 
       needle: '0deg',
-      gaugeColor: 'bg-gray-500'
+      arcColor: 'border-gray-300' // Gray Arc
     };
   };
 
-  const { status, badgeClass, icon, needle, gaugeColor } = getPriceComparison();
+  const { status, badgeClass, icon, needle, arcColor } = getPriceComparison();
 
   return (
     <div className={`relative group border-4 border-platinum p-8 bg-white transition-all hover:border-navy hover:shadow-xl rounded-xl ${className}`}>
@@ -62,20 +66,23 @@ const PriceCard = ({ item, averagePrice, isUnlocked, onUnlock, className = "" })
         {item.location} • {item.type}
       </p>
       
-      {/* 2. Gauge Visualization */}
-      <div className="flex justify-center mb-4 opacity-90 group-hover:opacity-100 transition-opacity">
-          <div className="relative w-28 h-14 overflow-hidden">
-            {/* Gauge Background (Gray Arc) */}
-            <div className="absolute top-0 left-0 w-28 h-28 rounded-full border-[8px] border-platinum border-b-transparent"></div>
+      {/* 2. Gauge Visualization (COLOR CODED ARC) */}
+      <div className="flex justify-center mb-6 opacity-90 group-hover:opacity-100 transition-opacity">
+          <div className="relative w-32 h-16 overflow-hidden">
+            
+            {/* Gauge Background Arc 
+               We dynamically change 'border-color' using ${arcColor} 
+            */}
+            <div className={`absolute top-0 left-0 w-32 h-32 rounded-full border-[10px] border-b-transparent ${arcColor}`}></div>
             
             {/* Needle */}
             <div 
-                className="absolute bottom-0 left-1/2 w-1.5 h-14 bg-navy origin-bottom transition-transform duration-700 ease-out z-10"
+                className="absolute bottom-0 left-1/2 w-1.5 h-16 bg-navy origin-bottom transition-transform duration-700 ease-out z-10"
                 style={{ transform: `translateX(-50%) rotate(${needle})` }}
             ></div>
             
-            {/* Center Dot (Color Coded) */}
-            <div className={`absolute bottom-0 left-1/2 w-4 h-4 rounded-full transform -translate-x-1/2 translate-y-1/2 z-20 border-2 border-white ${gaugeColor}`}></div>
+            {/* Center Dot (Matches Arc Color) */}
+            <div className={`absolute bottom-0 left-1/2 w-4 h-4 rounded-full transform -translate-x-1/2 translate-y-1/2 z-20 border-2 border-white ${badgeClass.split(' ')[0]}`}></div>
           </div>
       </div>
 
