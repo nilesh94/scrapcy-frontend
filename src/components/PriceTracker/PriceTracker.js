@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import './PriceTracker.css';
-import { ArrowUpRight, ArrowDownRight, Minus, Lock, ShieldCheck } from 'lucide-react';
+import './PriceTracker.css'; // You can keep this for page layout styles, but card styles are now in PriceCard
+import PriceCard from '../PriceCard';
 
 const MARKET_DATA = [
   { id: 101, category: "Ferrous", material: "Sponge Iron", location: "Raipur", price: 30500, change: 200, type: "Mandi", contact: "Raipur Ispat" },
@@ -46,17 +46,6 @@ const PriceTracker = () => {
 
   const uniqueLocations = [...new Set(MARKET_DATA.map(item => item.location))];
 
-  // Helper: Status Logic
-  const getComparison = (item) => {
-    const avg = materialAverages[item.material];
-    const diff = item.price - avg;
-    const threshold = avg * 0.02; 
-
-    if (diff > threshold) return { text: 'High', color: 'text-red-600', needle: '45deg', label: 'Expensive' };
-    if (diff < -threshold) return { text: 'Low', color: 'text-green-600', needle: '-45deg', label: 'Good Buy' };
-    return { text: 'Avg', color: 'text-gray-500', needle: '0deg', label: 'Neutral' };
-  };
-
   const handleUnlockPrice = (id) => {
     if (window.confirm("Unlock verified contact details for $5?")) {
       setTimeout(() => setUnlockedDetails(prev => ({ ...prev, [id]: true })), 500);
@@ -94,54 +83,16 @@ const PriceTracker = () => {
       </div>
 
       <div className="pt-grid">
-        {processedData.map(item => {
-          const { text, color, needle, label } = getComparison(item);
-          return (
-            <div key={item.id} className="pt-card">
-              <div className="pt-card-top">
-                <span className={`cat-badge ${item.category === 'Non Ferrous' ? 'nf' : 'fe'}`}>
-                  {item.category}
-                </span>
-                <div className={`flex items-center gap-1 font-bold ${color} text-sm uppercase`}>
-                   {text === 'High' ? <ArrowUpRight size={16}/> : (text === 'Low' ? <ArrowDownRight size={16}/> : <Minus size={16}/>)}
-                   {label}
-                </div>
-              </div>
-
-              <div className="pt-visuals">
-                <div className="gauge-box">
-                   <div className="gauge-arc"></div>
-                   <div className="gauge-needle" style={{ transform: `translateX(-50%) rotate(${needle})` }}></div>
-                   <div className={`gauge-dot ${text === 'Avg' ? 'bg-gray-400' : 'bg-orange'}`}></div>
-                </div>
-                
-                <div className="price-block">
-                  <h3>₹{item.price.toLocaleString()}</h3>
-                  <p className="text-xs font-bold text-gray-400">Avg: ₹{Math.round(materialAverages[item.material]).toLocaleString()}</p>
-                </div>
-              </div>
-
-              <div className="pt-info">
-                <h4>{item.material}</h4>
-                <p>Location: <strong>{item.location}</strong></p>
-                <p className="spec-type">Type: {item.type}</p>
-              </div>
-
-              <div className="pt-unlock-section">
-                  {unlockedDetails[item.id] ? (
-                    <div className="verified-contact">
-                      <p className="contact-label"><ShieldCheck size={12}/> Verified Contact:</p>
-                      <p className="contact-info">{item.contact}</p>
-                    </div>
-                  ) : (
-                    <button onClick={() => handleUnlockPrice(item.id)} className="pt-btn">
-                       <Lock size={14} /> Request Details
-                    </button>
-                  )}
-              </div>
-            </div>
-          );
-        })}
+        {processedData.map(item => (
+            // USE THE REUSABLE CARD HERE
+            <PriceCard 
+                key={item.id}
+                item={item}
+                averagePrice={materialAverages[item.material]}
+                isUnlocked={unlockedDetails[item.id]}
+                onUnlock={handleUnlockPrice}
+            />
+        ))}
       </div>
     </div>
   );
