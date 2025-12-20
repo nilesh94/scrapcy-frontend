@@ -4,7 +4,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-// 1. DATA
+// 1. DATA (Mocked based on your Excel sheet logic)
 const MARKET_DATA = [
   { id: 101, category: "Ferrous", material: "Sponge Iron", location: "Raipur", price: 30500, change: 200, type: "Mandi", contact: "Raipur Ispat Links" },
   { id: 102, category: "Ferrous", material: "Sponge Iron", location: "Durgapur", price: 34000, change: -150, type: "Mandi", contact: "Durgapur Foundries" },
@@ -17,10 +17,9 @@ const MARKET_DATA = [
 const Home = () => {
   const navigate = useNavigate();
   const [unlockedDetails, setUnlockedDetails] = useState({});
-  const [hasPaidDeposit, setHasPaidDeposit] = useState(false);
   const [userRole, setUserRole] = useState('guest'); 
 
-  // --- LOGIC TO CALCULATE AVERAGES ---
+  // --- LOGIC: Calculate Average Price per Material ---
   const materialAverages = useMemo(() => {
     const sums = {};
     const counts = {};
@@ -38,13 +37,18 @@ const Home = () => {
     return avgs;
   }, []);
 
+  // --- LOGIC: Compare Price to Average ---
   const getPriceComparison = (item) => {
     const avg = materialAverages[item.material];
     const diff = item.price - avg;
     const threshold = avg * 0.02; // 2% buffer for "Average" status
 
-    if (diff > threshold) return { status: 'High', color: 'text-red-600', icon: <ArrowUpRight size={18}/>, needle: '45deg' }; // Expensive
-    if (diff < -threshold) return { status: 'Low', color: 'text-green-600', icon: <ArrowDownRight size={18}/>, needle: '-45deg' }; // Cheap (Good Buy)
+    if (diff > threshold) {
+      return { status: 'High', color: 'text-red-600', icon: <ArrowUpRight size={18}/>, needle: '45deg' }; // Expensive
+    }
+    if (diff < -threshold) {
+      return { status: 'Low', color: 'text-green-600', icon: <ArrowDownRight size={18}/>, needle: '-45deg' }; // Good Buy
+    }
     return { status: 'Avg', color: 'text-gray-500', icon: <Minus size={18}/>, needle: '0deg' }; // Neutral
   };
 
@@ -52,12 +56,6 @@ const Home = () => {
   const handleUnlockPrice = (id) => {
     if (window.confirm("Unlock verified contact details for $5?")) {
       setTimeout(() => setUnlockedDetails(prev => ({ ...prev, [id]: true })), 500);
-    }
-  };
-
-  const handleAuctionDeposit = () => {
-    if (window.confirm("Pay refundable $500 Earnest Money Deposit?")) {
-      setHasPaidDeposit(true);
     }
   };
 
@@ -98,7 +96,7 @@ const Home = () => {
             >
               EXPLORE MARKET <ArrowRight size={20}/>
             </button>
-            {/* VIEW FULL DASHBOARD BUTTON REMOVED */}
+            {/* REMOVED "View Full Dashboard" BUTTON AS REQUESTED */}
           </div>
         </div>
         
@@ -134,6 +132,7 @@ const Home = () => {
           {/* HORIZONTAL SCROLL CONTAINER */}
           <div className="flex gap-6 overflow-x-auto pb-10 px-2 scrollbar-hide">
             
+            {/* Show first 6 items for preview */}
             {MARKET_DATA.slice(0, 6).map((p) => {
                const { status, color, icon, needle } = getPriceComparison(p);
                
@@ -153,11 +152,14 @@ const Home = () => {
                   {/* 2. Gauge Visualization */}
                   <div className="flex justify-center my-6 opacity-80 group-hover:opacity-100 transition-opacity">
                      <div className="relative w-24 h-12 overflow-hidden">
+                        {/* Gauge Background */}
                         <div className="absolute top-0 left-0 w-24 h-24 rounded-full border-[6px] border-platinum border-b-transparent"></div>
+                        {/* Needle */}
                         <div 
                            className="absolute bottom-0 left-1/2 w-1 h-12 bg-navy origin-bottom transition-transform duration-700 ease-out"
                            style={{ transform: `translateX(-50%) rotate(${needle})` }}
                         ></div>
+                        {/* Dot */}
                         <div className={`absolute bottom-0 left-1/2 w-3 h-3 rounded-full transform -translate-x-1/2 translate-y-1/2 ${status === 'Avg' ? 'bg-gray-400' : 'bg-orange'}`}></div>
                      </div>
                   </div>
@@ -184,6 +186,7 @@ const Home = () => {
                );
             })}
 
+            {/* "See All" Card at end of scroll */}
             <div 
               onClick={() => navigate('/tracker')}
               className="min-w-[320px] border-4 border-dashed border-platinum bg-platinum/20 flex flex-col items-center justify-center cursor-pointer hover:border-orange hover:bg-orange/5 transition-all group"
@@ -207,28 +210,40 @@ const Home = () => {
         <div className="max-w-7xl mx-auto px-4 text-center relative z-10">
           <h2 className="text-4xl font-black mb-4 uppercase tracking-tighter">E-Auction <span className="text-orange">Portal</span></h2>
           <div className="grid md:grid-cols-2 gap-8 text-left mt-12">
+            
+            {/* SELLER CARD */}
             <div className={`p-8 border-2 rounded-xl transition-all ${userRole === 'company' ? 'border-orange bg-white/5' : 'border-white/10 opacity-80'}`}>
               <Building2 className="text-orange mb-4" size={40} />
               <h3 className="text-2xl font-black mb-2">FOR SELLERS</h3>
               <p className="text-sm text-platinum/70 mb-8">Post bulk auctions and manage inventory.</p>
+              
               {userRole === 'company' ? (
-                <button className="bg-orange text-white w-full py-4 font-black uppercase">Post Auction</button>
+                // Navigates to Coming Soon page
+                <button onClick={() => navigate('/auction')} className="bg-orange text-white w-full py-4 font-black uppercase hover:bg-white hover:text-navy transition-colors">
+                  Post Auction
+                </button>
               ) : (
-                <button onClick={() => setUserRole('company')} className="border border-white/20 w-full py-4 text-xs font-bold hover:bg-white/10">REGISTER AS SELLER</button>
+                <button onClick={() => setUserRole('company')} className="border border-white/20 w-full py-4 text-xs font-bold hover:bg-white/10">
+                  REGISTER AS SELLER
+                </button>
               )}
             </div>
+
+            {/* BIDDER CARD */}
             <div className={`p-8 border-2 rounded-xl transition-all ${userRole === 'bidder' ? 'border-orange bg-white/5' : 'border-white/10 opacity-80'}`}>
               <User className="text-orange mb-4" size={40} />
               <h3 className="text-2xl font-black mb-2">FOR BIDDERS</h3>
               <p className="text-sm text-platinum/70 mb-8">Access premium lots. Requires EMD.</p>
+              
               {userRole === 'bidder' ? (
-                !hasPaidDeposit ? (
-                    <button onClick={handleAuctionDeposit} className="bg-orange text-white w-full py-4 font-black uppercase">Pay Deposit</button>
-                ) : (
-                    <button className="bg-green-600 text-white w-full py-4 font-black uppercase flex justify-center gap-2"><Unlock size={18}/> Enter Room</button>
-                )
+                // Navigates to Coming Soon page
+                <button onClick={() => navigate('/auction')} className="bg-green-600 text-white w-full py-4 font-black uppercase flex justify-center gap-2 hover:bg-green-500 transition-colors">
+                  <Unlock size={18}/> Enter Room
+                </button>
               ) : (
-                <button onClick={() => setUserRole('bidder')} className="border border-white/20 w-full py-4 text-xs font-bold hover:bg-white/10">REGISTER AS BIDDER</button>
+                <button onClick={() => setUserRole('bidder')} className="border border-white/20 w-full py-4 text-xs font-bold hover:bg-white/10">
+                  REGISTER AS BIDDER
+                </button>
               )}
             </div>
           </div>
