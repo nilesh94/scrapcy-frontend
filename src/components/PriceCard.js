@@ -1,19 +1,13 @@
 import React from 'react';
-import { 
-  Lock, ShieldCheck, ArrowUpRight, ArrowDownRight, Minus 
-} from 'lucide-react';
+import { Lock, ShieldCheck, ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
 
 const PriceCard = ({ item, averagePrice, isUnlocked, onUnlock, className = "" }) => {
   
   // --- INTERNAL LOGIC: Determine Status & Colors ---
   const getPriceComparison = () => {
-    // If no average is provided (fallback), treat as Avg
+    // Fallback if no average
     if (!averagePrice) return { 
-        status: 'Avg', 
-        badgeClass: 'bg-gray-500 text-white', 
-        icon: <Minus size={16} strokeWidth={3} />, 
-        needle: '0deg', 
-        arcColor: 'border-gray-300' // Gray Arc
+        status: 'Avg', color: '#6b7280', icon: <Minus size={16} strokeWidth={3} />, angle: 90 
     };
 
     const diff = item.price - averagePrice;
@@ -22,91 +16,116 @@ const PriceCard = ({ item, averagePrice, isUnlocked, onUnlock, className = "" })
     if (diff > threshold) {
       return { 
         status: 'High', 
-        badgeClass: 'bg-red-600 text-white', 
+        color: '#dc2626', // Red-600
         icon: <ArrowUpRight size={16} strokeWidth={3} />, 
-        needle: '45deg',
-        arcColor: 'border-red-500' // Red Arc
+        angle: 30 // Point Right
       };
     }
     if (diff < -threshold) {
       return { 
         status: 'Low', 
-        badgeClass: 'bg-green-600 text-white', 
+        color: '#16a34a', // Green-600
         icon: <ArrowDownRight size={16} strokeWidth={3} />, 
-        needle: '-45deg',
-        arcColor: 'border-green-500' // Green Arc
+        angle: 150 // Point Left
       };
     }
     return { 
       status: 'Avg', 
-      badgeClass: 'bg-gray-500 text-white', 
+      color: '#6b7280', // Gray-500
       icon: <Minus size={16} strokeWidth={3} />, 
-      needle: '0deg',
-      arcColor: 'border-gray-300' // Gray Arc
+      angle: 90 // Point Up
     };
   };
 
-  const { status, badgeClass, icon, needle, arcColor } = getPriceComparison();
+  const { status, color, icon, angle } = getPriceComparison();
+
+  // --- SVG MATH HELPERS ---
+  // We draw a semi-circle from 180deg (left) to 0deg (right)
+  // Center (50, 45), Radius 35
+  // Needle calculation based on angle
+  const radius = 35;
+  const centerX = 50;
+  const centerY = 45;
+  
+  // Convert degrees to radians for needle position
+  // Note: In SVG, 0 deg is usually 3 o'clock. We want 90 to be 12 o'clock.
+  const rad = (angle * Math.PI) / 180;
+  const needleLength = 30;
+  const needleX = centerX + needleLength * Math.cos(-rad); // Negate rad because SVG Y is down
+  const needleY = centerY + needleLength * Math.sin(-rad);
 
   return (
-    <div className={`relative group border-4 border-platinum p-8 bg-white transition-all hover:border-navy hover:shadow-xl rounded-xl ${className}`}>
+    <div className={`relative group border-4 border-platinum p-6 bg-white transition-all hover:border-navy hover:shadow-xl rounded-xl ${className}`}>
       
-      {/* 1. Header with SOLID COLOR BADGE */}
+      {/* 1. HEADER */}
       <div className="flex justify-between items-start mb-2">
-        <h3 className="text-xl font-black uppercase text-navy">{item.material}</h3>
+        <div>
+           <h3 className="text-xl font-black uppercase text-navy leading-none">{item.material}</h3>
+           <p className="text-xs font-bold text-steel uppercase mt-1">
+             {item.location} • {item.type}
+           </p>
+        </div>
         
-        {/* Status Badge */}
-        <div className={`flex items-center gap-1 font-black px-3 py-1 rounded-full text-xs uppercase tracking-wide shadow-sm ${badgeClass}`}>
+        {/* SOLID PILL BADGE */}
+        <div 
+          className="flex items-center gap-1 font-black px-3 py-1 rounded-full text-xs uppercase tracking-wide shadow-sm text-white"
+          style={{ backgroundColor: color }}
+        >
             {icon} {status}
         </div>
       </div>
       
-      {/* Sub-header */}
-      <p className="text-sm font-bold text-steel uppercase mb-6">
-        {item.location} • {item.type}
-      </p>
-      
-      {/* 2. Gauge Visualization (COLOR CODED ARC) */}
-      <div className="flex justify-center mb-6 opacity-90 group-hover:opacity-100 transition-opacity">
-          <div className="relative w-32 h-16 overflow-hidden">
+      {/* 2. SVG GAUGE VISUALIZATION */}
+      <div className="flex justify-center my-4">
+          <svg width="140" height="70" viewBox="0 0 100 50" className="overflow-visible">
+            {/* Background Arc (Platinum) */}
+            <path d="M 15 45 A 35 35 0 0 1 85 45" fill="none" stroke="#e6e6e6" strokeWidth="8" strokeLinecap="round" />
             
-            {/* Gauge Background Arc 
-               We dynamically change 'border-color' using ${arcColor} 
+            {/* Colored Status Arc (Overlays the background) 
+                Note: This simple version colors the whole arc. 
+                To make it look "filled" to a point, we'd need complex path math. 
+                For "High/Low" indicators, coloring the whole arc is standard.
             */}
-            <div className={`absolute top-0 left-0 w-32 h-32 rounded-full border-[10px] border-b-transparent ${arcColor}`}></div>
+            <path d="M 15 45 A 35 35 0 0 1 85 45" fill="none" stroke={color} strokeWidth="8" strokeLinecap="round" />
             
             {/* Needle */}
-            <div 
-                className="absolute bottom-0 left-1/2 w-1.5 h-16 bg-navy origin-bottom transition-transform duration-700 ease-out z-10"
-                style={{ transform: `translateX(-50%) rotate(${needle})` }}
-            ></div>
+            <line 
+              x1={centerX} y1={centerY} 
+              x2={needleX} y2={needleY} 
+              stroke="#0a192f" 
+              strokeWidth="3" 
+              strokeLinecap="round"
+            />
             
-            {/* Center Dot (Matches Arc Color) */}
-            <div className={`absolute bottom-0 left-1/2 w-4 h-4 rounded-full transform -translate-x-1/2 translate-y-1/2 z-20 border-2 border-white ${badgeClass.split(' ')[0]}`}></div>
-          </div>
+            {/* Center Pivot Dot */}
+            <circle cx={centerX} cy={centerY} r="3" fill="white" stroke={color} strokeWidth="2" />
+          </svg>
       </div>
 
-      {/* Price Display */}
+      {/* 3. PRICE DISPLAY */}
       <div className="text-center mb-4">
-        <p className="text-5xl font-black text-navy tracking-tighter">₹{item.price.toLocaleString()}</p>
+        <p className="text-4xl font-black text-navy tracking-tighter">₹{item.price.toLocaleString()}</p>
         <p className="text-xs text-steel font-bold mt-2">
-           Daily Change: <span className={item.change > 0 ? "text-green-600" : "text-red-600"}>{item.change > 0 ? '+' : ''}{item.change}</span>
+           Daily Change: <span style={{ color: item.change > 0 ? '#16a34a' : (item.change < 0 ? '#dc2626' : '#6b7280') }}>
+             {item.change > 0 ? '+' : ''}{item.change}
+           </span>
         </p>
       </div>
       
-      {/* 3. Unlock Section */}
+      {/* 4. UNLOCK BUTTON */}
       {isUnlocked ? (
-        <div className="mt-6 p-4 bg-green-50 border-l-4 border-green-600 rounded">
+        <div className="mt-4 p-3 bg-green-50 border-l-4 border-green-600 rounded">
           <p className="text-[10px] font-black uppercase text-green-700 flex items-center gap-1">
              <ShieldCheck size={12}/> Verified Contact:
           </p>
           <p className="text-sm font-bold text-navy mt-1">{item.contact}</p>
         </div>
       ) : (
-        <div className="mt-6">
+        <div className="mt-4">
           <button 
             onClick={() => onUnlock(item.id)}
-            className="bg-orange hover:bg-navy text-white w-full py-3 font-black uppercase text-xs transition-colors flex items-center justify-center gap-2 rounded shadow-md hover:shadow-lg"
+            className="w-full py-3 font-black uppercase text-xs text-white transition-colors flex items-center justify-center gap-2 rounded shadow-md hover:shadow-lg hover:bg-navy"
+            style={{ backgroundColor: '#ff6b00' }}
           >
             <Lock size={14} /> Unlock ($5)
           </button>
