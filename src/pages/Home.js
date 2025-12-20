@@ -71,12 +71,12 @@ const Home = () => {
             >
               EXPLORE MARKET <ArrowRight size={20}/>
             </button>
-            <button 
-              onClick={() => navigate('/tracker')}
-              className="border-2 border-navy text-navy px-8 py-4 font-bold hover:bg-navy hover:text-white transition-all duration-300"
-            >
-              VIEW FULL DASHBOARD
-            </button>
+            // <button 
+            //   onClick={() => navigate('/tracker')}
+            //   className="border-2 border-navy text-navy px-8 py-4 font-bold hover:bg-navy hover:text-white transition-all duration-300"
+            // >
+            //   VIEW FULL DASHBOARD
+            // </button>
           </div>
         </div>
         
@@ -98,7 +98,7 @@ const Home = () => {
           <div className="flex justify-between items-end mb-10">
             <div>
                <h2 className="text-3xl font-black uppercase italic tracking-tighter text-navy">Live Scrap Ticker</h2>
-               <p className="text-steel font-medium">Real-time prices (Horizontal Scroll)</p>
+               <p className="text-steel font-medium">Real-time prices</p>
             </div>
             
             {/* SEE ALL LINK */}
