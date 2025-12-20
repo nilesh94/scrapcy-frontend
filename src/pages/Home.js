@@ -98,12 +98,7 @@ const Home = () => {
             >
               EXPLORE MARKET <ArrowRight size={20}/>
             </button>
-            <button 
-              onClick={() => navigate('/tracker')}
-              className="border-2 border-navy text-navy px-8 py-4 font-bold hover:bg-navy hover:text-white transition-all duration-300"
-            >
-              VIEW FULL DASHBOARD
-            </button>
+            {/* VIEW FULL DASHBOARD BUTTON REMOVED */}
           </div>
         </div>
         
@@ -204,7 +199,7 @@ const Home = () => {
 
       {/* 4. E-AUCTION PORTAL */}
       <section id="auction" className="py-24 bg-navy text-white relative overflow-hidden">
-        {/* Background Icon - Fixed Import Here */}
+        {/* Background Icon */}
         <div className="absolute top-0 right-0 opacity-5 pointer-events-none">
             <Hammer size={400} />
         </div>
