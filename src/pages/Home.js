@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { 
-  Hammer, ShieldCheck, Mail, Lock, ArrowRight, 
-  Building2, User, Unlock, Filter, ArrowUpRight, ArrowDownRight 
+  Hammer, ShieldCheck, Mail, Lock, ArrowRight, Building2, User, Unlock, Filter, ArrowUpRight, ArrowDownRight 
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
