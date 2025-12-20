@@ -1,18 +1,31 @@
+// src/App.js
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+
+// Component Imports
 import Navbar from './components/Navbar';
+
+// Page Imports
 import Home from './pages/Home';
 import Register from './pages/Register';
 import Login from './pages/Login';
 import CompanyDashboard from './pages/CompanyDashboard';
+import PriceTracker from './components/PriceTracker/PriceTracker'; // <--- NEW IMPORT
 
 function App() {
   return (
     <Router>
       <div className="min-h-screen bg-platinum font-sans text-navy">
         <Navbar />
+        
         <Routes>
+          {/* Main Landing Page */}
           <Route path="/" element={<Home />} />
+          
+          {/* Dedicated Price Tracker Page */}
+          <Route path="/tracker" element={<PriceTracker />} /> 
+
+          {/* Auth & Dashboard Pages */}
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
           <Route path="/company/dashboard" element={<CompanyDashboard />} />
