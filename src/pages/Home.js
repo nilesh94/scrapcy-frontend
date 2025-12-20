@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { 
-  Lock, ArrowRight, Building2, User, Unlock, ArrowUpRight, ArrowDownRight, Minus 
+  Hammer, Lock, ArrowRight, Building2, User, Unlock, ArrowUpRight, ArrowDownRight, Minus 
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -20,7 +20,7 @@ const Home = () => {
   const [hasPaidDeposit, setHasPaidDeposit] = useState(false);
   const [userRole, setUserRole] = useState('guest'); 
 
-  // --- NEW: LOGIC TO CALCULATE AVERAGES ---
+  // --- LOGIC TO CALCULATE AVERAGES ---
   const materialAverages = useMemo(() => {
     const sums = {};
     const counts = {};
@@ -68,7 +68,7 @@ const Home = () => {
       <div className="bg-orange text-white py-2 overflow-hidden border-b-4 border-navy">
         <div className="flex animate-marquee whitespace-nowrap">
           {[...MARKET_DATA, ...MARKET_DATA].map((item, i) => {
-            const { status, color } = getPriceComparison(item);
+            const { status } = getPriceComparison(item);
             return (
               <span key={i} className="mx-8 font-bold uppercase italic tracking-wider flex items-center gap-2 text-sm">
                 <span className="text-navy">LIVE:</span> {item.material} ({item.location}) 
@@ -202,9 +202,13 @@ const Home = () => {
         </div>
       </section>
 
-      {/* 4. E-AUCTION PORTAL (Unchanged) */}
+      {/* 4. E-AUCTION PORTAL */}
       <section id="auction" className="py-24 bg-navy text-white relative overflow-hidden">
-        <div className="absolute top-0 right-0 opacity-5 pointer-events-none"><Hammer size={400} /></div>
+        {/* Background Icon - Fixed Import Here */}
+        <div className="absolute top-0 right-0 opacity-5 pointer-events-none">
+            <Hammer size={400} />
+        </div>
+
         <div className="max-w-7xl mx-auto px-4 text-center relative z-10">
           <h2 className="text-4xl font-black mb-4 uppercase tracking-tighter">E-Auction <span className="text-orange">Portal</span></h2>
           <div className="grid md:grid-cols-2 gap-8 text-left mt-12">
