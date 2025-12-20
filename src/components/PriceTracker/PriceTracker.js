@@ -1,74 +1,114 @@
+// src/components/PriceTracker/PriceTracker.js
 import React, { useState } from 'react';
-import './PriceTrackerPage.css';
+import './PriceTracker.css';
 
-// Mock Data (Same as before)
-const SCRAP_DATA = [
-  { id: 1, category: "Ferrous", material: "Sponge Iron", location: "Raipur", price: 32500, change: 200, type: "Mandi" },
-  { id: 2, category: "Ferrous", material: "Pig Iron Steel", location: "Durgapur", price: 41000, change: -150, type: "Steel" },
-  { id: 3, category: "Non-Ferrous", material: "Copper Millberry", location: "Delhi", price: 785, change: 12, type: "Millberry" },
-  { id: 4, category: "Non-Ferrous", material: "Aluminium Wire", location: "Alang", price: 212, change: -3, type: "Wire" },
-  { id: 5, category: "Non-Ferrous", material: "Brass Honey", location: "Jamnagar", price: 490, change: 5, type: "Honey" },
+// Extended Mock Data based on your Excel sheet "research (1).xlsx"
+const MARKET_DATA = [
+  { id: 101, category: "Scrap & Metallics", sub_category: "Sponge Iron", location: "Raipur", price: 32500, change: 200, type: "Mandi" },
+  { id: 102, category: "Scrap & Metallics", sub_category: "Sponge Iron", location: "Durgapur", price: 32800, change: -50, type: "Mandi" },
+  { id: 103, category: "Scrap & Metallics", sub_category: "Pig Iron Foundry", location: "Ahmedabad", price: 41000, change: 0, type: "Foundry" },
+  { id: 104, category: "Scrap & Metallics", sub_category: "Melting Scrap", location: "Alang", price: 36500, change: 150, type: "HMS" },
+  { id: 201, category: "Non Ferrous", sub_category: "Copper", location: "Delhi", price: 745, change: 5, type: "Millberry" },
+  { id: 202, category: "Non Ferrous", sub_category: "Copper", location: "Mumbai", price: 740, change: -2, type: "Armature" },
+  { id: 203, category: "Non Ferrous", sub_category: "Aluminium", location: "Alang", price: 212, change: -1, type: "Wire" },
+  { id: 204, category: "Non Ferrous", sub_category: "Brass", location: "Jamnagar", price: 490, change: 8, type: "Honey" },
 ];
 
-const PriceTrackerPage = () => {
-  const [filterType, setFilterType] = useState('All');
-  const [sortOrder, setSortOrder] = useState('High-Low');
+const PriceTracker = () => {
+  const [filterCategory, setFilterCategory] = useState('All');
+  const [filterLocation, setFilterLocation] = useState('All');
+  const [sortOrder, setSortOrder] = useState('default');
 
-  const filteredData = SCRAP_DATA
-    .filter(item => filterType === 'All' || item.category === filterType)
-    .sort((a, b) => sortOrder === 'High-Low' ? b.price - a.price : a.price - b.price);
+  // 1. Filter Logic
+  let processedData = MARKET_DATA.filter(item => {
+    const categoryMatch = filterCategory === 'All' || item.category === filterCategory;
+    const locationMatch = filterLocation === 'All' || item.location === filterLocation;
+    return categoryMatch && locationMatch;
+  });
+
+  // 2. Sort Logic
+  if (sortOrder === 'high-low') {
+    processedData.sort((a, b) => b.price - a.price);
+  } else if (sortOrder === 'low-high') {
+    processedData.sort((a, b) => a.price - b.price);
+  } else if (sortOrder === 'volatility') {
+    processedData.sort((a, b) => Math.abs(b.change) - Math.abs(a.change));
+  }
+
+  // Get unique locations for dropdown
+  const uniqueLocations = [...new Set(MARKET_DATA.map(item => item.location))];
 
   return (
-    <div className="tracker-page-container">
-      <div className="dashboard-header">
-        <h2>Market Intelligence Dashboard</h2>
-        <p>Real-time scrap prices and trends across India.</p>
+    <div className="price-tracker-page">
+      <div className="pt-header">
+        <h2>Live Market Intelligence</h2>
+        <p>Real-time pricing for Ferrous and Non-Ferrous scrap across key Indian mandis.</p>
         
-        <div className="dashboard-controls">
+        {/* Controls Bar */}
+        <div className="pt-controls">
           <div className="control-group">
-            <label>Filter Category:</label>
-            <select onChange={(e) => setFilterType(e.target.value)}>
+            <select onChange={(e) => setFilterCategory(e.target.value)}>
               <option value="All">All Categories</option>
-              <option value="Ferrous">Ferrous</option>
-              <option value="Non-Ferrous">Non-Ferrous</option>
+              <option value="Scrap & Metallics">Scrap & Metallics</option>
+              <option value="Non Ferrous">Non Ferrous</option>
             </select>
           </div>
+
           <div className="control-group">
-            <label>Sort Price:</label>
+            <select onChange={(e) => setFilterLocation(e.target.value)}>
+              <option value="All">All Locations</option>
+              {uniqueLocations.map(loc => <option key={loc} value={loc}>{loc}</option>)}
+            </select>
+          </div>
+
+          <div className="control-group">
             <select onChange={(e) => setSortOrder(e.target.value)}>
-              <option value="High-Low">High to Low</option>
-              <option value="Low-High">Low to High</option>
+              <option value="default">Sort By: Default</option>
+              <option value="high-low">Price: High to Low</option>
+              <option value="low-high">Price: Low to High</option>
+              <option value="volatility">Highest Volatility</option>
             </select>
           </div>
         </div>
       </div>
 
-      <div className="price-grid">
-        {filteredData.map(item => (
-          <div key={item.id} className="price-card">
-            <div className="price-card-header">
-              <span className="location-badge">{item.location}</span>
-              <div className="price-card-actions">
-                <button className="icon-btn" title="Save">🔖</button>
-                <button className="icon-btn" title="Share">🔗</button>
+      {/* Grid Display */}
+      <div className="pt-grid">
+        {processedData.map(item => (
+          <div key={item.id} className="pt-card">
+            <div className="pt-card-top">
+              <span className={`cat-badge ${item.category === 'Non Ferrous' ? 'nf' : 'fe'}`}>
+                {item.category}
+              </span>
+              <div className="pt-actions">
+                <button title="Save to Watchlist">🔖</button>
+                <button title="Share">🔗</button>
               </div>
             </div>
 
-            <div className="meter-visual">
-              <div className="gauge-container">
-                <div className="gauge-body"></div>
-                <div className={`gauge-needle ${item.change >= 0 ? 'pos' : 'neg'}`}></div>
+            <div className="pt-visuals">
+              {/* Gauge Graphic Mockup */}
+              <div className="gauge-box">
+                 <div className="gauge-arc"></div>
+                 <div className="gauge-needle" style={{ 
+                   transform: `translateX(-50%) rotate(${item.change * 0.5}deg)` // Dynamic rotation
+                 }}></div>
               </div>
-              <h3>₹{item.price.toLocaleString()}</h3>
-              <p className={item.change >= 0 ? "text-up" : "text-down"}>
-                {item.change >= 0 ? '▲' : '▼'} {Math.abs(item.change)}
-              </p>
+              <div className="price-block">
+                <h3>₹{item.price.toLocaleString()}</h3>
+                <span className={item.change >= 0 ? "change-up" : "change-down"}>
+                  {item.change >= 0 ? '▲' : '▼'} {Math.abs(item.change)}
+                </span>
+              </div>
             </div>
 
-            <h4>{item.material}</h4>
-            <p className="item-subtext">{item.type} | {item.category}</p>
-            
-            <button className="request-details-btn">Request Details</button>
+            <div className="pt-info">
+              <h4>{item.sub_category}</h4>
+              <p>Location: <strong>{item.location}</strong></p>
+              <p className="spec-type">Type: {item.type}</p>
+            </div>
+
+            <button className="pt-btn">Request Details</button>
           </div>
         ))}
       </div>
@@ -76,4 +116,4 @@ const PriceTrackerPage = () => {
   );
 };
 
-export default PriceTrackerPage;
+export default PriceTracker;
