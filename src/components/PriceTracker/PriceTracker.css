@@ -1,0 +1,92 @@
+/* src/components/PriceTracker/PriceTracker.css */
+.price-tracker-container {
+  padding: 40px 20px;
+  background-color: var(--color-white);
+  border-radius: 12px;
+  box-shadow: 0 4px 15px var(--color-shadow);
+  margin-top: 20px;
+}
+
+.tracker-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.controls select {
+  padding: 8px;
+  margin-left: 10px;
+  border: 1px solid var(--color-primary);
+  border-radius: 5px;
+  color: var(--color-primary-dark);
+}
+
+.tracker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 25px;
+}
+
+.tracker-card {
+  background: var(--color-light-bg);
+  border-radius: 10px;
+  padding: 20px;
+  text-align: center;
+  border: 1px solid #c5e8f7;
+  transition: transform 0.2s;
+}
+
+.tracker-card:hover {
+  transform: translateY(-5px);
+}
+
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 15px;
+}
+
+.location-tag {
+  background: var(--color-primary-dark);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+}
+
+/* Meter Mockup */
+.gauge-placeholder {
+  width: 80px;
+  height: 40px;
+  background: #ddd;
+  border-radius: 40px 40px 0 0;
+  margin: 0 auto 10px;
+  position: relative;
+  border: 2px solid var(--color-primary);
+}
+
+.gauge-arrow {
+  width: 2px;
+  height: 35px;
+  background: var(--color-primary-dark);
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform-origin: bottom;
+  transition: transform 1s;
+}
+
+.change-up { color: #28a745; font-weight: bold; }
+.change-down { color: #dc3545; font-weight: bold; }
+
+.request-btn {
+  width: 100%;
+  padding: 10px;
+  background-color: var(--color-primary-dark);
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-top: 15px;
+}
