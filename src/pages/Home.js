@@ -1,47 +1,27 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { 
-  Hammer, ShieldCheck, Mail, Lock, ArrowRight, Building2, User, Unlock, Filter, ArrowUpRight, ArrowDownRight 
+  Hammer, ShieldCheck, Lock, ArrowRight, Building2, User, Unlock, ArrowUpRight, ArrowDownRight 
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-// 1. MOCK DATA (Modeled after your 'research.xlsx' file)
+// 1. DATA (Same structure as before)
 const MARKET_DATA = [
   { id: 101, category: "Ferrous", material: "Sponge Iron", location: "Raipur", price: 32500, change: 200, type: "Mandi", contact: "Raipur Ispat Links" },
   { id: 102, category: "Ferrous", material: "Pig Iron Steel", location: "Durgapur", price: 41000, change: -150, type: "Steel", contact: "Durgapur Foundries" },
   { id: 103, category: "Ferrous", material: "Melting Scrap", location: "Alang", price: 36500, change: 150, type: "HMS", contact: "Alang Recyclers Assn" },
-  { id: 104, category: "Ferrous", material: "Pig Iron Foundry", location: "Ahmedabad", price: 42100, change: 0, type: "Foundry", contact: "Gujarat Iron Traders" },
   { id: 201, category: "Non-Ferrous", material: "Copper Millberry", location: "Delhi", price: 785, change: 12, type: "Wire", contact: "Delhi Metal Exch" },
   { id: 202, category: "Non-Ferrous", material: "Aluminium Wire", location: "Alang", price: 212, change: -3, type: "Scrap", contact: "Gujarat Alloys" },
-  { id: 203, category: "Non-Ferrous", material: "Brass Honey", location: "Jamnagar", price: 490, change: 5, type: "Honey", contact: "Jamnagar Brass Corp" },
+  // Note: We are showing a preview here. Full list is on /tracker
 ];
 
 const Home = () => {
   const navigate = useNavigate();
-  
-  // State for UI Logic
   const [unlockedDetails, setUnlockedDetails] = useState({});
   const [hasPaidDeposit, setHasPaidDeposit] = useState(false);
-  const [userRole, setUserRole] = useState('guest'); // Options: 'guest', 'company', 'bidder'
-  
-  // State for Dashboard Logic
-  const [filterCategory, setFilterCategory] = useState('All');
-  const [filterLocation, setFilterLocation] = useState('All');
-
-  // Filter Logic
-  const filteredPrices = useMemo(() => {
-    return MARKET_DATA.filter(item => {
-      const catMatch = filterCategory === 'All' || item.category === filterCategory;
-      const locMatch = filterLocation === 'All' || item.location === filterLocation;
-      return catMatch && locMatch;
-    });
-  }, [filterCategory, filterLocation]);
-
-  // Extract Unique Locations for Dropdown
-  const uniqueLocations = [...new Set(MARKET_DATA.map(item => item.location))];
+  const [userRole, setUserRole] = useState('guest'); 
 
   // Handlers
   const handleUnlockPrice = (id) => {
-    // Simulate Payment Gateway delay
     const confirmUnlock = window.confirm("Unlock verified contact details for $5?");
     if (confirmUnlock) {
       setTimeout(() => {
@@ -60,10 +40,9 @@ const Home = () => {
   return (
     <main className="bg-platinum min-h-screen">
       
-      {/* 1. NEWSLETTER TICKER */}
+      {/* 1. NEWSLETTER TICKER (Top) */}
       <div className="bg-orange text-white py-2 overflow-hidden border-b-4 border-navy">
         <div className="flex animate-marquee whitespace-nowrap">
-          {/* Duplicate map for seamless scrolling effect */}
           {[...MARKET_DATA, ...MARKET_DATA].map((item, i) => (
             <span key={i} className="mx-8 font-bold uppercase italic tracking-wider flex items-center gap-2 text-sm">
               <span className="text-navy">LIVE:</span> {item.material} ({item.location}) 
@@ -96,7 +75,7 @@ const Home = () => {
               onClick={() => navigate('/tracker')}
               className="border-2 border-navy text-navy px-8 py-4 font-bold hover:bg-navy hover:text-white transition-all duration-300"
             >
-              FULL TRACKER
+              VIEW FULL DASHBOARD
             </button>
           </div>
         </div>
@@ -111,113 +90,78 @@ const Home = () => {
         </div>
       </section>
 
-      {/* 3. MARKET INTELLIGENCE DASHBOARD */}
-      <section id="prices" className="bg-white py-20 border-y-4 border-platinum">
+      {/* 3. MARKET PRICES (Horizontal Scrolling) */}
+      <section id="prices" className="bg-white py-16 border-y-4 border-platinum">
         <div className="max-w-7xl mx-auto px-4">
           
-          {/* Header & Controls */}
-          <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
+          {/* Header */}
+          <div className="flex justify-between items-end mb-10">
             <div>
-              <h2 className="text-4xl font-black uppercase italic tracking-tighter text-navy">Market Intelligence</h2>
-              <p className="text-steel font-medium mt-2">Real-time pricing from major Indian Mandis.</p>
+               <h2 className="text-3xl font-black uppercase italic tracking-tighter text-navy">Live Scrap Ticker</h2>
+               <p className="text-steel font-medium">Real-time prices (Horizontal Scroll)</p>
             </div>
             
-            {/* Filters */}
-            <div className="flex flex-wrap gap-4 bg-platinum/30 p-4 rounded-lg border border-platinum">
-              <div className="flex items-center gap-2">
-                <Filter size={18} className="text-orange" />
-                <span className="text-xs font-bold text-navy uppercase">Filters:</span>
-              </div>
-              
-              <select 
-                className="text-sm font-bold text-navy border border-platinum rounded px-3 py-2 cursor-pointer focus:ring-2 focus:ring-orange outline-none"
-                onChange={(e) => setFilterCategory(e.target.value)}
-              >
-                <option value="All">All Categories</option>
-                <option value="Ferrous">Ferrous</option>
-                <option value="Non-Ferrous">Non-Ferrous</option>
-              </select>
-
-              <select 
-                className="text-sm font-bold text-navy border border-platinum rounded px-3 py-2 cursor-pointer focus:ring-2 focus:ring-orange outline-none"
-                onChange={(e) => setFilterLocation(e.target.value)}
-              >
-                <option value="All">All Locations</option>
-                {uniqueLocations.map(loc => <option key={loc} value={loc}>{loc}</option>)}
-              </select>
-            </div>
+            {/* SEE ALL LINK */}
+            <button 
+              onClick={() => navigate('/tracker')} 
+              className="flex items-center gap-2 text-orange font-black uppercase hover:text-navy transition-colors border-b-2 border-orange pb-1"
+            >
+              See All Markets <ArrowRight size={18} />
+            </button>
           </div>
-          
-          {/* Data Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredPrices.map((p) => (
-              <div key={p.id} className="bg-white border-2 border-platinum hover:border-navy transition-all duration-300 shadow-xl hover:shadow-2xl rounded-xl overflow-hidden group">
-                
-                {/* Card Header */}
-                <div className="p-6 pb-0 flex justify-between items-start">
-                  <span className="bg-navy text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">
-                    {p.location}
-                  </span>
+
+          {/* HORIZONTAL SCROLL CONTAINER */}
+          <div className="flex gap-6 overflow-x-auto pb-10 px-2 scrollbar-hide">
+            
+            {/* Map through only the first 5 items for preview */}
+            {MARKET_DATA.slice(0, 5).map((p) => (
+               <div key={p.id} className="min-w-[320px] relative group border-4 border-platinum p-8 bg-white transition-all hover:border-navy hover:shadow-xl">
+                <div className="flex justify-between items-start">
+                  <h3 className="text-xl font-black uppercase text-navy">{p.material}</h3>
                   <div className={`flex items-center gap-1 font-bold ${p.change > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {p.change > 0 ? <ArrowUpRight size={18} /> : <ArrowDownRight size={18} />}
-                    {Math.abs(p.change)}
+                     {p.change > 0 ? <ArrowUpRight size={18} /> : <ArrowDownRight size={18} />}
+                     {Math.abs(p.change)}
                   </div>
-                </div>
-
-                {/* Gauge Visual */}
-                <div className="px-6 pt-4 pb-0 flex justify-center opacity-80 group-hover:opacity-100 transition-opacity">
-                  <div className="relative w-32 h-16 overflow-hidden">
-                    <div className="absolute top-0 left-0 w-32 h-32 rounded-full border-[6px] border-platinum border-b-transparent"></div>
-                    <div 
-                      className="absolute bottom-0 left-1/2 w-1 h-16 bg-navy origin-bottom transition-transform duration-1000"
-                      style={{ transform: `translateX(-50%) rotate(${p.change > 0 ? '45deg' : '-45deg'})` }}
-                    ></div>
-                    <div className="absolute bottom-0 left-1/2 w-4 h-4 bg-orange rounded-full transform -translate-x-1/2 translate-y-1/2"></div>
-                  </div>
-                </div>
-
-                {/* Price Display */}
-                <div className="text-center px-6 pb-6">
-                   <h3 className="text-3xl font-black text-navy tracking-tighter">₹{p.price.toLocaleString()}</h3>
-                   <p className="text-sm font-bold text-steel uppercase mt-1">{p.material}</p>
-                   <p className="text-xs text-steel/60 font-medium">{p.category} • {p.type}</p>
                 </div>
                 
-                {/* Unlock / Details Section */}
-                <div className="border-t-2 border-platinum bg-platinum/10">
-                  {unlockedDetails[p.id] ? (
-                    <div className="p-4 bg-green-50 animate-pulse">
-                      <p className="text-[10px] font-black uppercase text-green-700 flex items-center gap-1">
-                        <ShieldCheck size={12}/> Verified Source:
-                      </p>
-                      <p className="text-sm font-bold text-navy mt-1">{p.contact}</p>
-                    </div>
-                  ) : (
+                <p className="text-sm font-bold text-steel uppercase mt-1 mb-4">{p.location} • {p.type}</p>
+                <p className="text-5xl font-black text-navy tracking-tighter">₹{p.price.toLocaleString()}</p>
+                
+                {unlockedDetails[p.id] ? (
+                  <div className="mt-6 p-4 bg-green-50 border-l-4 border-green-600">
+                    <p className="text-[10px] font-black uppercase text-green-700">Verified Contact:</p>
+                    <p className="text-sm font-bold text-navy mt-1">{p.contact}</p>
+                  </div>
+                ) : (
+                  <div className="mt-6">
                     <button 
                       onClick={() => handleUnlockPrice(p.id)}
-                      className="w-full py-4 flex items-center justify-center gap-2 text-navy font-black uppercase text-xs hover:bg-orange hover:text-white transition-colors group-hover:bg-navy group-hover:text-white"
+                      className="bg-orange hover:bg-navy text-white w-full py-3 font-black uppercase text-xs transition-colors flex items-center justify-center gap-2"
                     >
-                      <Lock size={14} className="text-orange group-hover:text-white" /> 
-                      Unlock Details ($5)
+                      <Lock size={14} /> Unlock ($5)
                     </button>
-                  )}
-                </div>
-
+                  </div>
+                )}
               </div>
             ))}
+
+            {/* "SEE ALL" CARD AT THE END OF SCROLL */}
+            <div 
+              onClick={() => navigate('/tracker')}
+              className="min-w-[320px] border-4 border-dashed border-platinum bg-platinum/20 flex flex-col items-center justify-center cursor-pointer hover:border-orange hover:bg-orange/5 transition-all group"
+            >
+              <div className="p-4 rounded-full bg-white border-2 border-platinum group-hover:border-orange mb-4">
+                <ArrowRight size={32} className="text-steel group-hover:text-orange" />
+              </div>
+              <h3 className="text-xl font-black uppercase text-navy">View All Prices</h3>
+              <p className="text-steel font-medium text-sm">Access full dashboard</p>
+            </div>
+
           </div>
-
-          {filteredPrices.length === 0 && (
-             <div className="text-center py-20 text-steel">
-                <p className="text-xl font-bold">No materials found.</p>
-                <p>Try adjusting your filters.</p>
-             </div>
-          )}
-
         </div>
       </section>
 
-      {/* 4. E-AUCTION PORTAL */}
+      {/* 4. E-AUCTION PORTAL (Same as before) */}
       <section id="auction" className="py-24 bg-navy text-white relative overflow-hidden">
         {/* Background Icon */}
         <div className="absolute top-0 right-0 opacity-5 pointer-events-none">
@@ -226,58 +170,34 @@ const Home = () => {
 
         <div className="max-w-7xl mx-auto px-4 text-center relative z-10">
           <h2 className="text-4xl font-black mb-4 uppercase tracking-tighter">E-Auction <span className="text-orange">Portal</span></h2>
-          <p className="text-platinum/60 mb-12 max-w-2xl mx-auto">Secure, transparent bidding for industrial lots. Verified sellers, pre-screened buyers.</p>
-          
-          <div className="grid md:grid-cols-2 gap-8 text-left">
+          <div className="grid md:grid-cols-2 gap-8 text-left mt-12">
             {/* AUCTIONEER LOGIC */}
-            <div className={`p-8 border-2 rounded-xl transition-all ${userRole === 'company' ? 'border-orange bg-white/5 shadow-2xl shadow-orange/10' : 'border-white/10 opacity-60 hover:opacity-100'}`}>
+            <div className={`p-8 border-2 rounded-xl transition-all ${userRole === 'company' ? 'border-orange bg-white/5' : 'border-white/10 opacity-80'}`}>
               <Building2 className="text-orange mb-4" size={40} />
               <h3 className="text-2xl font-black mb-2">FOR SELLERS</h3>
-              <p className="text-sm text-platinum/70 mb-8">Post bulk auctions, manage inventory, and receive automated bid sheets.</p>
-              
+              <p className="text-sm text-platinum/70 mb-8">Post bulk auctions and manage inventory.</p>
               {userRole === 'company' ? (
-                <button className="bg-orange text-white hover:bg-white hover:text-navy w-full py-4 font-black uppercase tracking-widest transition-colors">
-                    Post New Auction
-                </button>
+                <button className="bg-orange text-white w-full py-4 font-black uppercase">Post Auction</button>
               ) : (
-                <button 
-                  onClick={() => setUserRole('company')} 
-                  className="w-full py-4 border border-white/20 text-xs font-bold text-platinum/60 hover:border-orange hover:text-orange transition-colors"
-                >
-                   <Lock size={12} className="inline mr-2" /> REGISTER AS SELLER
-                </button>
+                <button onClick={() => setUserRole('company')} className="border border-white/20 w-full py-4 text-xs font-bold hover:bg-white/10">REGISTER AS SELLER</button>
               )}
             </div>
 
             {/* BIDDER LOGIC */}
-            <div className={`p-8 border-2 rounded-xl transition-all ${userRole === 'bidder' ? 'border-orange bg-white/5 shadow-2xl shadow-orange/10' : 'border-white/10 opacity-60 hover:opacity-100'}`}>
+            <div className={`p-8 border-2 rounded-xl transition-all ${userRole === 'bidder' ? 'border-orange bg-white/5' : 'border-white/10 opacity-80'}`}>
               <User className="text-orange mb-4" size={40} />
               <h3 className="text-2xl font-black mb-2">FOR BIDDERS</h3>
-              <p className="text-sm text-platinum/70 mb-8">Access premium lots. Requires refundable EMD (Earnest Money Deposit).</p>
-              
+              <p className="text-sm text-platinum/70 mb-8">Access premium lots. Requires EMD.</p>
               {userRole === 'bidder' ? (
                 !hasPaidDeposit ? (
-                    <button onClick={handleAuctionDeposit} className="bg-orange text-white hover:bg-white hover:text-navy w-full py-4 font-black uppercase tracking-widest transition-colors flex justify-center gap-2">
-                         Pay $500 Deposit
-                    </button>
+                    <button onClick={handleAuctionDeposit} className="bg-orange text-white w-full py-4 font-black uppercase">Pay Deposit</button>
                 ) : (
-                    <button className="bg-green-600 text-white w-full py-4 font-black uppercase tracking-widest flex justify-center gap-2 items-center hover:bg-green-500 transition-colors">
-                         <Unlock size={18} /> Enter Bidding Room
-                    </button>
+                    <button className="bg-green-600 text-white w-full py-4 font-black uppercase flex justify-center gap-2"><Unlock size={18}/> Enter Room</button>
                 )
               ) : (
-                <button 
-                  onClick={() => setUserRole('bidder')} 
-                  className="w-full py-4 border border-white/20 text-xs font-bold text-platinum/60 hover:border-orange hover:text-orange transition-colors"
-                >
-                   <Lock size={12} className="inline mr-2" /> REGISTER AS BIDDER
-                </button>
+                <button onClick={() => setUserRole('bidder')} className="border border-white/20 w-full py-4 text-xs font-bold hover:bg-white/10">REGISTER AS BIDDER</button>
               )}
             </div>
-          </div>
-          
-          <div className="mt-8 text-xs text-platinum/40">
-             * Select a role above to visualize different dashboard views (Demo Mode)
           </div>
         </div>
       </section>
