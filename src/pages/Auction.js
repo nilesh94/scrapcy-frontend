@@ -44,8 +44,14 @@ const Auction = () => {
 
       </div>
 
-      <footer className="absolute bottom-10 text-steel text-xs font-bold tracking-widest uppercase">
-        Scrapcy E-Auction Platform • 2025
+      {/* UPDATED FOOTER */}
+      <footer className="absolute bottom-10 text-center">
+        <p className="text-steel text-xs font-bold tracking-widest uppercase mb-1">
+          Scrapcy E-Auction Platform
+        </p>
+        <p className="text-white/20 text-[10px] uppercase tracking-wider">
+           A Venture by <span className="text-orange">Metanexus</span>
+        </p>
       </footer>
     </div>
   );
