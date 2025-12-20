@@ -1,92 +1,128 @@
 /* src/components/PriceTracker/PriceTracker.css */
-.price-tracker-container {
-  padding: 40px 20px;
-  background-color: var(--color-white);
-  border-radius: 12px;
-  box-shadow: 0 4px 15px var(--color-shadow);
-  margin-top: 20px;
+
+.price-tracker-page {
+  max-width: 1200px;
+  margin: 40px auto;
+  padding: 0 20px;
+  min-height: 80vh;
 }
 
-.tracker-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.pt-header {
   margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e0e0e0;
 }
 
-.controls select {
-  padding: 8px;
-  margin-left: 10px;
-  border: 1px solid var(--color-primary);
-  border-radius: 5px;
-  color: var(--color-primary-dark);
+.pt-header h2 { color: #2c3e50; margin-bottom: 10px; }
+.pt-header p { color: #7f8c8d; }
+
+/* --- Controls --- */
+.pt-controls {
+  display: flex;
+  gap: 15px;
+  margin-top: 20px;
+  flex-wrap: wrap;
 }
 
-.tracker-grid {
+.pt-controls select {
+  padding: 10px 15px;
+  border-radius: 8px;
+  border: 1px solid #87ceeb;
+  background-color: #f9f9f9;
+  font-size: 0.95em;
+  cursor: pointer;
+  min-width: 160px;
+}
+
+/* --- Grid --- */
+.pt-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 25px;
 }
 
-.tracker-card {
-  background: var(--color-light-bg);
-  border-radius: 10px;
+.pt-card {
+  background: #ffffff;
+  border: 1px solid #e1e8ed;
+  border-radius: 12px;
   padding: 20px;
-  text-align: center;
-  border: 1px solid #c5e8f7;
-  transition: transform 0.2s;
+  transition: transform 0.2s, box-shadow 0.2s;
+  position: relative;
 }
 
-.tracker-card:hover {
+.pt-card:hover {
   transform: translateY(-5px);
+  box-shadow: 0 8px 15px rgba(0,0,0,0.1);
 }
 
-.card-top {
+.pt-card-top {
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
   margin-bottom: 15px;
 }
 
-.location-tag {
-  background: var(--color-primary-dark);
-  color: white;
-  padding: 2px 8px;
+.cat-badge {
+  font-size: 0.7em;
+  padding: 3px 8px;
   border-radius: 4px;
-  font-size: 0.75rem;
+  font-weight: bold;
+  text-transform: uppercase;
 }
+.cat-badge.fe { background-color: #e3f2fd; color: #1565c0; } /* Ferrous */
+.cat-badge.nf { background-color: #fff3e0; color: #ef6c00; } /* Non-Ferrous */
 
-/* Meter Mockup */
-.gauge-placeholder {
-  width: 80px;
-  height: 40px;
-  background: #ddd;
-  border-radius: 40px 40px 0 0;
+.pt-actions button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.2em;
+  margin-left: 5px;
+  opacity: 0.6;
+}
+.pt-actions button:hover { opacity: 1; }
+
+/* --- Meter Visuals --- */
+.gauge-box {
+  width: 100px;
+  height: 50px;
+  background: #f0f0f0;
+  border-radius: 100px 100px 0 0;
   margin: 0 auto 10px;
   position: relative;
-  border: 2px solid var(--color-primary);
+  overflow: hidden;
+  border-bottom: 2px solid #ccc;
 }
-
-.gauge-arrow {
-  width: 2px;
-  height: 35px;
-  background: var(--color-primary-dark);
+.gauge-needle {
+  width: 4px;
+  height: 45px;
+  background: #555;
   position: absolute;
   bottom: 0;
   left: 50%;
-  transform-origin: bottom;
-  transition: transform 1s;
+  transform-origin: bottom center;
+  transition: transform 0.5s ease-out;
 }
 
-.change-up { color: #28a745; font-weight: bold; }
-.change-down { color: #dc3545; font-weight: bold; }
+.price-block { text-align: center; margin-bottom: 15px; }
+.price-block h3 { margin: 5px 0; font-size: 1.6em; color: #333; }
+.change-up { color: #27ae60; font-weight: bold; font-size: 0.9em; }
+.change-down { color: #c0392b; font-weight: bold; font-size: 0.9em; }
 
-.request-btn {
+.pt-info h4 { margin: 0 0 5px 0; color: #2c3e50; font-size: 1.1em; }
+.pt-info p { margin: 2px 0; color: #666; font-size: 0.9em; }
+.spec-type { font-style: italic; color: #888; font-size: 0.85em; }
+
+.pt-btn {
   width: 100%;
+  margin-top: 15px;
   padding: 10px;
   background-color: var(--color-primary-dark);
   color: white;
   border: none;
-  border-radius: 5px;
+  border-radius: 6px;
+  font-weight: 600;
   cursor: pointer;
-  margin-top: 15px;
+  transition: background 0.2s;
 }
+.pt-btn:hover { background-color: var(--color-primary); }
