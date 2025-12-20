@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import './PriceTracker.css'; // You can keep this for page layout styles, but card styles are now in PriceCard
-import PriceCard from '../PriceCard';
+import './PriceTracker.css';
+import PriceCard from '../PriceCard'; // Import Check
 
+// SAME MOCK DATA STRUCTURE AS HOME.JS
 const MARKET_DATA = [
   { id: 101, category: "Ferrous", material: "Sponge Iron", location: "Raipur", price: 30500, change: 200, type: "Mandi", contact: "Raipur Ispat" },
   { id: 102, category: "Ferrous", material: "Sponge Iron", location: "Durgapur", price: 34000, change: -50, type: "Mandi", contact: "Durgapur Traders" },
@@ -21,26 +22,24 @@ const PriceTracker = () => {
 
   // 1. Calculate Averages
   const materialAverages = useMemo(() => {
-    const sums = {};
-    const counts = {};
+    const sums = {}; const counts = {};
     MARKET_DATA.forEach(item => {
       if (!sums[item.material]) { sums[item.material] = 0; counts[item.material] = 0; }
       sums[item.material] += item.price;
       counts[item.material] += 1;
     });
     const avgs = {};
-    for (const mat in sums) { avgs[mat] = sums[mat] / counts[mat]; }
+    for (const mat in sums) avgs[mat] = sums[mat] / counts[mat];
     return avgs;
   }, []);
 
-  // 2. Filter Data
+  // 2. Filter & Sort
   let processedData = MARKET_DATA.filter(item => {
     const categoryMatch = filterCategory === 'All' || item.category === filterCategory;
     const locationMatch = filterLocation === 'All' || item.location === filterLocation;
     return categoryMatch && locationMatch;
   });
 
-  // 3. Sort Logic
   if (sortOrder === 'high-low') processedData.sort((a, b) => b.price - a.price);
   else if (sortOrder === 'low-high') processedData.sort((a, b) => a.price - b.price);
 
@@ -57,7 +56,6 @@ const PriceTracker = () => {
       <div className="pt-header">
         <h2>Live Market Intelligence</h2>
         <p>Real-time pricing compared against National Averages.</p>
-        
         <div className="pt-controls">
           <div className="control-group">
             <select onChange={(e) => setFilterCategory(e.target.value)}>
@@ -84,7 +82,6 @@ const PriceTracker = () => {
 
       <div className="pt-grid">
         {processedData.map(item => (
-            // USE THE REUSABLE CARD HERE
             <PriceCard 
                 key={item.id}
                 item={item}
