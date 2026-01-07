@@ -1,32 +1,62 @@
-import React, { useState } from 'react';
-import { LayoutDashboard, PlusCircle, Package, Gavel, Upload, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { LayoutDashboard, PlusCircle, Package, Gavel, Upload, X, LogOut, User } from 'lucide-react';
 
 const CompanyDashboard = () => {
-  const [activeTab, setActiveTab] = useState('overview'); // 'overview' or 'post'
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('overview');
+  const [user, setUser] = useState({ first_name: 'Company' });
+
+  // Load user name on mount
+  useEffect(() => {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+          setUser(JSON.parse(storedUser));
+      }
+  }, []);
+
+  const handleLogout = () => {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      navigate('/login');
+  };
 
   return (
     <div className="min-h-screen bg-platinum pb-20">
       
       {/* HEADER */}
       <div className="bg-navy text-white py-12 px-4">
-        <div className="max-w-7xl mx-auto flex justify-between items-end">
+        <div className="max-w-7xl mx-auto flex justify-between items-start">
           <div>
             <h1 className="text-4xl font-black uppercase tracking-tighter mb-2">Company Console</h1>
-            <p className="text-steel text-sm font-bold uppercase tracking-widest">Manage your scrap inventory and auctions</p>
+            <p className="text-steel text-sm font-bold uppercase tracking-widest">
+                Welcome, {user.first_name} • Manage Inventory
+            </p>
           </div>
-          <div className="flex gap-4">
+          
+          {/* Logout & Navigation */}
+          <div className="flex flex-col items-end gap-4">
             <button 
-              onClick={() => setActiveTab('overview')}
-              className={`flex items-center gap-2 px-6 py-3 font-bold text-xs uppercase tracking-widest transition ${activeTab === 'overview' ? 'bg-orange text-white' : 'bg-steel/30 hover:bg-white/10'}`}
+                onClick={handleLogout}
+                className="flex items-center gap-2 text-xs font-bold uppercase text-red-400 hover:text-white transition"
             >
-              <LayoutDashboard size={16} /> Overview
+                <LogOut size={14} /> Logout Session
             </button>
-            <button 
-              onClick={() => setActiveTab('post')}
-              className={`flex items-center gap-2 px-6 py-3 font-bold text-xs uppercase tracking-widest transition ${activeTab === 'post' ? 'bg-orange text-white' : 'bg-steel/30 hover:bg-white/10'}`}
-            >
-              <PlusCircle size={16} /> Post Auction
-            </button>
+
+            <div className="flex gap-4">
+                <button 
+                onClick={() => setActiveTab('overview')}
+                className={`flex items-center gap-2 px-6 py-3 font-bold text-xs uppercase tracking-widest transition ${activeTab === 'overview' ? 'bg-orange text-white' : 'bg-steel/30 hover:bg-white/10'}`}
+                >
+                <LayoutDashboard size={16} /> Overview
+                </button>
+                <button 
+                onClick={() => setActiveTab('post')}
+                className={`flex items-center gap-2 px-6 py-3 font-bold text-xs uppercase tracking-widest transition ${activeTab === 'post' ? 'bg-orange text-white' : 'bg-steel/30 hover:bg-white/10'}`}
+                >
+                <PlusCircle size={16} /> Post Auction
+                </button>
+            </div>
           </div>
         </div>
       </div>
