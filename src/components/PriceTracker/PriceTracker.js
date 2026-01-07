@@ -1,10 +1,10 @@
 import React, { useState, useMemo } from 'react';
-import './PriceTracker.css';
+import './PriceTracker.css'; // Importing your essential CSS
 import PriceCard from '../PriceCard'; 
-import Header from '../Header/Header'; // Import Header
-import Footer from '../Footer/Footer'; // Import Footer
+import Header from '../Header/Header'; 
+import Footer from '../Footer/Footer'; 
 
-// SAME MOCK DATA STRUCTURE AS HOME.JS
+// MOCK DATA
 const MARKET_DATA = [
   { id: 101, category: "Ferrous", material: "Sponge Iron", location: "Raipur", price: 30500, change: 200, type: "Mandi", contact: "Raipur Ispat" },
   { id: 102, category: "Ferrous", material: "Sponge Iron", location: "Durgapur", price: 34000, change: -50, type: "Mandi", contact: "Durgapur Traders" },
@@ -35,7 +35,7 @@ const PriceTracker = () => {
     return avgs;
   }, []);
 
-  // 2. Filter & Sort
+  // 2. Filter & Sort Logic
   let processedData = MARKET_DATA.filter(item => {
     const categoryMatch = filterCategory === 'All' || item.category === filterCategory;
     const locationMatch = filterLocation === 'All' || item.location === filterLocation;
@@ -57,46 +57,57 @@ const PriceTracker = () => {
     <div className="min-h-screen bg-platinum flex flex-col">
       <Header />
       
-      {/* Content Wrapper */}
-      <div className="flex-grow price-tracker-page">
-        <div className="pt-header">
-          <h2>Live Market Intelligence</h2>
-          <p>Real-time pricing compared against National Averages.</p>
+      {/* We wrap your original structure in flex-grow so it pushes the footer down,
+         but we keep the classNames exactly as you had them for your CSS.
+      */}
+      <div className="flex-grow">
+        <div className="price-tracker-page">
           
-          <div className="pt-controls">
-            <div className="control-group">
-              <select onChange={(e) => setFilterCategory(e.target.value)}>
-                <option value="All">All Categories</option>
-                <option value="Ferrous">Ferrous</option>
-                <option value="Non Ferrous">Non Ferrous</option>
-              </select>
-            </div>
-            <div className="control-group">
-              <select onChange={(e) => setFilterLocation(e.target.value)}>
-                <option value="All">All Locations</option>
-                {uniqueLocations.map(loc => <option key={loc} value={loc}>{loc}</option>)}
-              </select>
-            </div>
-            <div className="control-group">
-              <select onChange={(e) => setSortOrder(e.target.value)}>
-                <option value="default">Sort By: Default</option>
-                <option value="high-low">Price: High to Low</option>
-                <option value="low-high">Price: Low to High</option>
-              </select>
+          <div className="pt-header">
+            <h2>Live Market Intelligence</h2>
+            <p>Real-time pricing compared against National Averages.</p>
+            
+            <div className="pt-controls">
+              <div className="control-group">
+                <select onChange={(e) => setFilterCategory(e.target.value)}>
+                  <option value="All">All Categories</option>
+                  <option value="Ferrous">Ferrous</option>
+                  <option value="Non Ferrous">Non Ferrous</option>
+                </select>
+              </div>
+              <div className="control-group">
+                <select onChange={(e) => setFilterLocation(e.target.value)}>
+                  <option value="All">All Locations</option>
+                  {uniqueLocations.map(loc => <option key={loc} value={loc}>{loc}</option>)}
+                </select>
+              </div>
+              <div className="control-group">
+                <select onChange={(e) => setSortOrder(e.target.value)}>
+                  <option value="default">Sort By: Default</option>
+                  <option value="high-low">Price: High to Low</option>
+                  <option value="low-high">Price: Low to High</option>
+                </select>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="pt-grid">
-          {processedData.map(item => (
-              <PriceCard 
-                  key={item.id}
-                  item={item}
-                  averagePrice={materialAverages[item.material]}
-                  isUnlocked={unlockedDetails[item.id]}
-                  onUnlock={handleUnlockPrice}
-              />
-          ))}
+          <div className="pt-grid">
+            {processedData.length > 0 ? (
+                processedData.map(item => (
+                    <PriceCard 
+                        key={item.id}
+                        item={item}
+                        averagePrice={materialAverages[item.material]}
+                        isUnlocked={unlockedDetails[item.id]}
+                        onUnlock={handleUnlockPrice}
+                    />
+                ))
+            ) : (
+                <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '40px', color: '#888' }}>
+                    <h3>No market data found for these filters.</h3>
+                </div>
+            )}
+          </div>
         </div>
       </div>
 
