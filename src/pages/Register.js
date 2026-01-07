@@ -7,8 +7,9 @@ import {
 
 const Register = () => {
   const navigate = useNavigate();
-  // Default role is bidder
-  const [role, setRole] = useState('bidder');
+  
+  // --- STATE MANAGEMENT ---
+  const [role, setRole] = useState('bidder'); // 'bidder' or 'seller'
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
@@ -16,10 +17,10 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState('');
   
-  // Success State for the Popup
+  // Success Modal State
   const [showSuccess, setShowSuccess] = useState(false);
 
-  // State for Form Data
+  // Form Data
   const [formData, setFormData] = useState({
     firstName: '', lastName: '', email: '', phone: '', 
     password: '', confirmPassword: '',
@@ -28,7 +29,7 @@ const Register = () => {
     address: '', city: '', state: '', pincode: ''
   });
 
-  // State for Validation
+  // Validation State
   const [passwordCriteria, setPasswordCriteria] = useState({
     length: false, upper: false, lower: false, number: false, special: false
   });
@@ -58,11 +59,10 @@ const Register = () => {
     // 3. Required Fields Logic
     const basicFields = formData.firstName && formData.lastName && formData.email && formData.phone;
     
-    // Seller Logic: Needs Company Details
-    // Bidder Logic: Only needs Basic Details
+    // 4. Role Specific Logic
     let companyFields = true; 
-
     if (role === 'seller') {
+       // Sellers MUST have these fields
        companyFields = formData.companyName && 
                        formData.businessType && 
                        formData.gstNumber && 
@@ -81,6 +81,7 @@ const Register = () => {
     if (apiError) setApiError('');
   };
 
+  // --- SUBMIT LOGIC ---
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!isFormValid) return;
@@ -88,7 +89,7 @@ const Register = () => {
     setLoading(true);
     setApiError('');
 
-    // 1. Determine Role
+    // 1. Determine Backend Role ('user' is the backend name for bidder)
     const finalRole = role === 'bidder' ? 'user' : 'seller';
 
     // 2. Construct Clean Payload
@@ -101,8 +102,7 @@ const Register = () => {
       role: finalRole
     };
 
-    // 3. Conditionally Add Seller Fields
-    // If user is a bidder, we do NOT send these fields, keeping the payload clean.
+    // 3. Add Company fields ONLY if seller
     if (finalRole === 'seller') {
       Object.assign(apiPayload, {
         company_name: formData.companyName,
@@ -126,44 +126,50 @@ const Register = () => {
         { headers: { 'Content-Type': 'application/json' } }
       );
 
-      // --- SUCCESS HANDLING ---
       console.log("Registration Success:", response.data);
 
-      // A. Save Token & User Info (Auto-Login)
+      // 5. AUTO-LOGIN: Save Token & User Info
       if (response.data.access_token) {
         localStorage.setItem('token', response.data.access_token);
         localStorage.setItem('user', JSON.stringify(response.data.user));
       }
 
-      // B. Show Success Modal
+      // 6. Show Success Modal
       setShowSuccess(true);
 
-      // C. Redirect to Dashboard after 1.5 seconds
+      // 7. Redirect based on Role after 1.5s delay
       setTimeout(() => {
-        navigate('/dashboard');
+        if (role === 'seller') {
+            navigate('/company-dashboard');
+        } else {
+            navigate('/bidder-dashboard');
+        }
       }, 1500);
 
     } catch (err) {
       console.error("Registration Error:", err);
       const msg = err.response?.data?.error || err.response?.data?.detail || "Registration failed. Please try again.";
       setApiError(msg);
-      setLoading(false); // Only stop loading if error. If success, keep loading until redirect.
+      setLoading(false); // Only stop loading on error
     }
   };
 
+  // --- RENDER ---
   return (
     <div className="min-h-screen bg-platinum flex items-center justify-center px-4 py-12 relative">
       
-      {/* --- SUCCESS OVERLAY MODAL --- */}
+      {/* SUCCESS MODAL OVERLAY */}
       {showSuccess && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-navy/90 backdrop-blur-sm fixed top-0 left-0 w-full h-full">
-            <div className="bg-white p-8 rounded-2xl shadow-2xl text-center transform scale-110 transition-transform duration-300">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/90 backdrop-blur-sm">
+            <div className="bg-white p-8 rounded-2xl shadow-2xl text-center transform scale-110 transition-transform duration-300 animate-fadeIn">
                 <div className="flex justify-center mb-4">
                     <CheckCircle size={80} className="text-green-500 animate-bounce" />
                 </div>
                 <h3 className="text-3xl font-black text-navy mb-2">Welcome Aboard!</h3>
                 <p className="text-gray-500 font-medium">Registration Successful.</p>
-                <p className="text-orange text-sm mt-2 font-bold animate-pulse">Redirecting to Dashboard...</p>
+                <p className="text-orange text-sm mt-4 font-bold animate-pulse uppercase tracking-widest">
+                    Redirecting to {role === 'seller' ? 'Company Console' : 'Bidder Portal'}...
+                </p>
             </div>
         </div>
       )}
@@ -229,7 +235,7 @@ const Register = () => {
 
           <form onSubmit={handleSubmit} className="space-y-6">
             
-            {/* --- SECTION 1: ACCOUNT CREDENTIALS --- */}
+            {/* --- SECTION 1: ACCOUNT CREDENTIALS (ALL ROLES) --- */}
             <div className="space-y-4">
                <h3 className="text-navy font-bold text-sm uppercase border-b border-platinum pb-2 mb-4 flex items-center gap-2">
                  <Lock size={16} className="text-orange"/> Account Details
