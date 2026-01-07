@@ -139,11 +139,7 @@ const Register = () => {
 
       // 7. Redirect based on Role after 1.5s delay
       setTimeout(() => {
-        if (role === 'seller') {
-            navigate('/company-dashboard');
-        } else {
-            navigate('/bidder-dashboard');
-        }
+        navigate('/dashboard');
       }, 1500);
 
     } catch (err) {
