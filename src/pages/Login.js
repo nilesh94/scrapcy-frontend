@@ -6,23 +6,26 @@ import { Mail, Lock, Eye, EyeOff, LogIn, XCircle, ArrowRight } from 'lucide-reac
 const Login = () => {
   const navigate = useNavigate();
   
-  // State
+  // State Management
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Handle Input Change
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
-    if (error) setError(''); // Clear error when user types
+    if (error) setError(''); // Clear error message when user starts typing
   };
 
+  // Handle Form Submit
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
     try {
+      // 1. Send Login Request
       const response = await axios.post(
         'https://scrapcy-backend-new-1.onrender.com/users/login',
         formData,
@@ -31,23 +34,19 @@ const Login = () => {
 
       console.log("Login Success:", response.data);
 
-      // 1. Store Token & User Data
+      // 2. Store Token & User Data in LocalStorage
+      // This is crucial for the Dashboard to know who is logged in
       localStorage.setItem('token', response.data.access_token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
 
-      // 2. Redirect based on Role
-      // Backend returns role as 'seller' or 'user' (user = bidder)
-      const userRole = response.data.user.role;
-      
-      if (userRole === 'seller') {
-        navigate('/company-dashboard');
-      } else {
-        navigate('/bidder-dashboard');
-      }
+      // 3. Redirect to the Main Dashboard
+      // The Dashboard.js wrapper will automatically detect if they are a 
+      // Seller or Bidder and show the correct view.
+      navigate('/dashboard');
 
     } catch (err) {
       console.error("Login Error:", err);
-      // Handle 403 (Invalid Creds) or 500 (Server Error)
+      // Extract error message from backend response or default to generic message
       const msg = err.response?.data?.detail || "Login failed. Please check your email and password.";
       setError(msg);
     } finally {
@@ -116,7 +115,7 @@ const Login = () => {
                 <button 
                   type="button" 
                   onClick={() => setShowPassword(!showPassword)} 
-                  className="absolute right-3 top-3.5 text-steel hover:text-navy"
+                  className="absolute right-3 top-3.5 text-steel hover:text-navy focus:outline-none"
                 >
                   {showPassword ? <EyeOff size={18}/> : <Eye size={18}/>}
                 </button>
@@ -129,7 +128,7 @@ const Login = () => {
               disabled={loading}
               className={`w-full py-4 font-black uppercase text-sm tracking-widest rounded shadow-lg transition-all duration-300 flex items-center justify-center gap-2
                 ${loading 
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed border-2 border-dashed border-gray-400' 
                   : 'bg-orange text-white hover:bg-navy hover:shadow-xl'
                 }`}
             >
