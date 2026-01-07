@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import './PriceTracker.css';
-import PriceCard from '../PriceCard'; // Import Check
+import PriceCard from '../PriceCard'; 
+import Header from '../Header/Header'; // Import Header
+import Footer from '../Footer/Footer'; // Import Footer
 
 // SAME MOCK DATA STRUCTURE AS HOME.JS
 const MARKET_DATA = [
@@ -52,45 +54,53 @@ const PriceTracker = () => {
   };
 
   return (
-    <div className="price-tracker-page">
-      <div className="pt-header">
-        <h2>Live Market Intelligence</h2>
-        <p>Real-time pricing compared against National Averages.</p>
-        <div className="pt-controls">
-          <div className="control-group">
-            <select onChange={(e) => setFilterCategory(e.target.value)}>
-              <option value="All">All Categories</option>
-              <option value="Ferrous">Ferrous</option>
-              <option value="Non Ferrous">Non Ferrous</option>
-            </select>
+    <div className="min-h-screen bg-platinum flex flex-col">
+      <Header />
+      
+      {/* Content Wrapper */}
+      <div className="flex-grow price-tracker-page">
+        <div className="pt-header">
+          <h2>Live Market Intelligence</h2>
+          <p>Real-time pricing compared against National Averages.</p>
+          
+          <div className="pt-controls">
+            <div className="control-group">
+              <select onChange={(e) => setFilterCategory(e.target.value)}>
+                <option value="All">All Categories</option>
+                <option value="Ferrous">Ferrous</option>
+                <option value="Non Ferrous">Non Ferrous</option>
+              </select>
+            </div>
+            <div className="control-group">
+              <select onChange={(e) => setFilterLocation(e.target.value)}>
+                <option value="All">All Locations</option>
+                {uniqueLocations.map(loc => <option key={loc} value={loc}>{loc}</option>)}
+              </select>
+            </div>
+            <div className="control-group">
+              <select onChange={(e) => setSortOrder(e.target.value)}>
+                <option value="default">Sort By: Default</option>
+                <option value="high-low">Price: High to Low</option>
+                <option value="low-high">Price: Low to High</option>
+              </select>
+            </div>
           </div>
-          <div className="control-group">
-            <select onChange={(e) => setFilterLocation(e.target.value)}>
-              <option value="All">All Locations</option>
-              {uniqueLocations.map(loc => <option key={loc} value={loc}>{loc}</option>)}
-            </select>
-          </div>
-          <div className="control-group">
-            <select onChange={(e) => setSortOrder(e.target.value)}>
-              <option value="default">Sort By: Default</option>
-              <option value="high-low">Price: High to Low</option>
-              <option value="low-high">Price: Low to High</option>
-            </select>
-          </div>
+        </div>
+
+        <div className="pt-grid">
+          {processedData.map(item => (
+              <PriceCard 
+                  key={item.id}
+                  item={item}
+                  averagePrice={materialAverages[item.material]}
+                  isUnlocked={unlockedDetails[item.id]}
+                  onUnlock={handleUnlockPrice}
+              />
+          ))}
         </div>
       </div>
 
-      <div className="pt-grid">
-        {processedData.map(item => (
-            <PriceCard 
-                key={item.id}
-                item={item}
-                averagePrice={materialAverages[item.material]}
-                isUnlocked={unlockedDetails[item.id]}
-                onUnlock={handleUnlockPrice}
-            />
-        ))}
-      </div>
+      <Footer />
     </div>
   );
 };
