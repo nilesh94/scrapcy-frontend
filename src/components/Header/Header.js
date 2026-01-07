@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { 
-  Anchor, LayoutDashboard, LogOut, LogIn, UserPlus, Home, Layers, Info, Code 
+  Anchor, LayoutDashboard, LogOut, LogIn, UserPlus, 
+  Home, Layers, Info 
 } from 'lucide-react';
 
 const Header = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [user, setUser] = useState(null);
 
   // 1. Check Login Status on Mount
@@ -25,11 +27,30 @@ const Header = () => {
     navigate('/login');
   };
 
+  // 3. Handle Scroll for Anchor Links (Features, About)
+  const handleScroll = (id) => {
+    // If we are on the Home page, scroll smoothly
+    if (location.pathname === '/') {
+      const element = document.getElementById(id);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else {
+      // If on Dashboard or Login, navigate to Home first
+      navigate('/');
+      // Wait for navigation, then scroll
+      setTimeout(() => {
+        const element = document.getElementById(id);
+        if (element) element.scrollIntoView({ behavior: 'smooth' });
+      }, 500);
+    }
+  };
+
   return (
     <header className="bg-navy text-white py-4 shadow-lg sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
         
-        {/* LOGO */}
+        {/* --- LEFT: LOGO --- */}
         <div 
           className="flex items-center gap-2 cursor-pointer hover:opacity-90 transition" 
           onClick={() => navigate('/')}
@@ -40,10 +61,10 @@ const Header = () => {
           <span className="text-xl font-black uppercase tracking-tighter">Scrapcy</span>
         </div>
 
-        {/* NAVIGATION */}
+        {/* --- RIGHT: NAVIGATION --- */}
         <nav className="flex items-center gap-6">
           
-          {/* --- PUBLIC LINKS (VISIBLE TO EVERYONE) --- */}
+          {/* 1. PUBLIC MENU ITEMS */}
           <Link 
             to="/" 
             className="flex items-center gap-2 text-xs font-bold uppercase text-platinum hover:text-white transition"
@@ -51,35 +72,28 @@ const Header = () => {
             <Home size={14} /> Home
           </Link>
 
-          <a 
-            href="#features" 
+          <button 
+            onClick={() => handleScroll('features')}
             className="flex items-center gap-2 text-xs font-bold uppercase text-platinum hover:text-white transition"
           >
             <Layers size={14} /> Features
-          </a>
+          </button>
 
-          <a 
-            href="#about" 
+          <button 
+            onClick={() => handleScroll('about')}
             className="flex items-center gap-2 text-xs font-bold uppercase text-platinum hover:text-white transition"
           >
             <Info size={14} /> About
-          </a>
-
-          <a 
-            href="#css" 
-            className="flex items-center gap-2 text-xs font-bold uppercase text-platinum hover:text-white transition"
-          >
-            <Code size={14} /> CSS
-          </a>
+          </button>
 
           {/* DIVIDER */}
-          <div className="h-4 w-px bg-white/20"></div>
+          <div className="h-4 w-px bg-white/20 mx-2"></div>
 
-          {/* --- CONDITIONAL LINKS --- */}
+          {/* 2. AUTH MENU ITEMS (Conditional) */}
           {user ? (
             // STATE: LOGGED IN
             <>
-              <span className="hidden md:block text-xs font-bold text-orange uppercase tracking-widest">
+              <span className="hidden md:block text-xs font-bold text-orange uppercase tracking-widest mr-2">
                 Hi, {user.first_name}
               </span>
 
@@ -98,7 +112,7 @@ const Header = () => {
               </button>
             </>
           ) : (
-            // STATE: LOGGED OUT (GUEST)
+            // STATE: GUEST
             <>
               <Link 
                 to="/login"
