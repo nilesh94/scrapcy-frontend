@@ -57,9 +57,17 @@ const Register = () => {
     
     // Seller Logic: Needs Company Details
     // Bidder Logic: Only needs Basic Details
-    let companyFields = true;
+    let companyFields = true; // Default to true (valid) for Bidders
+
     if (role === 'seller') {
-       companyFields = formData.companyName && formData.businessType && formData.gstNumber && formData.address && formData.city && formData.state && formData.pincode;
+       // If Seller, strict check on these fields
+       companyFields = formData.companyName && 
+                       formData.businessType && 
+                       formData.gstNumber && 
+                       formData.address && 
+                       formData.city && 
+                       formData.state && 
+                       formData.pincode;
     }
 
     setIsFormValid(isStrong && match && basicFields && companyFields);
@@ -82,6 +90,11 @@ const Register = () => {
     // Mapping: 'bidder' -> 'user' (standard role), 'seller' -> 'seller'
     const finalRole = role === 'bidder' ? 'user' : 'seller';
 
+    // 2. Construct Payload
+    // CRITICAL: If role is 'user' (bidder), we explicitly send null for company fields
+    // This prevents accidental data submission if they switched tabs
+    const isSeller = finalRole === 'seller';
+
     const apiPayload = {
       email: formData.email,
       password: formData.password,
@@ -90,21 +103,21 @@ const Register = () => {
       phone: formData.phone,
       role: finalRole, 
       
-      // Optional fields (Only sent if they have values)
-      company_name: formData.companyName || null,
-      business_type: formData.businessType || null,
-      industry: formData.industry || null,
-      turnover: formData.turnover || null,
-      gst_number: formData.gstNumber || null,
-      pan_number: formData.panNumber || null,
-      address: formData.address || null,
-      city: formData.city || null,
-      state: formData.state || null,
-      pincode: formData.pincode || null
+      // Conditional Fields: Send data ONLY if seller, otherwise null
+      company_name: isSeller ? (formData.companyName || null) : null,
+      business_type: isSeller ? (formData.businessType || null) : null,
+      industry: isSeller ? (formData.industry || null) : null,
+      turnover: isSeller ? (formData.turnover || null) : null,
+      gst_number: isSeller ? (formData.gstNumber || null) : null,
+      pan_number: isSeller ? (formData.panNumber || null) : null,
+      address: isSeller ? (formData.address || null) : null,
+      city: isSeller ? (formData.city || null) : null,
+      state: isSeller ? (formData.state || null) : null,
+      pincode: isSeller ? (formData.pincode || null) : null
     };
 
     try {
-      // 2. Send Request
+      // 3. Send Request
       const response = await axios.post(
         'https://scrapcy-backend-new-1.onrender.com/users/register',
         apiPayload,
@@ -117,7 +130,8 @@ const Register = () => {
 
     } catch (err) {
       console.error("Registration Error:", err);
-      const msg = err.response?.data?.detail || "Registration failed. Please try again.";
+      // Handle Render 500 errors or Flask 400 errors
+      const msg = err.response?.data?.error || err.response?.data?.detail || "Registration failed. Please try again.";
       setApiError(msg);
     } finally {
       setLoading(false);
@@ -198,22 +212,22 @@ const Register = () => {
                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="relative">
                     <User className="absolute left-3 top-3.5 text-steel" size={18} />
-                    <input name="firstName" onChange={handleChange} type="text" placeholder="First Name" className="w-full pl-10 p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none" required />
+                    <input name="firstName" value={formData.firstName} onChange={handleChange} type="text" placeholder="First Name" className="w-full pl-10 p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none" required />
                   </div>
                   <div className="relative">
                     <User className="absolute left-3 top-3.5 text-steel" size={18} />
-                    <input name="lastName" onChange={handleChange} type="text" placeholder="Last Name" className="w-full pl-10 p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none" required />
+                    <input name="lastName" value={formData.lastName} onChange={handleChange} type="text" placeholder="Last Name" className="w-full pl-10 p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none" required />
                   </div>
                </div>
 
                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="relative">
                     <Mail className="absolute left-3 top-3.5 text-steel" size={18} />
-                    <input name="email" onChange={handleChange} type="email" placeholder="Official Email Address" className="w-full pl-10 p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none" required />
+                    <input name="email" value={formData.email} onChange={handleChange} type="email" placeholder="Official Email Address" className="w-full pl-10 p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none" required />
                   </div>
                   <div className="relative">
                     <Phone className="absolute left-3 top-3.5 text-steel" size={18} />
-                    <input name="phone" onChange={handleChange} type="tel" placeholder="Mobile Number" className="w-full pl-10 p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none" required />
+                    <input name="phone" value={formData.phone} onChange={handleChange} type="tel" placeholder="Mobile Number" className="w-full pl-10 p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none" required />
                   </div>
                </div>
 
@@ -221,14 +235,14 @@ const Register = () => {
                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                  <div className="relative">
                     <Lock className="absolute left-3 top-3.5 text-steel" size={18} />
-                    <input name="password" onChange={handleChange} type={showPassword ? "text" : "password"} placeholder="Create Password" className="w-full pl-10 pr-10 p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none" required />
+                    <input name="password" value={formData.password} onChange={handleChange} type={showPassword ? "text" : "password"} placeholder="Create Password" className="w-full pl-10 pr-10 p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none" required />
                     <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3.5 text-steel hover:text-navy">
                       {showPassword ? <EyeOff size={18}/> : <Eye size={18}/>}
                     </button>
                  </div>
                  <div className="relative">
                     <Lock className="absolute left-3 top-3.5 text-steel" size={18} />
-                    <input name="confirmPassword" onChange={handleChange} type={showConfirmPassword ? "text" : "password"} placeholder="Confirm Password" className={`w-full pl-10 pr-10 p-3 bg-platinum/30 border rounded text-sm focus:border-navy outline-none ${formData.confirmPassword && !passwordsMatch ? 'border-red-500 bg-red-50' : 'border-platinum'}`} required />
+                    <input name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} type={showConfirmPassword ? "text" : "password"} placeholder="Confirm Password" className={`w-full pl-10 pr-10 p-3 bg-platinum/30 border rounded text-sm focus:border-navy outline-none ${formData.confirmPassword && !passwordsMatch ? 'border-red-500 bg-red-50' : 'border-platinum'}`} required />
                     <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-3.5 text-steel hover:text-navy">
                       {showConfirmPassword ? <EyeOff size={18}/> : <Eye size={18}/>}
                     </button>
@@ -257,10 +271,10 @@ const Register = () => {
                     <div className="space-y-4">
                       <div className="relative">
                         <Building2 className="absolute left-3 top-3.5 text-steel" size={18} />
-                        <input name="companyName" onChange={handleChange} type="text" placeholder="Registered Company Name" className="w-full pl-10 p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none" required />
+                        <input name="companyName" value={formData.companyName} onChange={handleChange} type="text" placeholder="Registered Company Name" className="w-full pl-10 p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none" required />
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <select name="businessType" onChange={handleChange} className="w-full p-3 bg-platinum/30 border border-platinum rounded text-sm text-steel focus:border-navy outline-none cursor-pointer">
+                        <select name="businessType" value={formData.businessType} onChange={handleChange} className="w-full p-3 bg-platinum/30 border border-platinum rounded text-sm text-steel focus:border-navy outline-none cursor-pointer" required>
                           <option value="">Select Business Type</option>
                           <option value="Proprietorship">Proprietorship</option>
                           <option value="Partnership">Partnership</option>
@@ -268,7 +282,7 @@ const Register = () => {
                           <option value="Private Limited">Private Limited</option>
                           <option value="Public Limited">Public Limited</option>
                         </select>
-                        <select name="industry" onChange={handleChange} className="w-full p-3 bg-platinum/30 border border-platinum rounded text-sm text-steel focus:border-navy outline-none cursor-pointer">
+                        <select name="industry" value={formData.industry} onChange={handleChange} className="w-full p-3 bg-platinum/30 border border-platinum rounded text-sm text-steel focus:border-navy outline-none cursor-pointer">
                           <option value="">Select Industry</option>
                           <option value="Ferrous Metal">Ferrous Metal</option>
                           <option value="Non-Ferrous">Non-Ferrous</option>
@@ -284,18 +298,18 @@ const Register = () => {
                       <FileText size={16} className="text-orange"/> Statutory & Address
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                        <input name="gstNumber" onChange={handleChange} type="text" placeholder="GST Number (15 Digits)" className="w-full p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none uppercase" required />
-                        <input name="panNumber" onChange={handleChange} type="text" placeholder="PAN Number" className="w-full p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none uppercase" required />
+                        <input name="gstNumber" value={formData.gstNumber} onChange={handleChange} type="text" placeholder="GST Number (15 Digits)" className="w-full p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none uppercase" required />
+                        <input name="panNumber" value={formData.panNumber} onChange={handleChange} type="text" placeholder="PAN Number" className="w-full p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none uppercase" required />
                     </div>
                     <div className="space-y-4">
                         <div className="relative">
                           <MapPin className="absolute left-3 top-3.5 text-steel" size={18} />
-                          <input name="address" onChange={handleChange} type="text" placeholder="Registered Office Address" className="w-full pl-10 p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none" required />
+                          <input name="address" value={formData.address} onChange={handleChange} type="text" placeholder="Registered Office Address" className="w-full pl-10 p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none" required />
                         </div>
                         <div className="grid grid-cols-3 gap-4">
-                          <input name="city" onChange={handleChange} type="text" placeholder="City" className="w-full p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none" required />
-                          <input name="state" onChange={handleChange} type="text" placeholder="State" className="w-full p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none" required />
-                          <input name="pincode" onChange={handleChange} type="text" placeholder="Pincode" className="w-full p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none" required />
+                          <input name="city" value={formData.city} onChange={handleChange} type="text" placeholder="City" className="w-full p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none" required />
+                          <input name="state" value={formData.state} onChange={handleChange} type="text" placeholder="State" className="w-full p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none" required />
+                          <input name="pincode" value={formData.pincode} onChange={handleChange} type="text" placeholder="Pincode" className="w-full p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none" required />
                         </div>
                     </div>
                   </div>
@@ -318,7 +332,7 @@ const Register = () => {
               
               {!isFormValid && (
                  <p className="text-center text-xs text-red-500 font-bold mt-2 animate-pulse">
-                    * Please complete all required fields
+                   * Please complete all required fields
                  </p>
               )}
             </div>
