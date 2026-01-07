@@ -9,8 +9,6 @@ import Dashboard from './pages/Dashboard';
 import CompanyDashboard from './pages/CompanyDashboard';
 import BidderDashboard from './pages/BidderDashboard';
 import About from './pages/About';
-
-// Import Components
 import PriceTracker from './components/PriceTracker/PriceTracker';
 
 function App() {
