@@ -1,7 +1,10 @@
-import React, { useState, useMemo } from 'react';
-import { Hammer, ArrowRight, Building2, User, Unlock } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import PriceCard from '../components/PriceCard'; // Import Check
+import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { 
+  Hammer, ArrowRight, Building2, User, Unlock, Anchor, 
+  LayoutDashboard, LogOut, LogIn, UserPlus 
+} from 'lucide-react';
+import PriceCard from '../components/PriceCard'; // Ensure this path is correct
 
 const MARKET_DATA = [
   { id: 101, category: "Ferrous", material: "Sponge Iron", location: "Raipur", price: 30500, change: 200, type: "Mandi", contact: "Raipur Ispat Links" },
@@ -15,9 +18,30 @@ const MARKET_DATA = [
 const Home = () => {
   const navigate = useNavigate();
   const [unlockedDetails, setUnlockedDetails] = useState({});
-  const [userRole, setUserRole] = useState('guest'); 
+  const [user, setUser] = useState(null); // Replaces userRole, holds full user object
+  const [userRole, setUserRole] = useState('guest'); // Kept for the auction section toggle logic
 
-  // Calculate Averages
+  // 1. Check Login Status on Load
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const storedUser = localStorage.getItem('user');
+    if (token && storedUser) {
+      const parsedUser = JSON.parse(storedUser);
+      setUser(parsedUser);
+      setUserRole(parsedUser.role === 'seller' ? 'company' : 'bidder'); // Sync role for UI
+    }
+  }, []);
+
+  // 2. Logout Logic
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setUser(null);
+    setUserRole('guest');
+    window.location.reload(); 
+  };
+
+  // 3. Calculate Averages
   const materialAverages = useMemo(() => {
     const sums = {}; const counts = {};
     MARKET_DATA.forEach(item => {
@@ -38,6 +62,57 @@ const Home = () => {
 
   return (
     <main className="bg-platinum min-h-screen">
+      
+      {/* --- NAVBAR --- */}
+      <nav className="border-b border-platinum py-4 sticky top-0 bg-white/95 backdrop-blur-md z-50">
+        <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
+          
+          {/* Logo */}
+          <div className="flex items-center gap-2">
+            <div className="bg-orange text-white p-2 rounded">
+              <Anchor size={20} className="stroke-[3]" />
+            </div>
+            <span className="text-2xl font-black uppercase tracking-tighter text-navy">Scrapcy</span>
+          </div>
+
+          {/* Right Side Buttons */}
+          <div className="flex items-center gap-4">
+            {user ? (
+              <>
+                <span className="hidden md:block text-xs font-bold text-steel uppercase tracking-widest mr-2">
+                  Welcome, {user.first_name}
+                </span>
+                
+                <Link 
+                  to="/dashboard"
+                  className="flex items-center gap-2 text-sm font-black uppercase tracking-wide text-navy hover:text-orange transition-colors"
+                >
+                  <LayoutDashboard size={18} />
+                  Dashboard
+                </Link>
+
+                <button 
+                  onClick={handleLogout}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-navy text-white text-xs font-black uppercase tracking-widest rounded shadow-lg hover:bg-red-600 transition-all"
+                >
+                  <LogOut size={14} />
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <Link to="/login" className="flex items-center gap-2 text-sm font-black uppercase tracking-wide text-navy hover:text-orange transition-colors">
+                  <LogIn size={18} /> Login
+                </Link>
+                <Link to="/register" className="flex items-center gap-2 px-5 py-2.5 bg-orange text-white text-xs font-black uppercase tracking-widest rounded shadow-lg hover:bg-navy transition-all">
+                  <UserPlus size={16} /> Register
+                </Link>
+              </>
+            )}
+          </div>
+        </div>
+      </nav>
+
       {/* Ticker */}
       <div className="bg-orange text-white py-2 overflow-hidden border-b-4 border-navy">
         <div className="flex animate-marquee whitespace-nowrap">
@@ -58,8 +133,13 @@ const Home = () => {
           <span className="text-orange font-black tracking-widest uppercase text-sm italic">Industrial Authority</span>
           <h1 className="text-5xl md:text-7xl font-black uppercase leading-[0.9] mb-6 mt-2 text-navy">The Hub of <br/>Scrap Trade</h1>
           <p className="text-lg text-steel font-medium mb-8">A premium, high-integrity platform bridging scrap producers and professional bidders.</p>
-          <button onClick={() => document.getElementById('prices').scrollIntoView({ behavior: 'smooth' })} className="bg-navy text-white px-8 py-4 font-bold flex items-center gap-2 hover:bg-orange transition-all duration-300 shadow-lg shadow-navy/20">
-              EXPLORE MARKET <ArrowRight size={20}/>
+          
+          {/* Smart Redirect Button */}
+          <button 
+            onClick={() => navigate(user ? '/dashboard' : '/login')}
+            className="bg-navy text-white px-8 py-4 font-bold flex items-center gap-2 hover:bg-orange transition-all duration-300 shadow-lg shadow-navy/20"
+          >
+              {user ? 'GO TO DASHBOARD' : 'EXPLORE MARKET'} <ArrowRight size={20}/>
           </button>
         </div>
         <div className="rounded-lg shadow-2xl overflow-hidden bg-steel/10 p-2 border border-platinum-dark">
@@ -106,19 +186,33 @@ const Home = () => {
         <div className="absolute top-0 right-0 opacity-5 pointer-events-none"><Hammer size={400} /></div>
         <div className="max-w-7xl mx-auto px-4 text-center relative z-10">
           <h2 className="text-4xl font-black mb-4 uppercase tracking-tighter">E-Auction <span className="text-orange">Portal</span></h2>
+          
           <div className="grid md:grid-cols-2 gap-8 text-left mt-12">
+            
+            {/* SELLER CARD */}
             <div className={`p-8 border-2 rounded-xl transition-all ${userRole === 'company' ? 'border-orange bg-white/5' : 'border-white/10 opacity-80'}`}>
               <Building2 className="text-orange mb-4" size={40} />
               <h3 className="text-2xl font-black mb-2">FOR SELLERS</h3>
               <p className="text-sm text-platinum/70 mb-8">Post bulk auctions and manage inventory.</p>
-              {userRole === 'company' ? ( <button onClick={() => navigate('/auction')} className="bg-orange text-white w-full py-4 font-black uppercase hover:bg-white hover:text-navy transition-colors rounded">Post Auction</button> ) : ( <button onClick={() => setUserRole('company')} className="border border-white/20 w-full py-4 text-xs font-bold hover:bg-white/10 rounded">REGISTER AS SELLER</button> )}
+              {user && user.role === 'seller' ? ( 
+                <button onClick={() => navigate('/dashboard')} className="bg-orange text-white w-full py-4 font-black uppercase hover:bg-white hover:text-navy transition-colors rounded">Go to Dashboard</button> 
+              ) : ( 
+                <button onClick={() => navigate('/register')} className="border border-white/20 w-full py-4 text-xs font-bold hover:bg-white/10 rounded">REGISTER AS SELLER</button> 
+              )}
             </div>
+
+            {/* BIDDER CARD */}
             <div className={`p-8 border-2 rounded-xl transition-all ${userRole === 'bidder' ? 'border-orange bg-white/5' : 'border-white/10 opacity-80'}`}>
               <User className="text-orange mb-4" size={40} />
               <h3 className="text-2xl font-black mb-2">FOR BIDDERS</h3>
               <p className="text-sm text-platinum/70 mb-8">Access premium lots. Requires EMD.</p>
-              {userRole === 'bidder' ? ( <button onClick={() => navigate('/auction')} className="bg-green-600 text-white w-full py-4 font-black uppercase flex justify-center gap-2 hover:bg-green-500 transition-colors rounded"><Unlock size={18}/> Enter Room</button> ) : ( <button onClick={() => setUserRole('bidder')} className="border border-white/20 w-full py-4 text-xs font-bold hover:bg-white/10 rounded">REGISTER AS BIDDER</button> )}
+              {user && user.role !== 'seller' ? ( 
+                <button onClick={() => navigate('/dashboard')} className="bg-green-600 text-white w-full py-4 font-black uppercase flex justify-center gap-2 hover:bg-green-500 transition-colors rounded"><Unlock size={18}/> Enter Room</button> 
+              ) : ( 
+                <button onClick={() => navigate('/register')} className="border border-white/20 w-full py-4 text-xs font-bold hover:bg-white/10 rounded">REGISTER AS BIDDER</button> 
+              )}
             </div>
+
           </div>
         </div>
       </section>
