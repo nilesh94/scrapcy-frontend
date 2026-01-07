@@ -27,18 +27,13 @@ const Header = () => {
     navigate('/login');
   };
 
-  // 3. Handle Scroll for Anchor Links (Features, About)
+  // 3. Handle Scroll for Features (Still on Home Page)
   const handleScroll = (id) => {
-    // If we are on the Home page, scroll smoothly
     if (location.pathname === '/') {
       const element = document.getElementById(id);
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth' });
-      }
+      if (element) element.scrollIntoView({ behavior: 'smooth' });
     } else {
-      // If on Dashboard or Login, navigate to Home first
       navigate('/');
-      // Wait for navigation, then scroll
       setTimeout(() => {
         const element = document.getElementById(id);
         if (element) element.scrollIntoView({ behavior: 'smooth' });
@@ -72,13 +67,12 @@ const Header = () => {
             <Home size={14} /> Home
           </Link>
 
-          {/* UPDATED: MARKET PRICE BUTTON */}
-          <button 
-            onClick={() => navigate('/tracker')}
+          <Link 
+            to="/tracker"
             className="flex items-center gap-2 text-xs font-bold uppercase text-platinum hover:text-white transition"
           >
             <TrendingUp size={14} /> Market Price
-          </button>
+          </Link>
 
           <button 
             onClick={() => handleScroll('features')}
@@ -87,31 +81,29 @@ const Header = () => {
             <Layers size={14} /> Features
           </button>
 
-          <button 
-            onClick={() => handleScroll('about')}
+          {/* UPDATED: ABOUT LINK */}
+          <Link 
+            to="/about"
             className="flex items-center gap-2 text-xs font-bold uppercase text-platinum hover:text-white transition"
           >
             <Info size={14} /> About
-          </button>
+          </Link>
 
           {/* DIVIDER */}
           <div className="h-4 w-px bg-white/20 mx-2"></div>
 
-          {/* 2. AUTH MENU ITEMS (Conditional) */}
+          {/* 2. AUTH MENU ITEMS */}
           {user ? (
-            // STATE: LOGGED IN
             <>
               <span className="hidden md:block text-xs font-bold text-orange uppercase tracking-widest mr-2">
                 Hi, {user.first_name}
               </span>
-
               <Link 
                 to="/dashboard"
                 className="flex items-center gap-2 text-xs font-bold uppercase text-platinum hover:text-white transition"
               >
                 <LayoutDashboard size={14} /> Dashboard
               </Link>
-
               <button 
                 onClick={handleLogout}
                 className="flex items-center gap-2 px-4 py-2 bg-red-500/10 border border-red-500/50 text-red-400 text-xs font-bold uppercase tracking-widest rounded hover:bg-red-500 hover:text-white transition-all"
@@ -120,7 +112,6 @@ const Header = () => {
               </button>
             </>
           ) : (
-            // STATE: GUEST
             <>
               <Link 
                 to="/login"
@@ -128,7 +119,6 @@ const Header = () => {
               >
                 <LogIn size={14} /> Login
               </Link>
-
               <Link 
                 to="/register"
                 className="flex items-center gap-2 px-4 py-2 bg-orange text-white text-xs font-bold uppercase tracking-widest rounded hover:bg-white hover:text-navy transition-all"
