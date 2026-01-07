@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, LogIn, XCircle, ArrowRight } from 'lucide-react';
+import Header from '../components/Header/Header'; // Import Header
+import Footer from '../components/Footer/Footer'; // Import Footer
 
 const Login = () => {
   const navigate = useNavigate();
@@ -55,106 +57,113 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-platinum flex items-center justify-center px-4">
-      <div className="max-w-md w-full bg-white shadow-2xl rounded-lg overflow-hidden border-t-8 border-navy">
-        
-        {/* Header */}
-        <div className="bg-navy p-8 text-center text-white">
-          <h2 className="text-3xl font-black uppercase tracking-tighter">Welcome Back</h2>
-          <p className="text-orange text-xs font-bold tracking-widest mt-2 uppercase">
-            Log in to manage your auctions
-          </p>
-        </div>
+    <div className="min-h-screen bg-platinum flex flex-col">
+      <Header />
 
-        <div className="p-8">
+      {/* Main Content Wrapper (Centers the card and pushes footer down) */}
+      <div className="flex-grow flex items-center justify-center px-4 py-12">
+        <div className="max-w-md w-full bg-white shadow-2xl rounded-lg overflow-hidden border-t-8 border-navy">
           
-          {/* Error Banner */}
-          {error && (
-            <div className="mb-6 p-3 bg-red-100 border-l-4 border-red-500 text-red-700 text-sm font-bold flex items-center gap-2 animate-fadeIn">
-              <XCircle size={18} />
-              {error}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            
-            {/* Email Field */}
-            <div className="space-y-2">
-              <label className="text-xs font-black uppercase text-steel">Email Address</label>
-              <div className="relative group">
-                <Mail className="absolute left-3 top-3.5 text-steel group-focus-within:text-navy transition-colors" size={18} />
-                <input 
-                  name="email" 
-                  type="email" 
-                  required
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder="name@company.com" 
-                  className="w-full pl-10 p-3 bg-platinum/30 border border-platinum rounded text-sm font-medium focus:border-navy focus:bg-white outline-none transition-all" 
-                />
-              </div>
-            </div>
-
-            {/* Password Field */}
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <label className="text-xs font-black uppercase text-steel">Password</label>
-                <a href="#" className="text-[10px] font-bold text-orange hover:text-navy uppercase tracking-wide">Forgot Password?</a>
-              </div>
-              <div className="relative group">
-                <Lock className="absolute left-3 top-3.5 text-steel group-focus-within:text-navy transition-colors" size={18} />
-                <input 
-                  name="password" 
-                  type={showPassword ? "text" : "password"} 
-                  required
-                  value={formData.password}
-                  onChange={handleChange}
-                  placeholder="Enter your password" 
-                  className="w-full pl-10 pr-10 p-3 bg-platinum/30 border border-platinum rounded text-sm font-medium focus:border-navy focus:bg-white outline-none transition-all" 
-                />
-                <button 
-                  type="button" 
-                  onClick={() => setShowPassword(!showPassword)} 
-                  className="absolute right-3 top-3.5 text-steel hover:text-navy focus:outline-none"
-                >
-                  {showPassword ? <EyeOff size={18}/> : <Eye size={18}/>}
-                </button>
-              </div>
-            </div>
-
-            {/* Submit Button */}
-            <button 
-              type="submit" 
-              disabled={loading}
-              className={`w-full py-4 font-black uppercase text-sm tracking-widest rounded shadow-lg transition-all duration-300 flex items-center justify-center gap-2
-                ${loading 
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed border-2 border-dashed border-gray-400' 
-                  : 'bg-orange text-white hover:bg-navy hover:shadow-xl'
-                }`}
-            >
-              {loading ? (
-                'Logging in...'
-              ) : (
-                <>
-                  Log In <LogIn size={18} />
-                </>
-              )}
-            </button>
-          </form>
-
-          {/* Footer / Register Link */}
-          <div className="mt-8 text-center border-t border-platinum pt-6">
-            <p className="text-xs font-medium text-gray-500 mb-2">Don't have an account?</p>
-            <Link 
-              to="/register" 
-              className="inline-flex items-center gap-1 text-sm font-black text-navy hover:text-orange transition-colors uppercase tracking-wide"
-            >
-              Register Now <ArrowRight size={14} />
-            </Link>
+          {/* Header */}
+          <div className="bg-navy p-8 text-center text-white">
+            <h2 className="text-3xl font-black uppercase tracking-tighter">Welcome Back</h2>
+            <p className="text-orange text-xs font-bold tracking-widest mt-2 uppercase">
+              Log in to manage your auctions
+            </p>
           </div>
 
+          <div className="p-8">
+            
+            {/* Error Banner */}
+            {error && (
+              <div className="mb-6 p-3 bg-red-100 border-l-4 border-red-500 text-red-700 text-sm font-bold flex items-center gap-2 animate-fadeIn">
+                <XCircle size={18} />
+                {error}
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-6">
+              
+              {/* Email Field */}
+              <div className="space-y-2">
+                <label className="text-xs font-black uppercase text-steel">Email Address</label>
+                <div className="relative group">
+                  <Mail className="absolute left-3 top-3.5 text-steel group-focus-within:text-navy transition-colors" size={18} />
+                  <input 
+                    name="email" 
+                    type="email" 
+                    required
+                    value={formData.email}
+                    onChange={handleChange}
+                    placeholder="name@company.com" 
+                    className="w-full pl-10 p-3 bg-platinum/30 border border-platinum rounded text-sm font-medium focus:border-navy focus:bg-white outline-none transition-all" 
+                  />
+                </div>
+              </div>
+
+              {/* Password Field */}
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <label className="text-xs font-black uppercase text-steel">Password</label>
+                  <a href="#" className="text-[10px] font-bold text-orange hover:text-navy uppercase tracking-wide">Forgot Password?</a>
+                </div>
+                <div className="relative group">
+                  <Lock className="absolute left-3 top-3.5 text-steel group-focus-within:text-navy transition-colors" size={18} />
+                  <input 
+                    name="password" 
+                    type={showPassword ? "text" : "password"} 
+                    required
+                    value={formData.password}
+                    onChange={handleChange}
+                    placeholder="Enter your password" 
+                    className="w-full pl-10 pr-10 p-3 bg-platinum/30 border border-platinum rounded text-sm font-medium focus:border-navy focus:bg-white outline-none transition-all" 
+                  />
+                  <button 
+                    type="button" 
+                    onClick={() => setShowPassword(!showPassword)} 
+                    className="absolute right-3 top-3.5 text-steel hover:text-navy focus:outline-none"
+                  >
+                    {showPassword ? <EyeOff size={18}/> : <Eye size={18}/>}
+                  </button>
+                </div>
+              </div>
+
+              {/* Submit Button */}
+              <button 
+                type="submit" 
+                disabled={loading}
+                className={`w-full py-4 font-black uppercase text-sm tracking-widest rounded shadow-lg transition-all duration-300 flex items-center justify-center gap-2
+                  ${loading 
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed border-2 border-dashed border-gray-400' 
+                    : 'bg-orange text-white hover:bg-navy hover:shadow-xl'
+                  }`}
+              >
+                {loading ? (
+                  'Logging in...'
+                ) : (
+                  <>
+                    Log In <LogIn size={18} />
+                  </>
+                )}
+              </button>
+            </form>
+
+            {/* Footer / Register Link */}
+            <div className="mt-8 text-center border-t border-platinum pt-6">
+              <p className="text-xs font-medium text-gray-500 mb-2">Don't have an account?</p>
+              <Link 
+                to="/register" 
+                className="inline-flex items-center gap-1 text-sm font-black text-navy hover:text-orange transition-colors uppercase tracking-wide"
+              >
+                Register Now <ArrowRight size={14} />
+              </Link>
+            </div>
+
+          </div>
         </div>
       </div>
+
+      <Footer />
     </div>
   );
 };
