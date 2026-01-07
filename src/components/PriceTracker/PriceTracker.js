@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import './PriceTracker.css'; // Importing your essential CSS
-import PriceCard from '../PriceCard'; 
 import Header from '../Header/Header'; 
 import Footer from '../Footer/Footer'; 
+import PriceCard from '../PriceCard'; 
 
 // MOCK DATA
 const MARKET_DATA = [
@@ -57,10 +57,8 @@ const PriceTracker = () => {
     <div className="min-h-screen bg-platinum flex flex-col">
       <Header />
       
-      {/* We wrap your original structure in flex-grow so it pushes the footer down,
-         but we keep the classNames exactly as you had them for your CSS.
-      */}
       <div className="flex-grow">
+        {/* Keeping your original classNames for CSS compatibility */}
         <div className="price-tracker-page">
           
           <div className="pt-header">
