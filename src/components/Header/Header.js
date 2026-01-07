@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { 
-  Anchor, LayoutDashboard, LogOut, LogIn, UserPlus, Home 
+  Anchor, LayoutDashboard, LogOut, LogIn, UserPlus, Home, Layers, Info, Code 
 } from 'lucide-react';
 
 const Header = () => {
   const navigate = useNavigate();
-  const location = useLocation(); // To highlight active links if needed
   const [user, setUser] = useState(null);
 
   // 1. Check Login Status on Mount
@@ -24,8 +23,6 @@ const Header = () => {
     localStorage.removeItem('user');
     setUser(null);
     navigate('/login');
-    // Optional: Reload to clear state globally if not using Context
-    // window.location.reload(); 
   };
 
   return (
@@ -46,7 +43,7 @@ const Header = () => {
         {/* NAVIGATION */}
         <nav className="flex items-center gap-6">
           
-          {/* Always Show Home */}
+          {/* --- PUBLIC LINKS (VISIBLE TO EVERYONE) --- */}
           <Link 
             to="/" 
             className="flex items-center gap-2 text-xs font-bold uppercase text-platinum hover:text-white transition"
@@ -54,11 +51,34 @@ const Header = () => {
             <Home size={14} /> Home
           </Link>
 
+          <a 
+            href="#features" 
+            className="flex items-center gap-2 text-xs font-bold uppercase text-platinum hover:text-white transition"
+          >
+            <Layers size={14} /> Features
+          </a>
+
+          <a 
+            href="#about" 
+            className="flex items-center gap-2 text-xs font-bold uppercase text-platinum hover:text-white transition"
+          >
+            <Info size={14} /> About
+          </a>
+
+          <a 
+            href="#css" 
+            className="flex items-center gap-2 text-xs font-bold uppercase text-platinum hover:text-white transition"
+          >
+            <Code size={14} /> CSS
+          </a>
+
+          {/* DIVIDER */}
+          <div className="h-4 w-px bg-white/20"></div>
+
+          {/* --- CONDITIONAL LINKS --- */}
           {user ? (
             // STATE: LOGGED IN
             <>
-              <div className="h-4 w-px bg-white/20"></div>
-              
               <span className="hidden md:block text-xs font-bold text-orange uppercase tracking-widest">
                 Hi, {user.first_name}
               </span>
@@ -80,8 +100,6 @@ const Header = () => {
           ) : (
             // STATE: LOGGED OUT (GUEST)
             <>
-              <div className="h-4 w-px bg-white/20"></div>
-              
               <Link 
                 to="/login"
                 className="flex items-center gap-2 text-xs font-bold uppercase text-platinum hover:text-white transition"
