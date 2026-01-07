@@ -2,50 +2,43 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import CompanyDashboard from './CompanyDashboard';
 import BidderDashboard from './BidderDashboard';
+import AdminDashboard from './AdminDashboard'; // Import the new dashboard
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [role, setRole] = useState(null);
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // 1. Get User Data
     const token = localStorage.getItem('token');
-    const userString = localStorage.getItem('user');
+    const storedUser = localStorage.getItem('user');
 
-    if (!token || !userString) {
-      // Not logged in? Kick them out.
+    if (!token || !storedUser) {
+      // Not logged in -> Redirect to Login
       navigate('/login');
       return;
     }
 
-    try {
-      const user = JSON.parse(userString);
-      setRole(user.role); // 'seller' or 'user' (bidder)
-    } catch (e) {
-      // Corrupt data? Kick them out.
-      localStorage.clear();
-      navigate('/login');
-    } finally {
-      setLoading(false);
-    }
+    setUser(JSON.parse(storedUser));
+    setLoading(false);
   }, [navigate]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-platinum text-navy font-bold uppercase tracking-widest animate-pulse">
-        Loading Dashboard...
-      </div>
-    );
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-platinum">Loading...</div>;
+
+  // 2. Role Based Routing
+  // Assuming your DB user object has a 'role' field: 'admin', 'seller', or 'user' (bidder)
+  
+  if (user.role === 'admin') {
+    return <AdminDashboard />;
+  }
+  
+  if (user.role === 'seller') {
+    return <CompanyDashboard />;
   }
 
-  // 2. Render the correct Dashboard Component
-  if (role === 'seller') {
-    return <CompanyDashboard />;
-  } else {
-    // Default to Bidder for 'user' role
-    return <BidderDashboard />;
-  }
+  // Default to Bidder for 'user' role or unknown roles
+  return <BidderDashboard />;
 };
 
 export default Dashboard;
