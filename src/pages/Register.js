@@ -57,10 +57,9 @@ const Register = () => {
     
     // Seller Logic: Needs Company Details
     // Bidder Logic: Only needs Basic Details
-    let companyFields = true; // Default to true (valid) for Bidders
+    let companyFields = true; 
 
     if (role === 'seller') {
-       // If Seller, strict check on these fields
        companyFields = formData.companyName && 
                        formData.businessType && 
                        formData.gstNumber && 
@@ -86,38 +85,39 @@ const Register = () => {
     setLoading(true);
     setApiError('');
 
-    // 1. Prepare Data
-    // Mapping: 'bidder' -> 'user' (standard role), 'seller' -> 'seller'
+    // 1. Determine Role
     const finalRole = role === 'bidder' ? 'user' : 'seller';
 
-    // 2. Construct Payload
-    // CRITICAL: If role is 'user' (bidder), we explicitly send null for company fields
-    // This prevents accidental data submission if they switched tabs
-    const isSeller = finalRole === 'seller';
-
+    // 2. Construct Clean Payload
+    // We start with the fields required for EVERYONE
     const apiPayload = {
       email: formData.email,
       password: formData.password,
       first_name: formData.firstName,
       last_name: formData.lastName,
       phone: formData.phone,
-      role: finalRole, 
-      
-      // Conditional Fields: Send data ONLY if seller, otherwise null
-      company_name: isSeller ? (formData.companyName || null) : null,
-      business_type: isSeller ? (formData.businessType || null) : null,
-      industry: isSeller ? (formData.industry || null) : null,
-      turnover: isSeller ? (formData.turnover || null) : null,
-      gst_number: isSeller ? (formData.gstNumber || null) : null,
-      pan_number: isSeller ? (formData.panNumber || null) : null,
-      address: isSeller ? (formData.address || null) : null,
-      city: isSeller ? (formData.city || null) : null,
-      state: isSeller ? (formData.state || null) : null,
-      pincode: isSeller ? (formData.pincode || null) : null
+      role: finalRole
     };
 
+    // 3. Conditionally Add Seller Fields
+    // If role is 'user' (bidder), these keys will simply NOT exist in the JSON body.
+    if (finalRole === 'seller') {
+      Object.assign(apiPayload, {
+        company_name: formData.companyName,
+        business_type: formData.businessType,
+        industry: formData.industry,
+        turnover: formData.turnover,
+        gst_number: formData.gstNumber,
+        pan_number: formData.panNumber,
+        address: formData.address,
+        city: formData.city,
+        state: formData.state,
+        pincode: formData.pincode
+      });
+    }
+
     try {
-      // 3. Send Request
+      // 4. Send Request
       const response = await axios.post(
         'https://scrapcy-backend-new-1.onrender.com/users/register',
         apiPayload,
@@ -130,7 +130,6 @@ const Register = () => {
 
     } catch (err) {
       console.error("Registration Error:", err);
-      // Handle Render 500 errors or Flask 400 errors
       const msg = err.response?.data?.error || err.response?.data?.detail || "Registration failed. Please try again.";
       setApiError(msg);
     } finally {
@@ -160,9 +159,8 @@ const Register = () => {
             </div>
           )}
 
-          {/* --- ROLE SWITCHER (2 TYPES) --- */}
+          {/* --- ROLE SWITCHER --- */}
           <div className="flex gap-4 mb-6 p-1.5 bg-platinum rounded-lg">
-            {/* Bidder Button */}
             <button 
               type="button"
               onClick={() => setRole('bidder')}
@@ -171,7 +169,6 @@ const Register = () => {
               <User size={16} className="inline mb-1 mr-2"/> Individual Bidder
             </button>
 
-            {/* Seller Button */}
             <button 
               type="button"
               onClick={() => setRole('seller')}
@@ -203,7 +200,7 @@ const Register = () => {
 
           <form onSubmit={handleSubmit} className="space-y-6">
             
-            {/* --- SECTION 1: ACCOUNT CREDENTIALS (ALL ROLES) --- */}
+            {/* --- SECTION 1: ACCOUNT CREDENTIALS --- */}
             <div className="space-y-4">
                <h3 className="text-navy font-bold text-sm uppercase border-b border-platinum pb-2 mb-4 flex items-center gap-2">
                  <Lock size={16} className="text-orange"/> Account Details
