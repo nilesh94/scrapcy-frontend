@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { 
   Anchor, LayoutDashboard, LogOut, LogIn, UserPlus, 
-  Home, Layers, Info 
+  Home, Layers, Info, TrendingUp 
 } from 'lucide-react';
 
 const Header = () => {
@@ -71,6 +71,14 @@ const Header = () => {
           >
             <Home size={14} /> Home
           </Link>
+
+          {/* UPDATED: MARKET PRICE BUTTON */}
+          <button 
+            onClick={() => navigate('/tracker')}
+            className="flex items-center gap-2 text-xs font-bold uppercase text-platinum hover:text-white transition"
+          >
+            <TrendingUp size={14} /> Market Price
+          </button>
 
           <button 
             onClick={() => handleScroll('features')}
