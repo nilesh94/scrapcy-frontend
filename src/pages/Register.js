@@ -15,6 +15,9 @@ const Register = () => {
   // Loading & Error States
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState('');
+  
+  // Success State for the Popup
+  const [showSuccess, setShowSuccess] = useState(false);
 
   // State for Form Data
   const [formData, setFormData] = useState({
@@ -89,7 +92,6 @@ const Register = () => {
     const finalRole = role === 'bidder' ? 'user' : 'seller';
 
     // 2. Construct Clean Payload
-    // We start with the fields required for EVERYONE
     const apiPayload = {
       email: formData.email,
       password: formData.password,
@@ -100,7 +102,7 @@ const Register = () => {
     };
 
     // 3. Conditionally Add Seller Fields
-    // If role is 'user' (bidder), these keys will simply NOT exist in the JSON body.
+    // If user is a bidder, we do NOT send these fields, keeping the payload clean.
     if (finalRole === 'seller') {
       Object.assign(apiPayload, {
         company_name: formData.companyName,
@@ -124,21 +126,48 @@ const Register = () => {
         { headers: { 'Content-Type': 'application/json' } }
       );
 
+      // --- SUCCESS HANDLING ---
       console.log("Registration Success:", response.data);
-      alert(`Registration Successful! You are registered as a ${role.toUpperCase()}.`);
-      navigate('/login'); 
+
+      // A. Save Token & User Info (Auto-Login)
+      if (response.data.access_token) {
+        localStorage.setItem('token', response.data.access_token);
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+      }
+
+      // B. Show Success Modal
+      setShowSuccess(true);
+
+      // C. Redirect to Dashboard after 1.5 seconds
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 1500);
 
     } catch (err) {
       console.error("Registration Error:", err);
       const msg = err.response?.data?.error || err.response?.data?.detail || "Registration failed. Please try again.";
       setApiError(msg);
-    } finally {
-      setLoading(false);
+      setLoading(false); // Only stop loading if error. If success, keep loading until redirect.
     }
   };
 
   return (
-    <div className="min-h-screen bg-platinum flex items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-platinum flex items-center justify-center px-4 py-12 relative">
+      
+      {/* --- SUCCESS OVERLAY MODAL --- */}
+      {showSuccess && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-navy/90 backdrop-blur-sm fixed top-0 left-0 w-full h-full">
+            <div className="bg-white p-8 rounded-2xl shadow-2xl text-center transform scale-110 transition-transform duration-300">
+                <div className="flex justify-center mb-4">
+                    <CheckCircle size={80} className="text-green-500 animate-bounce" />
+                </div>
+                <h3 className="text-3xl font-black text-navy mb-2">Welcome Aboard!</h3>
+                <p className="text-gray-500 font-medium">Registration Successful.</p>
+                <p className="text-orange text-sm mt-2 font-bold animate-pulse">Redirecting to Dashboard...</p>
+            </div>
+        </div>
+      )}
+
       <div className="max-w-2xl w-full bg-white shadow-2xl rounded-lg overflow-hidden border-t-8 border-orange">
         
         {/* Header */}
