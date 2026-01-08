@@ -37,7 +37,7 @@ const Dashboard = () => {
     return <CompanyDashboard />;
   }
 
-  // Default to Bidder for 'user' role or unknown roles
+  // Default to Bidder for 'bidder' role or unknown roles
   return <BidderDashboard />;
 };
 
