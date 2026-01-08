@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { 
   LayoutDashboard, Upload, Save, CheckCircle, XCircle, FileText, Users 
@@ -19,11 +19,31 @@ const AdminDashboard = () => {
     email: '',
     phone: '',
     quantity: '',
-    pricePerKg: '',
+    pricePerUnit: '', // Renamed from pricePerKg to generic name
+    quantityUnit: 'Tons', // Default
+    priceUnit: 'Per Ton', // Default
+    sellerName: 'Admin Entry',
     addedBy: 'admin'
   });
 
   const [selectedFiles, setSelectedFiles] = useState(null);
+
+  // --- VALIDATION LOGIC FOR UNITS ---
+  // When Quantity Unit changes, adjust available Price Units
+  useEffect(() => {
+    if (formData.quantityUnit === 'Tons') {
+      // If Tons, default price can be Per Ton (but user can change to Per Kg)
+      if (formData.priceUnit !== 'Per Ton' && formData.priceUnit !== 'Per Kg') {
+        setFormData(prev => ({ ...prev, priceUnit: 'Per Ton' }));
+      }
+    } else if (formData.quantityUnit === 'Kg') {
+      // If Kg, Price MUST be Per Kg
+      setFormData(prev => ({ ...prev, priceUnit: 'Per Kg' }));
+    } else if (formData.quantityUnit === 'Liters') {
+      // If Liters, Price MUST be Per Liter
+      setFormData(prev => ({ ...prev, priceUnit: 'Per Liter' }));
+    }
+  }, [formData.quantityUnit]);
 
   // Handle Text Change
   const handleChange = (e) => {
@@ -43,27 +63,32 @@ const AdminDashboard = () => {
     setErrorMsg('');
 
     try {
-      // Create FormData object for multipart/form-data
       const data = new FormData();
-      data.append('scrap_type', formData.scrapType);
+      data.append('seller_name', formData.sellerName);
       data.append('company_name', formData.companyName);
       data.append('gst_number', formData.gstNumber);
       data.append('email', formData.email);
       data.append('phone', formData.phone);
+      data.append('scrap_type', formData.scrapType);
+      
+      // Quantity & Unit
       data.append('quantity', formData.quantity);
-      data.append('price_per_kg', formData.pricePerKg);
+      data.append('unit', formData.quantityUnit);
+      
+      // Price & Unit
+      data.append('price_per_unit', formData.pricePerUnit);
+      data.append('price_unit', formData.priceUnit);
+      
       data.append('added_by', 'admin');
 
-      // Append Files
       if (selectedFiles) {
         for (let i = 0; i < selectedFiles.length; i++) {
-          data.append('files', selectedFiles[i]);
+          data.append('images', selectedFiles[i]);
         }
       }
 
-      // API Call
       const response = await axios.post(
-        'https://scrapcy-backend-new-1.onrender.com/listings/create', // Update with your actual URL
+        'https://scrapcy-backend-new-1.onrender.com/scrap/add', 
         data,
         { headers: { 'Content-Type': 'multipart/form-data' } }
       );
@@ -72,13 +97,16 @@ const AdminDashboard = () => {
       
       // Reset Form
       setFormData({
-        scrapType: 'Ferrous', companyName: '', gstNumber: '', email: '', phone: '', quantity: '', pricePerKg: '', addedBy: 'admin'
+        scrapType: 'Ferrous', companyName: '', gstNumber: '', email: '', phone: '', 
+        quantity: '', pricePerUnit: '', quantityUnit: 'Tons', priceUnit: 'Per Ton', 
+        sellerName: 'Admin Entry', addedBy: 'admin'
       });
       setSelectedFiles(null);
 
     } catch (err) {
       console.error(err);
-      setErrorMsg('Failed to create listing. Please check inputs.');
+      const serverError = err.response?.data?.detail || 'Failed to create listing.';
+      setErrorMsg(serverError);
     } finally {
       setLoading(false);
     }
@@ -157,13 +185,39 @@ const AdminDashboard = () => {
                                 <option value="Plastic">Plastic</option>
                             </select>
                         </div>
+
+                        {/* QUANTITY SECTION */}
                         <div>
-                            <label className="block text-xs font-bold uppercase text-navy mb-1">Quantity (Tons)</label>
-                            <input name="quantity" value={formData.quantity} onChange={handleChange} type="number" step="0.01" className="w-full p-3 bg-white border border-platinum rounded focus:border-orange outline-none" required />
+                            <label className="block text-xs font-bold uppercase text-navy mb-1">Quantity</label>
+                            <div className="flex">
+                                <input name="quantity" value={formData.quantity} onChange={handleChange} type="number" step="0.01" className="w-2/3 p-3 bg-white border border-r-0 border-platinum rounded-l focus:border-orange outline-none" required />
+                                <select name="quantityUnit" value={formData.quantityUnit} onChange={handleChange} className="w-1/3 p-3 bg-gray-100 border border-l-0 border-platinum rounded-r text-xs font-bold focus:border-orange outline-none cursor-pointer">
+                                    <option value="Tons">Tons</option>
+                                    <option value="Kg">Kg</option>
+                                    <option value="Liters">Liters</option>
+                                </select>
+                            </div>
                         </div>
+
+                        {/* PRICE SECTION */}
                         <div>
-                            <label className="block text-xs font-bold uppercase text-navy mb-1">Price (Per Kg)</label>
-                            <input name="pricePerKg" value={formData.pricePerKg} onChange={handleChange} type="number" step="0.01" className="w-full p-3 bg-white border border-platinum rounded focus:border-orange outline-none" required />
+                            <label className="block text-xs font-bold uppercase text-navy mb-1">Price</label>
+                            <div className="flex">
+                                <input name="pricePerUnit" value={formData.pricePerUnit} onChange={handleChange} type="number" step="0.01" className="w-2/3 p-3 bg-white border border-r-0 border-platinum rounded-l focus:border-orange outline-none" required />
+                                <select name="priceUnit" value={formData.priceUnit} onChange={handleChange} className="w-1/3 p-3 bg-gray-100 border border-l-0 border-platinum rounded-r text-xs font-bold focus:border-orange outline-none cursor-pointer">
+                                    {/* LOGIC: Options change based on Quantity Unit */}
+                                    {formData.quantityUnit === 'Tons' ? (
+                                        <>
+                                            <option value="Per Ton">/ Ton</option>
+                                            <option value="Per Kg">/ Kg</option>
+                                        </>
+                                    ) : formData.quantityUnit === 'Kg' ? (
+                                        <option value="Per Kg">/ Kg</option>
+                                    ) : (
+                                        <option value="Per Liter">/ Liter</option>
+                                    )}
+                                </select>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -180,11 +234,11 @@ const AdminDashboard = () => {
                             onChange={handleFileChange} 
                             accept="image/*"
                             className="block w-full text-sm text-slate-500
-                                file:mr-4 file:py-2 file:px-4
-                                file:rounded-full file:border-0
-                                file:text-xs file:font-semibold
-                                file:bg-orange/10 file:text-orange
-                                hover:file:bg-orange/20 cursor-pointer"
+                            file:mr-4 file:py-2 file:px-4
+                            file:rounded-full file:border-0
+                            file:text-xs file:font-semibold
+                            file:bg-orange/10 file:text-orange
+                            hover:file:bg-orange/20 cursor-pointer"
                         />
                         <p className="text-xs text-steel mt-2">Supports JPG, PNG (Max 5MB)</p>
                     </div>
