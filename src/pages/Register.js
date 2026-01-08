@@ -92,7 +92,7 @@ const Register = () => {
     setApiError('');
 
     // 1. Determine Backend Role ('user' is the backend name for bidder)
-    const finalRole = role === 'bidder' ? 'user' : 'seller';
+    const finalRole = role === 'bidder' ? 'bidder' : 'seller';
 
     // 2. Construct Clean Payload
     const apiPayload = {
