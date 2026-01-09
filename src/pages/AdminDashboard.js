@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { Link } from 'react-router-dom'; // <--- Added Link
 import { 
   LayoutDashboard, Upload, Save, CheckCircle, XCircle, FileText, Users, MapPin 
 } from 'lucide-react';
@@ -163,11 +164,21 @@ const AdminDashboard = () => {
       <Header />
       
       <div className="bg-navy text-white py-12 px-4 shadow-lg">
-        <div className="max-w-7xl mx-auto">
-            <h1 className="text-4xl font-black uppercase tracking-tighter mb-1">Admin Console</h1>
-            <p className="text-orange text-sm font-bold uppercase tracking-widest">
-                System Administrator • Manage Listings
-            </p>
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+            <div>
+                <h1 className="text-4xl font-black uppercase tracking-tighter mb-1">Admin Console</h1>
+                <p className="text-orange text-sm font-bold uppercase tracking-widest">
+                    System Administrator • Add New Listings
+                </p>
+            </div>
+            
+            {/* VIEW LISTINGS BUTTON */}
+            <Link 
+              to="/admin/listings" 
+              className="bg-orange hover:bg-white hover:text-navy text-white font-bold py-3 px-6 rounded shadow-lg transition-all uppercase text-xs tracking-widest flex items-center gap-2"
+            >
+               <FileText size={16} /> View All Listings
+            </Link>
         </div>
       </div>
 
