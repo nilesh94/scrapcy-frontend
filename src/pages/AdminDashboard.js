@@ -86,34 +86,39 @@ const AdminDashboard = () => {
 
     try {
       const data = new FormData();
-      // Seller
+      
+      // --- TEXT FIELDS (Handle potential nulls) ---
       data.append('seller_name', formData.sellerName);
-      data.append('company_name', formData.companyName);
-      data.append('gst_number', formData.gstNumber);
+      data.append('company_name', formData.companyName || "");
+      data.append('gst_number', formData.gstNumber || "");
       data.append('email', formData.email);
       data.append('phone', formData.phone);
       if(formData.alternatePhone) data.append('alternate_phone', formData.alternatePhone);
 
-      // Scrap
       data.append('scrap_type', formData.scrapType);
       if(formData.grade) data.append('grade', formData.grade);
       if(formData.description) data.append('description', formData.description);
       
-      data.append('quantity', formData.quantity);
+      // --- CRITICAL FIX: NUMBER FIELDS ---
+      // Convert to string "0" if empty, otherwise Backend crashes or rejects
+      data.append('quantity', formData.quantity ? formData.quantity.toString() : "0");
       data.append('unit', formData.quantityUnit);
-      data.append('price_per_unit', formData.pricePerUnit);
+      
+      data.append('price_per_unit', formData.pricePerUnit ? formData.pricePerUnit.toString() : "0");
       data.append('price_unit', formData.priceUnit);
       
-      // Location
+      // --- LOCATION ---
       data.append('address', formData.address);
       if(formData.pickupConditions) data.append('pickup_conditions', formData.pickupConditions);
       
       data.append('added_by', 'admin');
 
-      // Append Images
+      // --- IMAGES ---
       for (let i = 0; i < selectedFiles.length; i++) {
         data.append('images', selectedFiles[i]);
       }
+
+      console.log("Submitting to API..."); // Debug Log
 
       const response = await axios.post(
         'https://scrapcy-backend-new-1.onrender.com/scrap/add', 
@@ -121,6 +126,7 @@ const AdminDashboard = () => {
         { headers: { 'Content-Type': 'multipart/form-data' } }
       );
 
+      console.log("Response:", response.data); 
       setSuccessMsg(`Success! Listing ID: ${response.data.listing_id} created.`);
       
       // Reset Form
@@ -135,9 +141,18 @@ const AdminDashboard = () => {
       document.getElementById('fileInput').value = ""; 
 
     } catch (err) {
-      console.error(err);
-      const serverError = err.response?.data?.detail || 'Failed to create listing.';
-      setErrorMsg(serverError);
+      console.error("Submission Error:", err);
+      // Handle Connection Closed or Network Errors specifically
+      if (err.message === "Network Error" || !err.response) {
+         setErrorMsg("Network Error: Server dropped connection. Check image size or server status.");
+      } else {
+         const serverError = err.response?.data?.detail || 'Failed to create listing.';
+         // Handle Pydantic Array Errors if any
+         const displayMsg = Array.isArray(serverError) 
+            ? `${serverError[0].loc[1]}: ${serverError[0].msg}` 
+            : serverError;
+         setErrorMsg(displayMsg);
+      }
     } finally {
       setLoading(false);
     }
