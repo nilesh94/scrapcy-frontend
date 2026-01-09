@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { 
-  LayoutDashboard, Upload, Save, CheckCircle, XCircle, FileText, Users 
+  LayoutDashboard, Upload, Save, CheckCircle, XCircle, FileText, Users, MapPin 
 } from 'lucide-react';
 import Header from '../components/Header/Header';
 import Footer from '../components/Footer/Footer';
@@ -13,34 +13,41 @@ const AdminDashboard = () => {
 
   // Form State
   const [formData, setFormData] = useState({
-    scrapType: 'Ferrous',
+    // Seller
+    sellerName: 'Admin Entry',
     companyName: '',
     gstNumber: '',
     email: '',
     phone: '',
+    alternatePhone: '', // NEW
+    
+    // Scrap
+    scrapType: 'Ferrous',
+    grade: '',          // NEW
+    description: '',    // NEW
     quantity: '',
-    pricePerUnit: '', // Renamed from pricePerKg to generic name
-    quantityUnit: 'Tons', // Default
-    priceUnit: 'Per Ton', // Default
-    sellerName: 'Admin Entry',
+    quantityUnit: 'Tons',
+    pricePerUnit: '',
+    priceUnit: 'Per Ton',
+    
+    // Location
+    address: '',         // NEW
+    pickupConditions: '', // NEW
+    
     addedBy: 'admin'
   });
 
   const [selectedFiles, setSelectedFiles] = useState(null);
 
   // --- VALIDATION LOGIC FOR UNITS ---
-  // When Quantity Unit changes, adjust available Price Units
   useEffect(() => {
     if (formData.quantityUnit === 'Tons') {
-      // If Tons, default price can be Per Ton (but user can change to Per Kg)
       if (formData.priceUnit !== 'Per Ton' && formData.priceUnit !== 'Per Kg') {
         setFormData(prev => ({ ...prev, priceUnit: 'Per Ton' }));
       }
     } else if (formData.quantityUnit === 'Kg') {
-      // If Kg, Price MUST be Per Kg
       setFormData(prev => ({ ...prev, priceUnit: 'Per Kg' }));
     } else if (formData.quantityUnit === 'Liters') {
-      // If Liters, Price MUST be Per Liter
       setFormData(prev => ({ ...prev, priceUnit: 'Per Liter' }));
     }
   }, [formData.quantityUnit]);
@@ -64,20 +71,27 @@ const AdminDashboard = () => {
 
     try {
       const data = new FormData();
+      // Seller
       data.append('seller_name', formData.sellerName);
       data.append('company_name', formData.companyName);
       data.append('gst_number', formData.gstNumber);
       data.append('email', formData.email);
       data.append('phone', formData.phone);
+      if(formData.alternatePhone) data.append('alternate_phone', formData.alternatePhone);
+
+      // Scrap
       data.append('scrap_type', formData.scrapType);
+      if(formData.grade) data.append('grade', formData.grade);
+      if(formData.description) data.append('description', formData.description);
       
-      // Quantity & Unit
       data.append('quantity', formData.quantity);
       data.append('unit', formData.quantityUnit);
-      
-      // Price & Unit
       data.append('price_per_unit', formData.pricePerUnit);
       data.append('price_unit', formData.priceUnit);
+      
+      // Location
+      data.append('address', formData.address);
+      if(formData.pickupConditions) data.append('pickup_conditions', formData.pickupConditions);
       
       data.append('added_by', 'admin');
 
@@ -95,11 +109,12 @@ const AdminDashboard = () => {
 
       setSuccessMsg(`Success! Listing ID: ${response.data.listing_id} created.`);
       
-      // Reset Form
+      // Reset Form (Keep defaults)
       setFormData({
-        scrapType: 'Ferrous', companyName: '', gstNumber: '', email: '', phone: '', 
-        quantity: '', pricePerUnit: '', quantityUnit: 'Tons', priceUnit: 'Per Ton', 
-        sellerName: 'Admin Entry', addedBy: 'admin'
+        sellerName: 'Admin Entry', companyName: '', gstNumber: '', email: '', phone: '', alternatePhone: '',
+        scrapType: 'Ferrous', grade: '', description: '', quantity: '', quantityUnit: 'Tons', 
+        pricePerUnit: '', priceUnit: 'Per Ton', address: '', pickupConditions: '',
+        addedBy: 'admin'
       });
       setSelectedFiles(null);
 
@@ -163,19 +178,42 @@ const AdminDashboard = () => {
                             <label className="block text-xs font-bold uppercase text-navy mb-1">Email</label>
                             <input name="email" value={formData.email} onChange={handleChange} type="email" className="w-full p-3 bg-white border border-platinum rounded focus:border-orange outline-none" required />
                         </div>
-                        <div>
-                            <label className="block text-xs font-bold uppercase text-navy mb-1">Phone</label>
-                            <input name="phone" value={formData.phone} onChange={handleChange} type="text" className="w-full p-3 bg-white border border-platinum rounded focus:border-orange outline-none" required />
+                        <div className="grid grid-cols-2 gap-2">
+                            <div>
+                                <label className="block text-xs font-bold uppercase text-navy mb-1">Phone</label>
+                                <input name="phone" value={formData.phone} onChange={handleChange} type="text" className="w-full p-3 bg-white border border-platinum rounded focus:border-orange outline-none" required />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold uppercase text-navy mb-1">Alt. Phone</label>
+                                <input name="alternatePhone" value={formData.alternatePhone} onChange={handleChange} type="text" className="w-full p-3 bg-white border border-platinum rounded focus:border-orange outline-none" />
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Section 2: Scrap Details */}
+                {/* Section 2: Location Info */}
+                <div className="bg-platinum/20 p-6 rounded-lg border border-platinum">
+                    <h3 className="text-sm font-black text-steel uppercase mb-4 flex items-center gap-2">
+                        <MapPin size={16} /> Location & Pickup
+                    </h3>
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-xs font-bold uppercase text-navy mb-1">Detailed Address (City, State, Pincode)</label>
+                            <textarea name="address" value={formData.address} onChange={handleChange} rows="2" className="w-full p-3 bg-white border border-platinum rounded focus:border-orange outline-none" placeholder="Full pickup address..." required></textarea>
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold uppercase text-navy mb-1">Pickup Conditions / Access Notes</label>
+                            <input name="pickupConditions" value={formData.pickupConditions} onChange={handleChange} type="text" className="w-full p-3 bg-white border border-platinum rounded focus:border-orange outline-none" placeholder="e.g. 24ft Truck entry available, Weighbridge on-site..." />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Section 3: Scrap Details */}
                 <div className="bg-platinum/20 p-6 rounded-lg border border-platinum">
                     <h3 className="text-sm font-black text-steel uppercase mb-4 flex items-center gap-2">
                         <LayoutDashboard size={16} /> Material Info
                     </h3>
-                    <div className="grid md:grid-cols-3 gap-4">
+                    <div className="grid md:grid-cols-2 gap-4 mb-4">
                         <div>
                             <label className="block text-xs font-bold uppercase text-navy mb-1">Scrap Type</label>
                             <select name="scrapType" value={formData.scrapType} onChange={handleChange} className="w-full p-3 bg-white border border-platinum rounded focus:border-orange outline-none cursor-pointer">
@@ -185,7 +223,18 @@ const AdminDashboard = () => {
                                 <option value="Plastic">Plastic</option>
                             </select>
                         </div>
+                        <div>
+                            <label className="block text-xs font-bold uppercase text-navy mb-1">Grade / Quality</label>
+                            <input name="grade" value={formData.grade} onChange={handleChange} type="text" className="w-full p-3 bg-white border border-platinum rounded focus:border-orange outline-none" placeholder="e.g. HMS 1&2, Grade A..." />
+                        </div>
+                    </div>
+                    
+                    <div className="mb-4">
+                        <label className="block text-xs font-bold uppercase text-navy mb-1">Material Description</label>
+                        <textarea name="description" value={formData.description} onChange={handleChange} rows="3" className="w-full p-3 bg-white border border-platinum rounded focus:border-orange outline-none" placeholder="Detailed description of the scrap condition, attachments, etc."></textarea>
+                    </div>
 
+                    <div className="grid md:grid-cols-2 gap-4">
                         {/* QUANTITY SECTION */}
                         <div>
                             <label className="block text-xs font-bold uppercase text-navy mb-1">Quantity</label>
@@ -205,7 +254,6 @@ const AdminDashboard = () => {
                             <div className="flex">
                                 <input name="pricePerUnit" value={formData.pricePerUnit} onChange={handleChange} type="number" step="0.01" className="w-2/3 p-3 bg-white border border-r-0 border-platinum rounded-l focus:border-orange outline-none" required />
                                 <select name="priceUnit" value={formData.priceUnit} onChange={handleChange} className="w-1/3 p-3 bg-gray-100 border border-l-0 border-platinum rounded-r text-xs font-bold focus:border-orange outline-none cursor-pointer">
-                                    {/* LOGIC: Options change based on Quantity Unit */}
                                     {formData.quantityUnit === 'Tons' ? (
                                         <>
                                             <option value="Per Ton">/ Ton</option>
@@ -222,7 +270,7 @@ const AdminDashboard = () => {
                     </div>
                 </div>
 
-                {/* Section 3: Images */}
+                {/* Section 4: Images */}
                 <div className="bg-platinum/20 p-6 rounded-lg border border-platinum">
                     <h3 className="text-sm font-black text-steel uppercase mb-4 flex items-center gap-2">
                         <Upload size={16} /> Upload Images
