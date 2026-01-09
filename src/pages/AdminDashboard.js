@@ -13,26 +13,23 @@ const AdminDashboard = () => {
 
   // Form State
   const [formData, setFormData] = useState({
-    // Seller
     sellerName: 'Admin Entry',
     companyName: '',
     gstNumber: '',
     email: '',
     phone: '',
-    alternatePhone: '', // NEW
+    alternatePhone: '',
     
-    // Scrap
     scrapType: 'Ferrous',
-    grade: '',          // NEW
-    description: '',    // NEW
+    grade: '',
+    description: '',
     quantity: '',
     quantityUnit: 'Tons',
     pricePerUnit: '',
     priceUnit: 'Per Ton',
     
-    // Location
-    address: '',         // NEW
-    pickupConditions: '', // NEW
+    address: '',
+    pickupConditions: '',
     
     addedBy: 'admin'
   });
@@ -55,11 +52,22 @@ const AdminDashboard = () => {
   // Handle Text Change
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    if(errorMsg) setErrorMsg(''); // Clear error on type
   };
 
-  // Handle File Change
+  // --- VALIDATION: IMAGE LIMITS ---
   const handleFileChange = (e) => {
-    setSelectedFiles(e.target.files);
+    const files = e.target.files;
+    
+    if (files.length > 5) {
+        setErrorMsg("Maximum 5 images allowed. Please select fewer files.");
+        e.target.value = null; // Clear input
+        setSelectedFiles(null);
+        return;
+    }
+    
+    setSelectedFiles(files);
+    setErrorMsg('');
   };
 
   // Handle Submit
@@ -68,6 +76,13 @@ const AdminDashboard = () => {
     setLoading(true);
     setSuccessMsg('');
     setErrorMsg('');
+
+    // --- VALIDATION: MANDATORY 1 IMAGE ---
+    if (!selectedFiles || selectedFiles.length === 0) {
+        setErrorMsg("At least 1 image is mandatory.");
+        setLoading(false);
+        return;
+    }
 
     try {
       const data = new FormData();
@@ -95,10 +110,9 @@ const AdminDashboard = () => {
       
       data.append('added_by', 'admin');
 
-      if (selectedFiles) {
-        for (let i = 0; i < selectedFiles.length; i++) {
-          data.append('images', selectedFiles[i]);
-        }
+      // Append Images
+      for (let i = 0; i < selectedFiles.length; i++) {
+        data.append('images', selectedFiles[i]);
       }
 
       const response = await axios.post(
@@ -109,7 +123,7 @@ const AdminDashboard = () => {
 
       setSuccessMsg(`Success! Listing ID: ${response.data.listing_id} created.`);
       
-      // Reset Form (Keep defaults)
+      // Reset Form
       setFormData({
         sellerName: 'Admin Entry', companyName: '', gstNumber: '', email: '', phone: '', alternatePhone: '',
         scrapType: 'Ferrous', grade: '', description: '', quantity: '', quantityUnit: 'Tons', 
@@ -117,6 +131,8 @@ const AdminDashboard = () => {
         addedBy: 'admin'
       });
       setSelectedFiles(null);
+      // Reset file input manually
+      document.getElementById('fileInput').value = ""; 
 
     } catch (err) {
       console.error(err);
@@ -235,7 +251,6 @@ const AdminDashboard = () => {
                     </div>
 
                     <div className="grid md:grid-cols-2 gap-4">
-                        {/* QUANTITY SECTION */}
                         <div>
                             <label className="block text-xs font-bold uppercase text-navy mb-1">Quantity</label>
                             <div className="flex">
@@ -247,8 +262,6 @@ const AdminDashboard = () => {
                                 </select>
                             </div>
                         </div>
-
-                        {/* PRICE SECTION */}
                         <div>
                             <label className="block text-xs font-bold uppercase text-navy mb-1">Price</label>
                             <div className="flex">
@@ -273,10 +286,11 @@ const AdminDashboard = () => {
                 {/* Section 4: Images */}
                 <div className="bg-platinum/20 p-6 rounded-lg border border-platinum">
                     <h3 className="text-sm font-black text-steel uppercase mb-4 flex items-center gap-2">
-                        <Upload size={16} /> Upload Images
+                        <Upload size={16} /> Upload Images (Max 5)
                     </h3>
                     <div className="border-2 border-dashed border-steel/30 bg-white rounded-lg p-8 text-center">
                         <input 
+                            id="fileInput"
                             type="file" 
                             multiple 
                             onChange={handleFileChange} 
@@ -288,7 +302,7 @@ const AdminDashboard = () => {
                             file:bg-orange/10 file:text-orange
                             hover:file:bg-orange/20 cursor-pointer"
                         />
-                        <p className="text-xs text-steel mt-2">Supports JPG, PNG (Max 5MB)</p>
+                        <p className="text-xs text-steel mt-2">Supports JPG, PNG (Max 5MB) - Minimum 1 Required</p>
                     </div>
                 </div>
 
