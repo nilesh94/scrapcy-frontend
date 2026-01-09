@@ -28,6 +28,25 @@ const AdminListings = () => {
     }
   };
 
+  // --- NEW: DELETE FUNCTIONALITY ---
+  const handleDelete = async (id) => {
+    if(!window.confirm("Are you sure you want to delete this listing? This will permanently delete the listing and its images from Google Drive.")) {
+        return;
+    }
+
+    try {
+        // Call the backend API
+        await axios.delete(`https://scrapcy-backend-new-1.onrender.com/scrap/${id}`);
+        
+        // Update UI immediately by filtering out the deleted item
+        setListings(prevListings => prevListings.filter(item => item.id !== id));
+        alert("Listing deleted successfully");
+    } catch (err) {
+        console.error("Delete failed:", err);
+        alert("Failed to delete listing. It might have already been removed.");
+    }
+  };
+
   // Helper to format date
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-IN', {
@@ -138,7 +157,11 @@ const AdminListings = () => {
                                 <button className="flex justify-center items-center gap-2 text-xs font-bold uppercase py-2 bg-platinum hover:bg-gray-200 text-navy rounded transition-colors">
                                     <ExternalLink size={14} /> View
                                 </button>
-                                <button className="flex justify-center items-center gap-2 text-xs font-bold uppercase py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded transition-colors">
+                                {/* UPDATED DELETE BUTTON */}
+                                <button 
+                                    onClick={() => handleDelete(item.id)}
+                                    className="flex justify-center items-center gap-2 text-xs font-bold uppercase py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded transition-colors"
+                                >
                                     <Trash2 size={14} /> Delete
                                 </button>
                             </div>
