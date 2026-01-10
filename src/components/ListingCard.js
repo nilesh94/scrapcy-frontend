@@ -28,12 +28,16 @@ const ListingCard = ({ item, onDelete }) => {
     }
   };
 
-  // --- LOGIC CHANGE: Resolve Names ---
-  // Priority: New Relation > Legacy String > Unknown
-  const categoryName = item.category_ref?.name || item.scrap_type || "Scrap";
-  const materialName = item.material_ref?.name || ""; 
-  // For grade, we handle the case where it might be null
-  const gradeName = item.grade_ref?.name || (item.grade ? item.grade.split('(')[0] : null);
+  // --- LOGIC CHANGE: UPDATED ATTRIBUTE NAMES ---
+  
+  // 1. Category: try category_ref.material_category, fallback to legacy scrap_type
+  const categoryName = item.category_ref?.material_category || item.scrap_type || "Scrap";
+  
+  // 2. Material: try material_ref.material_name
+  const materialName = item.material_ref?.material_name || ""; 
+  
+  // 3. Grade: try grade_ref.grade_name, fallback to legacy grade string
+  const gradeName = item.grade_ref?.grade_name || (item.grade ? item.grade.split('(')[0] : null);
 
   return (
     <div className="bg-white rounded-lg shadow-xl overflow-hidden hover:shadow-2xl transition-shadow border-t-4 border-orange group flex flex-col h-full">
@@ -64,21 +68,21 @@ const ListingCard = ({ item, onDelete }) => {
             <div className="w-full h-full flex items-center justify-center text-gray-400"><LayoutDashboard size={40} /></div>
         )}
         
-        {/* --- UPDATED BADGES --- */}
+        {/* --- BADGES --- */}
         <div className="absolute top-2 right-2 flex flex-col items-end gap-1">
-            {/* Level 1: Category (e.g. Non-Ferrous) */}
+            {/* Level 1: Category */}
             <span className="bg-black/60 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider backdrop-blur-sm">
                 {categoryName}
             </span>
             
-            {/* Level 2: Material (e.g. Copper) - Show if exists */}
+            {/* Level 2: Material */}
             {materialName && (
                <span className="bg-navy/80 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider backdrop-blur-sm">
                   {materialName}
                </span>
             )}
 
-            {/* Level 3: Grade (e.g. Millberry) - Show if exists */}
+            {/* Level 3: Grade */}
             {gradeName && (
                 <span className="bg-orange text-white text-xs font-bold px-2 py-1 rounded uppercase tracking-wider shadow">
                     {gradeName}
