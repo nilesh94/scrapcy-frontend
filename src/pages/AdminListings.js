@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { Link } from 'react-router-dom'; // <--- Added Link Import
 import Header from '../components/Header/Header';
 import Footer from '../components/Footer/Footer';
-import ListingCard from '../components/ListingCard'; // <--- Import New Component
+import ListingCard from '../components/ListingCard'; 
 
 const AdminListings = () => {
   const [listings, setListings] = useState([]);
@@ -49,9 +50,14 @@ const AdminListings = () => {
                     Admin Console • {listings.length} Active Listings
                 </p>
             </div>
-            <a href="/admin" className="bg-orange hover:bg-white hover:text-navy text-white font-bold py-2 px-6 rounded transition-all uppercase text-xs tracking-widest">
+            
+            {/* OPTIMIZATION: Used Link instead of <a> for faster navigation */}
+            <Link 
+                to="/admin" 
+                className="bg-orange hover:bg-white hover:text-navy text-white font-bold py-2 px-6 rounded transition-all uppercase text-xs tracking-widest"
+            >
                 + Add New
-            </a>
+            </Link>
         </div>
       </div>
 
@@ -64,7 +70,6 @@ const AdminListings = () => {
         {!loading && !error && (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {listings.map((item) => (
-                    // Use the new ListingCard here
                     <ListingCard 
                         key={item.id} 
                         item={item} 
