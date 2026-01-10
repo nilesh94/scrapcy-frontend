@@ -10,6 +10,7 @@ import CompanyDashboard from './pages/CompanyDashboard';
 import BidderDashboard from './pages/BidderDashboard';
 import About from './pages/About';
 import PriceTracker from './components/PriceTracker/PriceTracker';
+import AdminListingDetail from './pages/AdminListingDetail';
 
 // Import Admin Pages
 import AdminDashboard from './pages/AdminDashboard';
@@ -36,6 +37,7 @@ function App() {
         {/* ADMIN ROUTES */}
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/listings" element={<AdminListings />} />
+        <Route path="/admin/listings/:id" element={<AdminListingDetail />} />
       </Routes>
     </Router>
   );
