@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
-  LayoutDashboard, MapPin, Phone, Trash2, ExternalLink, 
-  Calendar, Package, ChevronLeft, ChevronRight 
+  LayoutDashboard, MapPin, ExternalLink, 
+  Calendar, Package, ChevronLeft, ChevronRight, Trash2
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -27,6 +27,13 @@ const ListingCard = ({ item, onDelete }) => {
       setCurrentImgIndex((prev) => (prev === 0 ? item.images.length - 1 : prev - 1));
     }
   };
+
+  // --- LOGIC CHANGE: Resolve Names ---
+  // Priority: New Relation > Legacy String > Unknown
+  const categoryName = item.category_ref?.name || item.scrap_type || "Scrap";
+  const materialName = item.material_ref?.name || ""; 
+  // For grade, we handle the case where it might be null
+  const gradeName = item.grade_ref?.name || (item.grade ? item.grade.split('(')[0] : null);
 
   return (
     <div className="bg-white rounded-lg shadow-xl overflow-hidden hover:shadow-2xl transition-shadow border-t-4 border-orange group flex flex-col h-full">
@@ -57,16 +64,26 @@ const ListingCard = ({ item, onDelete }) => {
             <div className="w-full h-full flex items-center justify-center text-gray-400"><LayoutDashboard size={40} /></div>
         )}
         
-        {/* --- BADGES (UPDATED) --- */}
+        {/* --- UPDATED BADGES --- */}
         <div className="absolute top-2 right-2 flex flex-col items-end gap-1">
-            {/* Level 1: Generic Type (e.g. Metal Scrap) */}
-            <span className="bg-black/50 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider backdrop-blur-sm">
-                {item.scrap_type}
+            {/* Level 1: Category (e.g. Non-Ferrous) */}
+            <span className="bg-black/60 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider backdrop-blur-sm">
+                {categoryName}
             </span>
-            {/* Level 3: Specific Material (e.g. Copper) - We saved this in 'grade' column for backward compatibility */}
-            <span className="bg-orange text-white text-xs font-bold px-2 py-1 rounded uppercase tracking-wider shadow">
-                {item.grade ? item.grade.split('(')[0] : 'Unknown'}
-            </span>
+            
+            {/* Level 2: Material (e.g. Copper) - Show if exists */}
+            {materialName && (
+               <span className="bg-navy/80 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider backdrop-blur-sm">
+                  {materialName}
+               </span>
+            )}
+
+            {/* Level 3: Grade (e.g. Millberry) - Show if exists */}
+            {gradeName && (
+                <span className="bg-orange text-white text-xs font-bold px-2 py-1 rounded uppercase tracking-wider shadow">
+                    {gradeName}
+                </span>
+            )}
         </div>
       </div>
 
