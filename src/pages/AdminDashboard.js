@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Link } from 'react-router-dom'; // <--- Added Link
+import { Link } from 'react-router-dom'; 
 import { 
   LayoutDashboard, Upload, Save, CheckCircle, XCircle, FileText, Users, MapPin 
 } from 'lucide-react';
@@ -26,6 +26,7 @@ const AdminDashboard = () => {
     description: '',
     quantity: '',
     quantityUnit: 'Tons',
+    monthlyCapacity: '', // <--- Added State
     pricePerUnit: '',
     priceUnit: 'Per Ton',
     
@@ -104,6 +105,9 @@ const AdminDashboard = () => {
       // Convert to string "0" if empty, otherwise Backend crashes or rejects
       data.append('quantity', formData.quantity ? formData.quantity.toString() : "0");
       data.append('unit', formData.quantityUnit);
+
+      // --- NEW FIELD APPEND ---
+      if(formData.monthlyCapacity) data.append('monthly_capacity', formData.monthlyCapacity);
       
       data.append('price_per_unit', formData.pricePerUnit ? formData.pricePerUnit.toString() : "0");
       data.append('price_unit', formData.priceUnit);
@@ -134,6 +138,7 @@ const AdminDashboard = () => {
       setFormData({
         sellerName: 'Admin Entry', companyName: '', gstNumber: '', email: '', phone: '', alternatePhone: '',
         scrapType: 'Ferrous', grade: '', description: '', quantity: '', quantityUnit: 'Tons', 
+        monthlyCapacity: '', // <--- RESET NEW FIELD
         pricePerUnit: '', priceUnit: 'Per Ton', address: '', pickupConditions: '',
         addedBy: 'admin'
       });
@@ -307,6 +312,20 @@ const AdminDashboard = () => {
                             </div>
                         </div>
                     </div>
+
+                    {/* --- NEW INPUT FIELD: MONTHLY CAPACITY --- */}
+                    <div className="mt-4">
+                         <label className="block text-xs font-bold uppercase text-navy mb-1">Monthly Supply Capacity (Optional)</label>
+                         <input 
+                            name="monthlyCapacity" 
+                            value={formData.monthlyCapacity} 
+                            onChange={handleChange} 
+                            type="text" 
+                            className="w-full p-3 bg-white border border-platinum rounded focus:border-orange outline-none" 
+                            placeholder="e.g. 500 Tons/Month" 
+                         />
+                    </div>
+
                 </div>
 
                 {/* Section 4: Images */}
