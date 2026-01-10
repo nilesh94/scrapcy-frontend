@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { ArrowLeft, Trash2, MapPin, Phone, Mail, User, Truck, Tag } from 'lucide-react';
+import { ArrowLeft, Trash2, MapPin, Phone, Mail, User, Truck, Tag, Layers } from 'lucide-react';
 import Header from '../components/Header/Header';
 import Footer from '../components/Footer/Footer';
 
@@ -92,17 +92,22 @@ const AdminListingDetail = () => {
                 
                 {/* Header Info */}
                 <div className="bg-white p-6 rounded-lg shadow-md border-l-4 border-navy">
-                    <span className="bg-orange/10 text-orange px-3 py-1 rounded-full text-xs font-black uppercase tracking-widest mb-2 inline-block">
-                        {listing.scrap_type} Scrap
-                    </span>
                     
+                    {/* HIERARCHY TAGS */}
+                    <div className="flex items-center gap-2 text-xs font-bold text-orange uppercase tracking-widest mb-3">
+                        <Layers size={14} />
+                        <span>{listing.scrap_type}</span>
+                        <span className="text-gray-300">/</span>
+                        <span>{listing.grade || "General"}</span>
+                    </div>
+
                     <div className="flex justify-between items-end">
                         <div>
                             <h1 className="text-3xl font-black text-navy mb-1">{listing.quantity} {listing.unit}</h1>
                             <p className="text-xl text-gray-600 font-medium">₹{listing.price_per_unit} <span className="text-sm text-gray-400 uppercase">{listing.price_unit}</span></p>
                         </div>
 
-                        {/* ALWAYS SHOW - Default to "N/A" if null */}
+                        {/* ALWAYS SHOW CAPACITY - Default to "N/A" if null */}
                         <div className="text-right pl-4 border-l border-gray-100 ml-4">
                             <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Monthly Capacity</p>
                             <p className="text-lg font-black text-navy leading-none">
