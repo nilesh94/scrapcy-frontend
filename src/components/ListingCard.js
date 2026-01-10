@@ -109,7 +109,7 @@ const ListingCard = ({ item, onDelete }) => {
 
         <div className="mb-3">
             <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded border border-blue-100">
-                Capacity: {item.monthly_capacity || "N/A"}
+                Monthly Capacity: {item.monthly_capacity || "N/A"}
             </span>
         </div>
               
