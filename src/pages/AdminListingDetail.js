@@ -104,7 +104,7 @@ const AdminListingDetail = () => {
 
                         {/* ALWAYS SHOW - Default to "N/A" if null */}
                         <div className="text-right pl-4 border-l border-gray-100 ml-4">
-                            <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Monthly Capacity</p>
+                            <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Capacity</p>
                             <p className="text-lg font-black text-navy leading-none">
                                 {listing.monthly_capacity || "N/A"} 
                             </p>
