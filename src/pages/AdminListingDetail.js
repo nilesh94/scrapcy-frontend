@@ -102,13 +102,13 @@ const AdminListingDetail = () => {
                             <p className="text-xl text-gray-600 font-medium">₹{listing.price_per_unit} <span className="text-sm text-gray-400 uppercase">{listing.price_unit}</span></p>
                         </div>
 
-                        {/* --- NEW CAPACITY DISPLAY --- */}
-                        {listing.monthly_capacity && (
-                            <div className="text-right pl-4 border-l border-gray-100 ml-4">
-                                <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Monthly Capacity</p>
-                                <p className="text-lg font-black text-navy leading-none">{listing.monthly_capacity}</p>
-                            </div>
-                        )}
+                        {/* ALWAYS SHOW - Default to "N/A" if null */}
+                        <div className="text-right pl-4 border-l border-gray-100 ml-4">
+                            <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Monthly Capacity</p>
+                            <p className="text-lg font-black text-navy leading-none">
+                                {listing.monthly_capacity || "N/A"} 
+                            </p>
+                        </div>
                     </div>
                 </div>
 
