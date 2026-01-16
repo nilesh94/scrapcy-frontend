@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom'; 
 import { 
-  LayoutDashboard, Upload, Save, CheckCircle, XCircle, FileText, Users, MapPin 
+  LayoutDashboard, Upload, Save, CheckCircle, XCircle, FileText, Users, MapPin, TrendingUp 
 } from 'lucide-react';
 import Header from '../components/Header/Header';
 import Footer from '../components/Footer/Footer';
@@ -34,20 +34,14 @@ const AdminDashboard = () => {
     email: '',
     phone: '',
     alternatePhone: '',
-    
-    // Note: 'scrapType' and 'grade' are removed from here because 
-    // they are now handled by the separate state variables above.
-    
     description: '',
     quantity: '',
     quantityUnit: 'Tons',
     monthlyCapacity: '', 
     pricePerUnit: '',
     priceUnit: 'Per Ton',
-    
     address: '',
     pickupConditions: '',
-    
     addedBy: 'admin'
   });
 
@@ -67,39 +61,29 @@ const AdminDashboard = () => {
   }, []);
 
   // --- 4. DROPDOWN HANDLERS ---
-  
-  // Level 1: Scrap Type Change
   const handleScrapTypeChange = (e) => {
     const type = e.target.value;
     setSelectedScrapType(type);
-    // Reset Downstream
     setSelectedCategoryId(''); setFilteredMaterials([]);
     setSelectedMaterialId(''); setFilteredGrades([]);
     setSelectedGradeId('');
-    // Filter Categories
     const categories = hierarchy.filter(item => item.scrap_type === type);
     setFilteredCategories(categories);
   };
 
-  // Level 2: Category Change
   const handleCategoryChange = (e) => {
     const catId = parseInt(e.target.value);
     setSelectedCategoryId(catId);
-    // Reset Downstream
     setSelectedMaterialId(''); setFilteredGrades([]);
     setSelectedGradeId('');
-    // Find Materials
     const catObj = hierarchy.find(item => item.id === catId);
     setFilteredMaterials(catObj ? catObj.materials : []);
   };
 
-  // Level 3: Material Change
   const handleMaterialChange = (e) => {
     const matId = parseInt(e.target.value);
     setSelectedMaterialId(matId);
-    // Reset Downstream
     setSelectedGradeId('');
-    // Find Grades
     const matObj = filteredMaterials.find(item => item.id === matId);
     setFilteredGrades(matObj ? matObj.grades : []);
   };
@@ -117,13 +101,11 @@ const AdminDashboard = () => {
     }
   }, [formData.quantityUnit]);
 
-  // Handle Text Change
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
     if(errorMsg) setErrorMsg(''); 
   };
 
-  // Handle File Change
   const handleFileChange = (e) => {
     const files = e.target.files;
     if (files.length > 5) {
@@ -143,7 +125,6 @@ const AdminDashboard = () => {
     setSuccessMsg('');
     setErrorMsg('');
 
-    // Validation: Check if Material is selected
     if (!selectedCategoryId || !selectedMaterialId) {
         setErrorMsg("Please complete the material classification (Category & Material Name).");
         setLoading(false);
@@ -158,8 +139,6 @@ const AdminDashboard = () => {
 
     try {
       const data = new FormData();
-      
-      // Text Fields
       data.append('seller_name', formData.sellerName);
       data.append('company_name', formData.companyName || "");
       data.append('gst_number', formData.gstNumber || "");
@@ -167,34 +146,24 @@ const AdminDashboard = () => {
       data.append('phone', formData.phone);
       if(formData.alternatePhone) data.append('alternate_phone', formData.alternatePhone);
 
-      // --- NEW: APPEND IDs INSTEAD OF TEXT ---
       data.append('category_id', selectedCategoryId);
       data.append('material_id', selectedMaterialId);
       if(selectedGradeId) data.append('grade_id', selectedGradeId);
 
       if(formData.description) data.append('description', formData.description);
-      
-      // Numbers
       data.append('quantity', formData.quantity ? formData.quantity.toString() : "0");
       data.append('unit', formData.quantityUnit);
-
       if(formData.monthlyCapacity) data.append('monthly_capacity', formData.monthlyCapacity);
       
       data.append('price_per_unit', formData.pricePerUnit ? formData.pricePerUnit.toString() : "0");
       data.append('price_unit', formData.priceUnit);
-      
-      // Location
       data.append('address', formData.address);
       if(formData.pickupConditions) data.append('pickup_conditions', formData.pickupConditions);
-      
       data.append('added_by', 'admin');
 
-      // Images
       for (let i = 0; i < selectedFiles.length; i++) {
         data.append('images', selectedFiles[i]);
       }
-
-      console.log("Submitting...");
 
       const response = await axios.post(
         'https://scrapcy-backend-new-1.onrender.com/scrap/add', 
@@ -204,7 +173,6 @@ const AdminDashboard = () => {
 
       setSuccessMsg(`Success! Listing ID: ${response.data.listing_id} created.`);
       
-      // Reset Form
       setFormData({
         sellerName: 'Admin Entry', companyName: '', gstNumber: '', email: '', phone: '', alternatePhone: '',
         description: '', quantity: '', quantityUnit: 'Tons', 
@@ -213,13 +181,10 @@ const AdminDashboard = () => {
         addedBy: 'admin'
       });
       setSelectedFiles(null);
-      
-      // Reset Dropdowns
       setSelectedScrapType('');
       setSelectedCategoryId('');
       setSelectedMaterialId('');
       setSelectedGradeId('');
-
       document.getElementById('fileInput').value = ""; 
 
     } catch (err) {
@@ -251,12 +216,22 @@ const AdminDashboard = () => {
                 </p>
             </div>
             
-            <Link 
-              to="/admin/listings" 
-              className="bg-orange hover:bg-white hover:text-navy text-white font-bold py-3 px-6 rounded shadow-lg transition-all uppercase text-xs tracking-widest flex items-center gap-2"
-            >
-               <FileText size={16} /> View All Listings
-            </Link>
+            <div className="flex gap-3">
+                {/* NEW BUTTON FOR MARKET PRICE */}
+                <Link 
+                  to="/admin/market-prices" 
+                  className="bg-white text-navy hover:bg-orange hover:text-white font-bold py-3 px-6 rounded shadow-lg transition-all uppercase text-xs tracking-widest flex items-center gap-2"
+                >
+                    <TrendingUp size={16} /> List Market Price
+                </Link>
+
+                <Link 
+                  to="/admin/listings" 
+                  className="bg-orange hover:bg-white hover:text-navy text-white font-bold py-3 px-6 rounded shadow-lg transition-all uppercase text-xs tracking-widest flex items-center gap-2"
+                >
+                   <FileText size={16} /> View All Listings
+                </Link>
+            </div>
         </div>
       </div>
 
@@ -279,7 +254,7 @@ const AdminDashboard = () => {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
-                
+                {/* ... (Existing Form Code Remains Exactly the Same) ... */}
                 {/* Section 1: Seller Info */}
                 <div className="bg-platinum/20 p-6 rounded-lg border border-platinum">
                     <h3 className="text-sm font-black text-steel uppercase mb-4 flex items-center gap-2">
@@ -328,7 +303,7 @@ const AdminDashboard = () => {
                     </div>
                 </div>
 
-                {/* Section 3: Material Info (UPGRADED TO 4-LEVEL DROPDOWN) */}
+                {/* Section 3: Material Info */}
                 <div className="bg-platinum/20 p-6 rounded-lg border border-platinum">
                     <h3 className="text-sm font-black text-steel uppercase mb-4 flex items-center gap-2">
                         <LayoutDashboard size={16} /> Material Classification
@@ -417,7 +392,6 @@ const AdminDashboard = () => {
                         </div>
                     </div>
 
-                    {/* --- MONTHLY CAPACITY (IT IS HERE) --- */}
                     <div className="mt-4">
                          <label className="block text-xs font-bold uppercase text-navy mb-1">Monthly Supply Capacity (Optional)</label>
                          <input 
@@ -427,7 +401,7 @@ const AdminDashboard = () => {
                             type="text" 
                             className="w-full p-3 bg-white border border-platinum rounded focus:border-orange outline-none" 
                             placeholder="e.g. 500 Tons/Month" 
-                         />
+                          />
                     </div>
                 </div>
 
@@ -461,7 +435,6 @@ const AdminDashboard = () => {
                 >
                     {loading ? 'Processing...' : <><Save size={18} /> Save Listing</>}
                 </button>
-
             </form>
         </div>
       </div>
