@@ -11,7 +11,8 @@ const Register = () => {
   const navigate = useNavigate();
   
   // --- STATE MANAGEMENT ---
-  const [role, setRole] = useState('bidder'); // 'bidder' or 'seller'
+  // Default to 'seller' logic so all company fields are visible/required by default
+  const [role, setRole] = useState('seller'); 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
@@ -28,7 +29,8 @@ const Register = () => {
     password: '', confirmPassword: '',
     companyName: '', businessType: '', industry: '', turnover: '',
     gstNumber: '', panNumber: '',
-    address: '', city: '', state: '', pincode: ''
+    address: '', city: '', state: '', pincode: '',
+    tradeRole: '' // Added for Buyer/Seller/Both selection
   });
 
   // Validation State
@@ -61,22 +63,20 @@ const Register = () => {
     // 3. Required Fields Logic
     const basicFields = formData.firstName && formData.lastName && formData.email && formData.phone;
     
-    // 4. Role Specific Logic
-    let companyFields = true; 
-    if (role === 'seller') {
-       // Sellers MUST have these fields
-       companyFields = formData.companyName && 
-                       formData.businessType && 
-                       formData.gstNumber && 
-                       formData.address && 
-                       formData.city && 
-                       formData.state && 
-                       formData.pincode;
-    }
+    // 4. Role Specific Logic (Now applies to everyone as it's a unified form)
+    // Also requires the new tradeRole field
+    const companyFields = formData.companyName && 
+                          formData.businessType && 
+                          formData.tradeRole && // Validation for new dropdown
+                          formData.gstNumber && 
+                          formData.address && 
+                          formData.city && 
+                          formData.state && 
+                          formData.pincode;
 
     setIsFormValid(isStrong && match && basicFields && companyFields);
 
-  }, [formData, role]);
+  }, [formData]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -91,8 +91,9 @@ const Register = () => {
     setLoading(true);
     setApiError('');
 
-    // 1. Determine Backend Role ('user' is the backend name for bidder)
-    const finalRole = role === 'bidder' ? 'bidder' : 'seller';
+    // 1. Determine Backend Role based on selection
+    // In DB it should save: Buyer -> buyer, Seller -> seller, Both -> buyer_seller
+    const finalRole = formData.tradeRole;
 
     // 2. Construct Clean Payload
     const apiPayload = {
@@ -104,21 +105,19 @@ const Register = () => {
       role: finalRole
     };
 
-    // 3. Add Company fields ONLY if seller
-    if (finalRole === 'seller') {
-      Object.assign(apiPayload, {
-        company_name: formData.companyName,
-        business_type: formData.businessType,
-        industry: formData.industry,
-        turnover: formData.turnover,
-        gst_number: formData.gstNumber,
-        pan_number: formData.panNumber,
-        address: formData.address,
-        city: formData.city,
-        state: formData.state,
-        pincode: formData.pincode
-      });
-    }
+    // 3. Add Company fields (Always added now as everyone is registering as a company)
+    Object.assign(apiPayload, {
+      company_name: formData.companyName,
+      business_type: formData.businessType,
+      industry: formData.industry,
+      turnover: formData.turnover,
+      gst_number: formData.gstNumber,
+      pan_number: formData.panNumber,
+      address: formData.address,
+      city: formData.city,
+      state: formData.state,
+      pincode: formData.pincode
+    });
 
     try {
       // 4. Send Request
@@ -139,7 +138,7 @@ const Register = () => {
       // 6. Show Success Modal
       setShowSuccess(true);
 
-      // 7. Redirect based on Role after 1.5s delay
+      // 7. Redirect after 1.5s delay
       setTimeout(() => {
         navigate('/dashboard');
       }, 1500);
@@ -167,7 +166,7 @@ const Register = () => {
                 <h3 className="text-3xl font-black text-navy mb-2">Welcome Aboard!</h3>
                 <p className="text-gray-500 font-medium">Registration Successful.</p>
                 <p className="text-orange text-sm mt-4 font-bold animate-pulse uppercase tracking-widest">
-                    Redirecting to {role === 'seller' ? 'Company Console' : 'Bidder Portal'}...
+                    Redirecting to Dashboard...
                 </p>
             </div>
         </div>
@@ -195,43 +194,13 @@ const Register = () => {
                 </div>
               )}
 
-              {/* --- ROLE SWITCHER --- */}
-              <div className="flex gap-4 mb-6 p-1.5 bg-platinum rounded-lg">
-                <button 
-                  type="button"
-                  onClick={() => setRole('bidder')}
-                  className={`flex-1 py-4 font-black text-xs uppercase tracking-widest rounded transition-all duration-300 ${role === 'bidder' ? 'bg-white text-navy shadow-md transform scale-[1.02]' : 'text-steel hover:text-navy'}`}
-                >
-                  <User size={16} className="inline mb-1 mr-2"/> Individual Bidder
-                </button>
-
-                <button 
-                  type="button"
-                  onClick={() => setRole('seller')}
-                  className={`flex-1 py-4 font-black text-xs uppercase tracking-widest rounded transition-all duration-300 ${role === 'seller' ? 'bg-white text-navy shadow-md transform scale-[1.02]' : 'text-steel hover:text-navy'}`}
-                >
-                  <Building2 size={16} className="inline mb-1 mr-2"/> Company Seller
-                </button>
-              </div>
-
-              {/* Dynamic Role Description */}
-              <div className={`mb-8 p-4 rounded border-l-4 text-xs font-medium flex items-start gap-3 
-                ${role === 'bidder' ? 'bg-blue-50 border-navy text-navy' : 'bg-orange/10 border-orange text-orange-900'}`}>
-                  
+              {/* Dynamic Description */}
+              <div className="mb-8 p-4 rounded border-l-4 text-xs font-medium flex items-start gap-3 bg-orange/10 border-orange text-orange-900">
                   <Info size={18} className="shrink-0 mt-0.5" />
-                  
-                  {role === 'bidder' && (
-                    <div>
-                      <strong className="block mb-1 text-sm">Individual Bidder</strong>
-                      You can browse live auctions, place bids on scrap materials, and track your purchase history. You <u>cannot</u> post new auctions.
-                    </div>
-                  )}
-                  {role === 'seller' && (
-                    <div>
-                      <strong className="block mb-1 text-sm">Company Seller</strong>
-                      You can list scrap materials for auction, manage inventory, and sell to the highest bidder. Requires business details (GST/PAN).
-                    </div>
-                  )}
+                  <div>
+                    <strong className="block mb-1 text-sm">Company Registration</strong>
+                    Please provide your business details to start trading on Scrapcy. Select your role (Buyer, Seller, or Both) below.
+                  </div>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-6">
@@ -294,60 +263,75 @@ const Register = () => {
                   </div>
                 </div>
 
-                {/* --- SECTION 2: COMPANY DETAILS (ONLY FOR SELLER) --- */}
-                {role === 'seller' && (
-                  <div className="animate-fadeIn space-y-6 pt-4">
-                      <div>
-                        <h3 className="text-navy font-bold text-sm uppercase border-b border-platinum pb-2 mb-4 flex items-center gap-2">
-                          <Briefcase size={16} className="text-orange"/> Organization Details
-                        </h3>
-                        <div className="space-y-4">
-                          <div className="relative">
-                            <Building2 className="absolute left-3 top-3.5 text-steel" size={18} />
-                            <input name="companyName" value={formData.companyName} onChange={handleChange} type="text" placeholder="Registered Company Name" className="w-full pl-10 p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none" required />
-                          </div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <select name="businessType" value={formData.businessType} onChange={handleChange} className="w-full p-3 bg-platinum/30 border border-platinum rounded text-sm text-steel focus:border-navy outline-none cursor-pointer" required>
-                              <option value="">Select Business Type</option>
-                              <option value="Proprietorship">Proprietorship</option>
-                              <option value="Partnership">Partnership</option>
-                              <option value="LLP">LLP</option>
-                              <option value="Private Limited">Private Limited</option>
-                              <option value="Public Limited">Public Limited</option>
-                            </select>
-                            <select name="industry" value={formData.industry} onChange={handleChange} className="w-full p-3 bg-platinum/30 border border-platinum rounded text-sm text-steel focus:border-navy outline-none cursor-pointer">
-                              <option value="">Select Industry</option>
-                              <option value="Ferrous Metal">Ferrous Metal</option>
-                              <option value="Non-Ferrous">Non-Ferrous</option>
-                              <option value="E-Waste">E-Waste</option>
-                              <option value="Plastic">Plastic</option>
-                            </select>
-                          </div>
+                {/* --- SECTION 2: COMPANY DETAILS (UNIFIED) --- */}
+                <div className="animate-fadeIn space-y-6 pt-4">
+                    <div>
+                      <h3 className="text-navy font-bold text-sm uppercase border-b border-platinum pb-2 mb-4 flex items-center gap-2">
+                        <Briefcase size={16} className="text-orange"/> Organization Details
+                      </h3>
+                      <div className="space-y-4">
+                        
+                        {/* NEW SELECTION BOX FOR ROLE */}
+                        <div className="relative">
+                           <select 
+                              name="tradeRole" 
+                              value={formData.tradeRole} 
+                              onChange={handleChange} 
+                              className="w-full p-3 bg-platinum/30 border border-platinum rounded text-sm text-steel focus:border-navy outline-none cursor-pointer" 
+                              required
+                           >
+                              <option value="">Select Company Role (Buyer/Seller)</option>
+                              <option value="buyer">I am a Buyer of Scrap</option>
+                              <option value="seller">I am a Seller of Scrap</option>
+                              <option value="buyer_seller">I am Both (Buyer & Seller)</option>
+                           </select>
                         </div>
-                      </div>
 
-                      <div>
-                        <h3 className="text-navy font-bold text-sm uppercase border-b border-platinum pb-2 mb-4 flex items-center gap-2">
-                          <FileText size={16} className="text-orange"/> Statutory & Address
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                            <input name="gstNumber" value={formData.gstNumber} onChange={handleChange} type="text" placeholder="GST Number (15 Digits)" className="w-full p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none uppercase" required />
-                            <input name="panNumber" value={formData.panNumber} onChange={handleChange} type="text" placeholder="PAN Number" className="w-full p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none uppercase" required />
+                        <div className="relative">
+                          <Building2 className="absolute left-3 top-3.5 text-steel" size={18} />
+                          <input name="companyName" value={formData.companyName} onChange={handleChange} type="text" placeholder="Registered Company Name" className="w-full pl-10 p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none" required />
                         </div>
-                        <div className="space-y-4">
-                            <div className="relative">
-                              <MapPin className="absolute left-3 top-3.5 text-steel" size={18} />
-                              <input name="address" value={formData.address} onChange={handleChange} type="text" placeholder="Registered Office Address" className="w-full pl-10 p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none" required />
-                            </div>
-                            <div className="grid grid-cols-3 gap-4">
-                              <input name="city" value={formData.city} onChange={handleChange} type="text" placeholder="City" className="w-full p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none" required />
-                              <input name="state" value={formData.state} onChange={handleChange} type="text" placeholder="State" className="w-full p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none" required />
-                              <input name="pincode" value={formData.pincode} onChange={handleChange} type="text" placeholder="Pincode" className="w-full p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none" required />
-                            </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <select name="businessType" value={formData.businessType} onChange={handleChange} className="w-full p-3 bg-platinum/30 border border-platinum rounded text-sm text-steel focus:border-navy outline-none cursor-pointer" required>
+                            <option value="">Select Business Type</option>
+                            <option value="Proprietorship">Proprietorship</option>
+                            <option value="Partnership">Partnership</option>
+                            <option value="LLP">LLP</option>
+                            <option value="Private Limited">Private Limited</option>
+                            <option value="Public Limited">Public Limited</option>
+                          </select>
+                          <select name="industry" value={formData.industry} onChange={handleChange} className="w-full p-3 bg-platinum/30 border border-platinum rounded text-sm text-steel focus:border-navy outline-none cursor-pointer">
+                            <option value="">Select Industry</option>
+                            <option value="Ferrous Metal">Ferrous Metal</option>
+                            <option value="Non-Ferrous">Non-Ferrous</option>
+                            <option value="E-Waste">E-Waste</option>
+                            <option value="Plastic">Plastic</option>
+                          </select>
                         </div>
                       </div>
-                  </div>
-                )}
+                    </div>
+
+                    <div>
+                      <h3 className="text-navy font-bold text-sm uppercase border-b border-platinum pb-2 mb-4 flex items-center gap-2">
+                        <FileText size={16} className="text-orange"/> Statutory & Address
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                          <input name="gstNumber" value={formData.gstNumber} onChange={handleChange} type="text" placeholder="GST Number (15 Digits)" className="w-full p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none uppercase" required />
+                          <input name="panNumber" value={formData.panNumber} onChange={handleChange} type="text" placeholder="PAN Number" className="w-full p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none uppercase" required />
+                      </div>
+                      <div className="space-y-4">
+                          <div className="relative">
+                            <MapPin className="absolute left-3 top-3.5 text-steel" size={18} />
+                            <input name="address" value={formData.address} onChange={handleChange} type="text" placeholder="Registered Office Address" className="w-full pl-10 p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none" required />
+                          </div>
+                          <div className="grid grid-cols-3 gap-4">
+                            <input name="city" value={formData.city} onChange={handleChange} type="text" placeholder="City" className="w-full p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none" required />
+                            <input name="state" value={formData.state} onChange={handleChange} type="text" placeholder="State" className="w-full p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none" required />
+                            <input name="pincode" value={formData.pincode} onChange={handleChange} type="text" placeholder="Pincode" className="w-full p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none" required />
+                          </div>
+                      </div>
+                    </div>
+                </div>
 
                 {/* Submit Button */}
                 <div className="pt-6">
@@ -360,13 +344,13 @@ const Register = () => {
                         : 'bg-navy text-white hover:bg-orange hover:shadow-xl cursor-pointer' 
                       }`}
                   >
-                    {loading ? 'Processing...' : `Register as ${role === 'seller' ? 'Seller' : 'Bidder'}`}
+                    {loading ? 'Processing...' : `Register`}
                   </button>
                   
                   {!isFormValid && (
-                     <p className="text-center text-xs text-red-500 font-bold mt-2 animate-pulse">
-                       * Please complete all required fields
-                     </p>
+                      <p className="text-center text-xs text-red-500 font-bold mt-2 animate-pulse">
+                        * Please complete all required fields
+                      </p>
                   )}
                 </div>
 
