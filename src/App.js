@@ -11,6 +11,7 @@ import BidderDashboard from './pages/BidderDashboard';
 import About from './pages/About';
 import PriceTracker from './components/PriceTracker/PriceTracker';
 import AdminListingDetail from './pages/AdminListingDetail';
+import AdminMarketPrice from './pages/AdminMarketPrice';
 
 // Import Admin Pages
 import AdminDashboard from './pages/AdminDashboard';
@@ -38,6 +39,7 @@ function App() {
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/listings" element={<AdminListings />} />
         <Route path="/admin/listings/:id" element={<AdminListingDetail />} />
+        <Route path="/admin/market-prices" element={<AdminMarketPrice />} />
       </Routes>
     </Router>
   );
