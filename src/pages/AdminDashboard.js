@@ -254,7 +254,7 @@ const AdminDashboard = () => {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
-                {/* ... (Existing Form Code Remains Exactly the Same) ... */}
+                
                 {/* Section 1: Seller Info */}
                 <div className="bg-platinum/20 p-6 rounded-lg border border-platinum">
                     <h3 className="text-sm font-black text-steel uppercase mb-4 flex items-center gap-2">
