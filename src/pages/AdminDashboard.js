@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Link } from 'react-router-dom'; 
+import { Link } from 'react-router-dom';
 import { 
   LayoutDashboard, Upload, Save, CheckCircle, XCircle, FileText, Users, MapPin, TrendingUp 
 } from 'lucide-react';
@@ -217,17 +217,18 @@ const AdminDashboard = () => {
             </div>
             
             <div className="flex gap-3">
-                {/* NEW BUTTON FOR MARKET PRICE */}
+                {/* --- 1. MARKET PRICE BUTTON (UPDATED COLOR) --- */}
                 <Link 
                   to="/admin/market-prices" 
-                  className="bg-white text-navy hover:bg-orange hover:text-white font-bold py-3 px-6 rounded shadow-lg transition-all uppercase text-xs tracking-widest flex items-center gap-2"
+                  className="bg-white text-blue-900 hover:bg-orange hover:text-white font-bold py-3 px-6 rounded shadow-lg transition-all uppercase text-xs tracking-widest flex items-center gap-2"
                 >
                     <TrendingUp size={16} /> List Market Price
                 </Link>
 
+                {/* --- 2. LISTINGS BUTTON --- */}
                 <Link 
                   to="/admin/listings" 
-                  className="bg-orange hover:bg-white hover:text-navy text-white font-bold py-3 px-6 rounded shadow-lg transition-all uppercase text-xs tracking-widest flex items-center gap-2"
+                  className="bg-orange hover:bg-white hover:text-blue-900 text-white font-bold py-3 px-6 rounded shadow-lg transition-all uppercase text-xs tracking-widest flex items-center gap-2"
                 >
                    <FileText size={16} /> View All Listings
                 </Link>
