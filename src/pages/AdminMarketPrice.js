@@ -39,7 +39,7 @@ const AdminMarketPrice = () => {
     const user = JSON.parse(localStorage.getItem('user'));
     if (!user || user.role !== 'admin') {
         alert("Unauthorized Access. Admins only.");
-        navigate('/login'); // Redirect to login or home
+        navigate('/login'); 
         return;
     }
 
@@ -49,15 +49,13 @@ const AdminMarketPrice = () => {
         const catRes = await axios.get('https://scrapcy-backend-new-1.onrender.com/categories/hierarchy');
         setHierarchy(catRes.data);
 
-        // Fetch Locations (PLACEHOLDER FOR PYTHON API)
-        // Note: You will need to build this endpoint in Python later.
+        // Fetch Locations (Real Backend Call)
         const locRes = await axios.get('https://scrapcy-backend-new-1.onrender.com/locations'); 
         setLocations(locRes.data);
       } catch (err) {
         console.error("Data fetch error", err);
-        // Fallback for UI development if API fails
         if(err.code === "ERR_BAD_REQUEST" || err.response?.status === 404) {
-            console.log("Locations API not ready, using empty list.");
+            setErrorMsg("API Error: Could not load locations or categories.");
         }
       }
     };
@@ -108,15 +106,16 @@ const AdminMarketPrice = () => {
     }
 
     try {
+        // Construct Payload matches app/schemas/market_data.py
         const payload = {
-            category_id: selectedCategoryId,
-            material_id: selectedMaterialId,
+            category_id: parseInt(selectedCategoryId),
+            material_id: parseInt(selectedMaterialId),
             grade_id: selectedGradeId ? parseInt(selectedGradeId) : null,
             location_id: parseInt(selectedLocationId),
             price_per_mt: parseFloat(pricePerMT)
         };
 
-        // POST call to Python Backend (Placeholder endpoint)
+        // POST call to Python Backend
         await axios.post('https://scrapcy-backend-new-1.onrender.com/market-prices/add', payload);
 
         setSuccessMsg("Market Price recorded successfully.");
@@ -227,7 +226,7 @@ const AdminMarketPrice = () => {
                                 <option value="">-- Select Location --</option>
                                 {locations.map(loc => (
                                     <option key={loc.id} value={loc.id}>
-                                        {loc.city}, {loc.state} ({loc.location_name})
+                                        {loc.city ? `${loc.city}, ` : ''}{loc.state ? `${loc.state} ` : ''}({loc.location_name})
                                     </option>
                                 ))}
                             </select>
