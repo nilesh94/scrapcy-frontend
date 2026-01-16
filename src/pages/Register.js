@@ -27,7 +27,7 @@ const Register = () => {
   const [formData, setFormData] = useState({
     firstName: '', lastName: '', email: '', phone: '', 
     password: '', confirmPassword: '',
-    companyName: '', businessType: '', industry: '', turnover: '',
+    companyName: '', businessType: '', industry: '', otherIndustry: '', turnover: '',
     gstNumber: '', panNumber: '',
     address: '', city: '', state: '', pincode: '',
     tradeRole: '' // Added for Buyer/Seller/Both selection
@@ -109,7 +109,8 @@ const Register = () => {
     Object.assign(apiPayload, {
       company_name: formData.companyName,
       business_type: formData.businessType,
-      industry: formData.industry,
+      // Logic: If 'Others' is selected, save the custom input value, otherwise save the dropdown value
+      industry: formData.industry === 'Others' ? formData.otherIndustry : formData.industry,
       turnover: formData.turnover,
       gst_number: formData.gstNumber,
       pan_number: formData.panNumber,
@@ -306,7 +307,23 @@ const Register = () => {
                             <option value="Non-Ferrous">Non-Ferrous</option>
                             <option value="E-Waste">E-Waste</option>
                             <option value="Plastic">Plastic</option>
+                            <option value="Others">Others</option>
                           </select>
+                          
+                          {/* CONDITIONAL INPUT FOR 'OTHERS' */}
+                          {formData.industry === 'Others' && (
+                            <div className="md:col-span-2 animate-fadeIn">
+                                <input 
+                                  name="otherIndustry" 
+                                  value={formData.otherIndustry} 
+                                  onChange={handleChange} 
+                                  type="text" 
+                                  placeholder="Please specify your industry" 
+                                  className="w-full p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none" 
+                                />
+                            </div>
+                          )}
+
                         </div>
                       </div>
                     </div>
