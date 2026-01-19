@@ -56,15 +56,17 @@ const AdminDashboard = () => {
     const fetchMasterData = async () => {
       try {
         const res = await axios.get('https://scrapcy-backend-new-1.onrender.com/categories/hierarchy');
+        console.log("Hierarchy Data:", res.data); // Debug: Check console to see if 'forms' exist
         setHierarchy(res.data);
       } catch (err) {
         console.error("Master data fetch error", err);
+        setErrorMsg("Failed to load category data.");
       }
     };
     fetchMasterData();
   }, []);
 
-  // --- 4. DROPDOWN HANDLERS ---
+  // --- 4. DROPDOWN HANDLERS (WITH CRASH PROTECTION) ---
   
   // Level 1: Scrap Type -> Filter Categories
   const handleScrapTypeChange = (e) => {
@@ -77,13 +79,16 @@ const AdminDashboard = () => {
     setSelectedFormId('');     setFilteredForms([]);
     setSelectedGradeId('');    setFilteredGrades([]);
 
+    if (!type) return;
+
     const categories = hierarchy.filter(item => item.scrap_type === type);
-    setFilteredCategories(categories);
+    setFilteredCategories(categories || []);
   };
 
   // Level 2: Category -> Filter Materials
   const handleCategoryChange = (e) => {
-    const catId = parseInt(e.target.value);
+    const val = e.target.value;
+    const catId = val ? parseInt(val) : '';
     setSelectedCategoryId(catId);
     
     // Reset lower levels
@@ -91,34 +96,44 @@ const AdminDashboard = () => {
     setSelectedFormId('');     setFilteredForms([]);
     setSelectedGradeId('');    setFilteredGrades([]);
 
+    if (!catId) return;
+
     const catObj = hierarchy.find(item => item.id === catId);
-    setFilteredMaterials(catObj ? catObj.materials : []);
+    // SAFETY: || [] prevents crash if materials is missing
+    setFilteredMaterials(catObj?.materials || []); 
   };
 
   // Level 3: Material -> Filter Forms (UPDATED)
   const handleMaterialChange = (e) => {
-    const matId = parseInt(e.target.value);
+    const val = e.target.value;
+    const matId = val ? parseInt(val) : '';
     setSelectedMaterialId(matId);
     
     // Reset lower levels
     setSelectedFormId('');     setFilteredForms([]);
     setSelectedGradeId('');    setFilteredGrades([]);
 
+    if (!matId) return;
+
     const matObj = filteredMaterials.find(item => item.id === matId);
-    // Now we set FORMS, not Grades directly
-    setFilteredForms(matObj ? matObj.forms : []);
+    // SAFETY: This was likely the crash cause. Added ?.forms || []
+    setFilteredForms(matObj?.forms || []); 
   };
 
   // Level 4: Form -> Filter Grades (NEW)
   const handleFormChange = (e) => {
-    const fId = parseInt(e.target.value);
+    const val = e.target.value;
+    const fId = val ? parseInt(val) : '';
     setSelectedFormId(fId);
 
     // Reset Grade
     setSelectedGradeId('');    setFilteredGrades([]);
 
+    if (!fId) return;
+
     const formObj = filteredForms.find(item => item.id === fId);
-    setFilteredGrades(formObj ? formObj.grades : []);
+    // SAFETY: || [] prevents crash
+    setFilteredGrades(formObj?.grades || []); 
   }
 
   // --- 5. UNIT VALIDATION LOGIC ---
@@ -182,7 +197,7 @@ const AdminDashboard = () => {
       // --- IDs ---
       data.append('category_id', selectedCategoryId);
       data.append('material_id', selectedMaterialId);
-      if(selectedFormId) data.append('form_id', selectedFormId); // ADDED
+      if(selectedFormId) data.append('form_id', selectedFormId);
       if(selectedGradeId) data.append('grade_id', selectedGradeId);
 
       if(formData.description) data.append('description', formData.description);
@@ -256,7 +271,6 @@ const AdminDashboard = () => {
             </div>
             
             <div className="flex gap-3">
-                {/* --- 1. MARKET PRICE BUTTON --- */}
                 <Link 
                   to="/admin/market-prices" 
                   className="bg-white text-blue-900 hover:bg-orange hover:text-white font-bold py-3 px-6 rounded shadow-lg transition-all uppercase text-xs tracking-widest flex items-center gap-2"
@@ -264,7 +278,6 @@ const AdminDashboard = () => {
                     <TrendingUp size={16} /> List Market Price
                 </Link>
 
-                {/* --- 2. LISTINGS BUTTON --- */}
                 <Link 
                   to="/admin/listings" 
                   className="bg-orange hover:bg-white hover:text-blue-900 text-white font-bold py-3 px-6 rounded shadow-lg transition-all uppercase text-xs tracking-widest flex items-center gap-2"
@@ -383,12 +396,13 @@ const AdminDashboard = () => {
                             </select>
                         </div>
 
-                        {/* Level 4: Form (NEW) */}
+                        {/* Level 4: Form */}
                         <div>
                             <label className="block text-xs font-bold uppercase text-navy mb-1">4. Form</label>
                             <select value={selectedFormId} onChange={handleFormChange} disabled={!selectedMaterialId} className="w-full p-3 bg-white border border-platinum rounded focus:border-orange outline-none disabled:bg-gray-100">
                                 <option value="">-- Select Form --</option>
-                                {filteredForms.map(form => (
+                                {/* SAFETY: Added || [] to prevent crash if undefined */}
+                                {(filteredForms || []).map(form => (
                                     <option key={form.id} value={form.id}>{form.form_name}</option>
                                 ))}
                             </select>
@@ -399,7 +413,8 @@ const AdminDashboard = () => {
                             <label className="block text-xs font-bold uppercase text-navy mb-1">5. Grade (Optional)</label>
                             <select value={selectedGradeId} onChange={(e) => setSelectedGradeId(e.target.value)} disabled={!selectedFormId || filteredGrades.length === 0} className="w-full p-3 bg-white border border-platinum rounded focus:border-orange outline-none disabled:bg-gray-100">
                                 <option value="">-- Select Grade --</option>
-                                {filteredGrades.map(grad => (
+                                {/* SAFETY: Added || [] to prevent crash if undefined */}
+                                {(filteredGrades || []).map(grad => (
                                     <option key={grad.id} value={grad.id}>{grad.grade_name}</option>
                                 ))}
                             </select>
