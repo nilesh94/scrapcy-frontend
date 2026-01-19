@@ -1,37 +1,51 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react'; // Added useRef
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { 
-  User, Building2, Briefcase, FileText, MapPin, Mail, Phone, Lock, Eye, EyeOff, CheckCircle, XCircle, Info 
+  User, Building2, Briefcase, FileText, MapPin, Mail, Phone, Lock, Eye, EyeOff, CheckCircle, XCircle, Info, ChevronDown, CheckSquare, Square 
 } from 'lucide-react';
-import Header from '../components/Header/Header'; // Import Header
-import Footer from '../components/Footer/Footer'; // Import Footer
+import Header from '../components/Header/Header';
+import Footer from '../components/Footer/Footer';
 
 const Register = () => {
   const navigate = useNavigate();
   
   // --- STATE MANAGEMENT ---
-  // Default to 'seller' logic so all company fields are visible/required by default
-  const [role, setRole] = useState('seller'); 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  
-  // Loading & Error States
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState('');
-  
-  // Success Modal State
   const [showSuccess, setShowSuccess] = useState(false);
+
+  // Industry Multi-Select State
+  const [showIndustryDropdown, setShowIndustryDropdown] = useState(false);
+  const dropdownRef = useRef(null); // To close dropdown when clicking outside
+  
+  const industryOptions = [
+    "Ferrous Metal", 
+    "Non-Ferrous", 
+    "E-Waste", 
+    "Plastic", 
+    "Paper",
+    "Rubber",
+    "Battery",
+    "Glass",
+    "Others"
+  ];
 
   // Form Data
   const [formData, setFormData] = useState({
     firstName: '', lastName: '', email: '', phone: '', 
     password: '', confirmPassword: '',
-    companyName: '', businessType: '', industry: '', otherIndustry: '', turnover: '',
-    gstNumber: '', panNumber: '',
+    companyName: '', businessType: '', 
+    turnover: '', gstNumber: '', panNumber: '',
     address: '', city: '', state: '', pincode: '',
-    tradeRole: '' // Added for Buyer/Seller/Both selection
+    tradeRole: '',
+    otherIndustry: '' // Text input for 'Others'
   });
+
+  // Separate state for selected industries (Array)
+  const [selectedIndustries, setSelectedIndustries] = useState([]);
 
   // Validation State
   const [passwordCriteria, setPasswordCriteria] = useState({
@@ -39,6 +53,17 @@ const Register = () => {
   });
   const [passwordsMatch, setPasswordsMatch] = useState(false);
   const [isFormValid, setIsFormValid] = useState(false);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowIndustryDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [dropdownRef]);
 
   // --- VALIDATION LOGIC ---
   useEffect(() => {
@@ -57,30 +82,38 @@ const Register = () => {
     // 2. Passwords Match
     const match = password && password === confirmPassword;
     setPasswordsMatch(match);
-
     const isStrong = Object.values(criteria).every(Boolean);
     
     // 3. Required Fields Logic
     const basicFields = formData.firstName && formData.lastName && formData.email && formData.phone;
     
-    // 4. Role Specific Logic (Now applies to everyone as it's a unified form)
-    // Also requires the new tradeRole field
+    // 4. Role Specific Logic
     const companyFields = formData.companyName && 
                           formData.businessType && 
-                          formData.tradeRole && // Validation for new dropdown
+                          formData.tradeRole && 
                           formData.gstNumber && 
                           formData.address && 
                           formData.city && 
                           formData.state && 
-                          formData.pincode;
+                          formData.pincode &&
+                          selectedIndustries.length > 0; // Check if at least one industry is selected
 
     setIsFormValid(isStrong && match && basicFields && companyFields);
 
-  }, [formData]);
+  }, [formData, selectedIndustries]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
     if (apiError) setApiError('');
+  };
+
+  // Toggle Industry Selection
+  const toggleIndustry = (option) => {
+    if (selectedIndustries.includes(option)) {
+      setSelectedIndustries(selectedIndustries.filter(item => item !== option));
+    } else {
+      setSelectedIndustries([...selectedIndustries, option]);
+    }
   };
 
   // --- SUBMIT LOGIC ---
@@ -91,9 +124,12 @@ const Register = () => {
     setLoading(true);
     setApiError('');
 
-    // 1. Determine Backend Role based on selection
-    // In DB it should save: Buyer -> buyer, Seller -> seller, Both -> buyer_seller
-    const finalRole = formData.tradeRole;
+    // 1. Process Industries into Comma Separated String
+    // If 'Others' is selected, we replace the word "Others" with the user's typed input
+    let finalIndustryString = selectedIndustries
+      .map(item => item === 'Others' ? formData.otherIndustry : item)
+      .filter(item => item && item.trim() !== "") // Remove empty strings
+      .join(', ');
 
     // 2. Construct Clean Payload
     const apiPayload = {
@@ -102,15 +138,12 @@ const Register = () => {
       first_name: formData.firstName,
       last_name: formData.lastName,
       phone: formData.phone,
-      role: finalRole
-    };
-
-    // 3. Add Company fields (Always added now as everyone is registering as a company)
-    Object.assign(apiPayload, {
+      role: formData.tradeRole, // buyer, seller, or buyer_seller
+      
+      // Company Details
       company_name: formData.companyName,
       business_type: formData.businessType,
-      // Logic: If 'Others' is selected, save the custom input value, otherwise save the dropdown value
-      industry: formData.industry === 'Others' ? formData.otherIndustry : formData.industry,
+      industry: finalIndustryString, // Sending the CSV string here
       turnover: formData.turnover,
       gst_number: formData.gstNumber,
       pan_number: formData.panNumber,
@@ -118,10 +151,9 @@ const Register = () => {
       city: formData.city,
       state: formData.state,
       pincode: formData.pincode
-    });
+    };
 
     try {
-      // 4. Send Request
       const response = await axios.post(
         'https://scrapcy-backend-new-1.onrender.com/users/register',
         apiPayload,
@@ -130,16 +162,12 @@ const Register = () => {
 
       console.log("Registration Success:", response.data);
 
-      // 5. AUTO-LOGIN: Save Token & User Info
       if (response.data.access_token) {
         localStorage.setItem('token', response.data.access_token);
         localStorage.setItem('user', JSON.stringify(response.data.user));
       }
 
-      // 6. Show Success Modal
       setShowSuccess(true);
-
-      // 7. Redirect after 1.5s delay
       setTimeout(() => {
         navigate('/dashboard');
       }, 1500);
@@ -148,16 +176,15 @@ const Register = () => {
       console.error("Registration Error:", err);
       const msg = err.response?.data?.error || err.response?.data?.detail || "Registration failed. Please try again.";
       setApiError(msg);
-      setLoading(false); // Only stop loading on error
+      setLoading(false);
     }
   };
 
-  // --- RENDER ---
   return (
     <div className="min-h-screen bg-platinum flex flex-col relative">
       <Header />
 
-      {/* SUCCESS MODAL OVERLAY */}
+      {/* SUCCESS MODAL */}
       {showSuccess && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/90 backdrop-blur-sm">
             <div className="bg-white p-8 rounded-2xl shadow-2xl text-center transform scale-110 transition-transform duration-300 animate-fadeIn">
@@ -173,11 +200,10 @@ const Register = () => {
         </div>
       )}
 
-      {/* Main Content Wrapper */}
+      {/* Main Content */}
       <div className="flex-grow flex items-center justify-center px-4 py-12 relative z-10">
           <div className="max-w-2xl w-full bg-white shadow-2xl rounded-lg overflow-hidden border-t-8 border-orange">
             
-            {/* Header */}
             <div className="px-8 pt-8 pb-6 bg-navy text-white text-center">
               <h2 className="text-3xl font-black uppercase tracking-tighter">Create Account</h2>
               <p className="text-orange text-xs font-bold tracking-widest mt-2 uppercase">
@@ -186,27 +212,15 @@ const Register = () => {
             </div>
 
             <div className="p-8">
-              
-              {/* API Error Message */}
               {apiError && (
                 <div className="mb-6 p-3 bg-red-100 border-l-4 border-red-500 text-red-700 text-sm font-bold flex items-center gap-2">
-                  <XCircle size={18} />
-                  {apiError}
+                  <XCircle size={18} /> {apiError}
                 </div>
               )}
 
-              {/* Dynamic Description */}
-              <div className="mb-8 p-4 rounded border-l-4 text-xs font-medium flex items-start gap-3 bg-orange/10 border-orange text-orange-900">
-                  <Info size={18} className="shrink-0 mt-0.5" />
-                  <div>
-                    <strong className="block mb-1 text-sm">Company Registration</strong>
-                    Please provide your business details to start trading on Scrapcy. Select your role (Buyer, Seller, or Both) below.
-                  </div>
-              </div>
-
               <form onSubmit={handleSubmit} className="space-y-6">
                 
-                {/* --- SECTION 1: ACCOUNT CREDENTIALS (ALL ROLES) --- */}
+                {/* --- ACCOUNT DETAILS --- */}
                 <div className="space-y-4">
                   <h3 className="text-navy font-bold text-sm uppercase border-b border-platinum pb-2 mb-4 flex items-center gap-2">
                     <Lock size={16} className="text-orange"/> Account Details
@@ -234,7 +248,6 @@ const Register = () => {
                       </div>
                   </div>
 
-                  {/* Password Fields */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="relative">
                         <Lock className="absolute left-3 top-3.5 text-steel" size={18} />
@@ -252,7 +265,7 @@ const Register = () => {
                     </div>
                   </div>
 
-                  {/* Password Requirements Checklist */}
+		  {/* Password Requirements Checklist */}
                   <div className="bg-platinum/20 p-3 rounded text-xs text-steel space-y-1">
                       <div className="grid grid-cols-2 gap-x-4 gap-y-1">
                         <span className={`flex items-center gap-1 ${passwordCriteria.length ? 'text-green-600 font-bold' : ''}`}> {passwordCriteria.length ? <CheckCircle size={10} /> : <XCircle size={10} />} 8+ Characters </span>
@@ -264,7 +277,7 @@ const Register = () => {
                   </div>
                 </div>
 
-                {/* --- SECTION 2: COMPANY DETAILS (UNIFIED) --- */}
+                {/* --- ORGANIZATION DETAILS --- */}
                 <div className="animate-fadeIn space-y-6 pt-4">
                     <div>
                       <h3 className="text-navy font-bold text-sm uppercase border-b border-platinum pb-2 mb-4 flex items-center gap-2">
@@ -272,19 +285,13 @@ const Register = () => {
                       </h3>
                       <div className="space-y-4">
                         
-                        {/* NEW SELECTION BOX FOR ROLE */}
+                        {/* ROLE SELECTION */}
                         <div className="relative">
-                           <select 
-                              name="tradeRole" 
-                              value={formData.tradeRole} 
-                              onChange={handleChange} 
-                              className="w-full p-3 bg-platinum/30 border border-platinum rounded text-sm text-steel focus:border-navy outline-none cursor-pointer" 
-                              required
-                           >
-                              <option value="">Select Company Role (Buyer/Seller)</option>
-                              <option value="buyer">I am a Buyer of Scrap</option>
-                              <option value="seller">I am a Seller of Scrap</option>
-                              <option value="buyer_seller">I am Both (Buyer & Seller)</option>
+                           <select name="tradeRole" value={formData.tradeRole} onChange={handleChange} className="w-full p-3 bg-platinum/30 border border-platinum rounded text-sm text-steel focus:border-navy outline-none cursor-pointer" required>
+                             <option value="">Select Company Role (Buyer/Seller)</option>
+                             <option value="buyer">I am a Buyer of Scrap</option>
+                             <option value="seller">I am a Seller of Scrap</option>
+                             <option value="buyer_seller">I am Both (Buyer & Seller)</option>
                            </select>
                         </div>
 
@@ -292,6 +299,7 @@ const Register = () => {
                           <Building2 className="absolute left-3 top-3.5 text-steel" size={18} />
                           <input name="companyName" value={formData.companyName} onChange={handleChange} type="text" placeholder="Registered Company Name" className="w-full pl-10 p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none" required />
                         </div>
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <select name="businessType" value={formData.businessType} onChange={handleChange} className="w-full p-3 bg-platinum/30 border border-platinum rounded text-sm text-steel focus:border-navy outline-none cursor-pointer" required>
                             <option value="">Select Business Type</option>
@@ -301,25 +309,62 @@ const Register = () => {
                             <option value="Private Limited">Private Limited</option>
                             <option value="Public Limited">Public Limited</option>
                           </select>
-                          <select name="industry" value={formData.industry} onChange={handleChange} className="w-full p-3 bg-platinum/30 border border-platinum rounded text-sm text-steel focus:border-navy outline-none cursor-pointer">
-                            <option value="">Select Industry</option>
-                            <option value="Ferrous Metal">Ferrous Metal</option>
-                            <option value="Non-Ferrous">Non-Ferrous</option>
-                            <option value="E-Waste">E-Waste</option>
-                            <option value="Plastic">Plastic</option>
-                            <option value="Others">Others</option>
-                          </select>
+
+                          {/* --- CUSTOM MULTI-SELECT INDUSTRY --- */}
+                          <div className="relative" ref={dropdownRef}>
+                            <div 
+                              className="w-full p-3 bg-platinum/30 border border-platinum rounded text-sm text-steel focus:border-navy outline-none cursor-pointer flex justify-between items-center"
+                              onClick={() => setShowIndustryDropdown(!showIndustryDropdown)}
+                            >
+                              <span className={selectedIndustries.length === 0 ? "text-gray-400" : "text-navy"}>
+                                {selectedIndustries.length === 0 
+                                  ? "Select Industries (Multiple)" 
+                                  : `${selectedIndustries.length} Selected`}
+                              </span>
+                              <ChevronDown size={16} />
+                            </div>
+
+                            {/* Dropdown Options */}
+                            {showIndustryDropdown && (
+                              <div className="absolute z-50 w-full mt-1 bg-white border border-platinum shadow-xl rounded max-h-48 overflow-y-auto">
+                                {industryOptions.map((option) => (
+                                  <div 
+                                    key={option} 
+                                    onClick={() => toggleIndustry(option)}
+                                    className="p-2 hover:bg-platinum/50 cursor-pointer flex items-center gap-2 text-sm text-navy"
+                                  >
+                                    {selectedIndustries.includes(option) 
+                                      ? <CheckSquare size={16} className="text-orange" /> 
+                                      : <Square size={16} className="text-gray-300" />}
+                                    {option}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* SHOW SELECTED TAGS */}
+                          {selectedIndustries.length > 0 && (
+                             <div className="md:col-span-2 flex flex-wrap gap-2">
+                               {selectedIndustries.map(ind => (
+                                 <span key={ind} className="bg-navy/10 text-navy text-xs px-2 py-1 rounded font-semibold flex items-center gap-1">
+                                   {ind}
+                                   <button type="button" onClick={() => toggleIndustry(ind)} className="hover:text-red-500"><XCircle size={10} /></button>
+                                 </span>
+                               ))}
+                             </div>
+                          )}
                           
                           {/* CONDITIONAL INPUT FOR 'OTHERS' */}
-                          {formData.industry === 'Others' && (
+                          {selectedIndustries.includes('Others') && (
                             <div className="md:col-span-2 animate-fadeIn">
                                 <input 
                                   name="otherIndustry" 
                                   value={formData.otherIndustry} 
                                   onChange={handleChange} 
                                   type="text" 
-                                  placeholder="Please specify your industry" 
-                                  className="w-full p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none" 
+                                  placeholder="Please specify your other industry" 
+                                  className="w-full p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none border-orange" 
                                 />
                             </div>
                           )}
@@ -363,7 +408,6 @@ const Register = () => {
                   >
                     {loading ? 'Processing...' : `Register`}
                   </button>
-                  
                   {!isFormValid && (
                       <p className="text-center text-xs text-red-500 font-bold mt-2 animate-pulse">
                         * Please complete all required fields
@@ -375,7 +419,6 @@ const Register = () => {
             </div>
           </div>
       </div>
-
       <Footer />
     </div>
   );
