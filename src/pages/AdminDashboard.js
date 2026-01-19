@@ -23,6 +23,10 @@ const AdminDashboard = () => {
   const [filteredMaterials, setFilteredMaterials] = useState([]); 
   const [selectedMaterialId, setSelectedMaterialId] = useState(''); 
 
+  // --- NEW: FORM STATE ---
+  const [filteredForms, setFilteredForms] = useState([]); 
+  const [selectedFormId, setSelectedFormId] = useState(''); 
+
   const [filteredGrades, setFilteredGrades] = useState([]); 
   const [selectedGradeId, setSelectedGradeId] = useState(''); 
 
@@ -61,32 +65,61 @@ const AdminDashboard = () => {
   }, []);
 
   // --- 4. DROPDOWN HANDLERS ---
+  
+  // Level 1: Scrap Type -> Filter Categories
   const handleScrapTypeChange = (e) => {
     const type = e.target.value;
     setSelectedScrapType(type);
-    setSelectedCategoryId(''); setFilteredMaterials([]);
-    setSelectedMaterialId(''); setFilteredGrades([]);
-    setSelectedGradeId('');
+    
+    // Reset lower levels
+    setSelectedCategoryId(''); setFilteredCategories([]);
+    setSelectedMaterialId(''); setFilteredMaterials([]);
+    setSelectedFormId('');     setFilteredForms([]);
+    setSelectedGradeId('');    setFilteredGrades([]);
+
     const categories = hierarchy.filter(item => item.scrap_type === type);
     setFilteredCategories(categories);
   };
 
+  // Level 2: Category -> Filter Materials
   const handleCategoryChange = (e) => {
     const catId = parseInt(e.target.value);
     setSelectedCategoryId(catId);
-    setSelectedMaterialId(''); setFilteredGrades([]);
-    setSelectedGradeId('');
+    
+    // Reset lower levels
+    setSelectedMaterialId(''); setFilteredMaterials([]);
+    setSelectedFormId('');     setFilteredForms([]);
+    setSelectedGradeId('');    setFilteredGrades([]);
+
     const catObj = hierarchy.find(item => item.id === catId);
     setFilteredMaterials(catObj ? catObj.materials : []);
   };
 
+  // Level 3: Material -> Filter Forms (UPDATED)
   const handleMaterialChange = (e) => {
     const matId = parseInt(e.target.value);
     setSelectedMaterialId(matId);
-    setSelectedGradeId('');
+    
+    // Reset lower levels
+    setSelectedFormId('');     setFilteredForms([]);
+    setSelectedGradeId('');    setFilteredGrades([]);
+
     const matObj = filteredMaterials.find(item => item.id === matId);
-    setFilteredGrades(matObj ? matObj.grades : []);
+    // Now we set FORMS, not Grades directly
+    setFilteredForms(matObj ? matObj.forms : []);
   };
+
+  // Level 4: Form -> Filter Grades (NEW)
+  const handleFormChange = (e) => {
+    const fId = parseInt(e.target.value);
+    setSelectedFormId(fId);
+
+    // Reset Grade
+    setSelectedGradeId('');    setFilteredGrades([]);
+
+    const formObj = filteredForms.find(item => item.id === fId);
+    setFilteredGrades(formObj ? formObj.grades : []);
+  }
 
   // --- 5. UNIT VALIDATION LOGIC ---
   useEffect(() => {
@@ -146,8 +179,10 @@ const AdminDashboard = () => {
       data.append('phone', formData.phone);
       if(formData.alternatePhone) data.append('alternate_phone', formData.alternatePhone);
 
+      // --- IDs ---
       data.append('category_id', selectedCategoryId);
       data.append('material_id', selectedMaterialId);
+      if(selectedFormId) data.append('form_id', selectedFormId); // ADDED
       if(selectedGradeId) data.append('grade_id', selectedGradeId);
 
       if(formData.description) data.append('description', formData.description);
@@ -181,10 +216,14 @@ const AdminDashboard = () => {
         addedBy: 'admin'
       });
       setSelectedFiles(null);
+      
+      // Reset Selects
       setSelectedScrapType('');
       setSelectedCategoryId('');
       setSelectedMaterialId('');
+      setSelectedFormId('');
       setSelectedGradeId('');
+      
       document.getElementById('fileInput').value = ""; 
 
     } catch (err) {
@@ -217,7 +256,7 @@ const AdminDashboard = () => {
             </div>
             
             <div className="flex gap-3">
-                {/* --- 1. MARKET PRICE BUTTON (UPDATED COLOR) --- */}
+                {/* --- 1. MARKET PRICE BUTTON --- */}
                 <Link 
                   to="/admin/market-prices" 
                   className="bg-white text-blue-900 hover:bg-orange hover:text-white font-bold py-3 px-6 rounded shadow-lg transition-all uppercase text-xs tracking-widest flex items-center gap-2"
@@ -344,10 +383,21 @@ const AdminDashboard = () => {
                             </select>
                         </div>
 
-                        {/* Level 4: Grade */}
+                        {/* Level 4: Form (NEW) */}
                         <div>
-                            <label className="block text-xs font-bold uppercase text-navy mb-1">4. Grade (Optional)</label>
-                            <select value={selectedGradeId} onChange={(e) => setSelectedGradeId(e.target.value)} disabled={!selectedMaterialId || filteredGrades.length === 0} className="w-full p-3 bg-white border border-platinum rounded focus:border-orange outline-none disabled:bg-gray-100">
+                            <label className="block text-xs font-bold uppercase text-navy mb-1">4. Form</label>
+                            <select value={selectedFormId} onChange={handleFormChange} disabled={!selectedMaterialId} className="w-full p-3 bg-white border border-platinum rounded focus:border-orange outline-none disabled:bg-gray-100">
+                                <option value="">-- Select Form --</option>
+                                {filteredForms.map(form => (
+                                    <option key={form.id} value={form.id}>{form.form_name}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Level 5: Grade */}
+                        <div className="md:col-span-2">
+                            <label className="block text-xs font-bold uppercase text-navy mb-1">5. Grade (Optional)</label>
+                            <select value={selectedGradeId} onChange={(e) => setSelectedGradeId(e.target.value)} disabled={!selectedFormId || filteredGrades.length === 0} className="w-full p-3 bg-white border border-platinum rounded focus:border-orange outline-none disabled:bg-gray-100">
                                 <option value="">-- Select Grade --</option>
                                 {filteredGrades.map(grad => (
                                     <option key={grad.id} value={grad.id}>{grad.grade_name}</option>
