@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react'; // Added useRef
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { 
-  User, Building2, Briefcase, FileText, MapPin, Mail, Phone, Lock, Eye, EyeOff, CheckCircle, XCircle, Info, ChevronDown, CheckSquare, Square 
+  User, Building2, Briefcase, FileText, MapPin, Mail, Phone, Lock, Eye, EyeOff, CheckCircle, XCircle, ChevronDown, CheckSquare, Square 
 } from 'lucide-react';
 import Header from '../components/Header/Header';
 import Footer from '../components/Footer/Footer';
@@ -87,16 +87,21 @@ const Register = () => {
     // 3. Required Fields Logic
     const basicFields = formData.firstName && formData.lastName && formData.email && formData.phone;
     
-    // 4. Role Specific Logic
+    // 4. Role Specific Logic (Mandatory Fields)
+    // PAN is EXCLUDED here.
+    // Logic: If 'Others' is selected in industry, 'otherIndustry' text becomes mandatory.
+    const isIndustryValid = selectedIndustries.length > 0 && 
+                            (!selectedIndustries.includes('Others') || formData.otherIndustry.trim() !== '');
+
     const companyFields = formData.companyName && 
                           formData.businessType && 
                           formData.tradeRole && 
-                          formData.gstNumber && 
+                          formData.gstNumber &&  // GST IS MANDATORY
                           formData.address && 
                           formData.city && 
                           formData.state && 
                           formData.pincode &&
-                          selectedIndustries.length > 0; // Check if at least one industry is selected
+                          isIndustryValid;
 
     setIsFormValid(isStrong && match && basicFields && companyFields);
 
@@ -125,10 +130,9 @@ const Register = () => {
     setApiError('');
 
     // 1. Process Industries into Comma Separated String
-    // If 'Others' is selected, we replace the word "Others" with the user's typed input
     let finalIndustryString = selectedIndustries
       .map(item => item === 'Others' ? formData.otherIndustry : item)
-      .filter(item => item && item.trim() !== "") // Remove empty strings
+      .filter(item => item && item.trim() !== "") 
       .join(', ');
 
     // 2. Construct Clean Payload
@@ -138,15 +142,15 @@ const Register = () => {
       first_name: formData.firstName,
       last_name: formData.lastName,
       phone: formData.phone,
-      role: formData.tradeRole, // buyer, seller, or buyer_seller
+      role: formData.tradeRole, 
       
       // Company Details
       company_name: formData.companyName,
       business_type: formData.businessType,
-      industry: finalIndustryString, // Sending the CSV string here
+      industry: finalIndustryString,
       turnover: formData.turnover,
       gst_number: formData.gstNumber,
-      pan_number: formData.panNumber,
+      pan_number: formData.panNumber, // Optional
       address: formData.address,
       city: formData.city,
       state: formData.state,
@@ -265,7 +269,7 @@ const Register = () => {
                     </div>
                   </div>
 
-		  {/* Password Requirements Checklist */}
+                  {/* Password Requirements Checklist */}
                   <div className="bg-platinum/20 p-3 rounded text-xs text-steel space-y-1">
                       <div className="grid grid-cols-2 gap-x-4 gap-y-1">
                         <span className={`flex items-center gap-1 ${passwordCriteria.length ? 'text-green-600 font-bold' : ''}`}> {passwordCriteria.length ? <CheckCircle size={10} /> : <XCircle size={10} />} 8+ Characters </span>
@@ -365,6 +369,7 @@ const Register = () => {
                                   type="text" 
                                   placeholder="Please specify your other industry" 
                                   className="w-full p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none border-orange" 
+                                  required // Made Required if "Others" is selected
                                 />
                             </div>
                           )}
@@ -378,8 +383,19 @@ const Register = () => {
                         <FileText size={16} className="text-orange"/> Statutory & Address
                       </h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                          {/* GST IS MANDATORY */}
                           <input name="gstNumber" value={formData.gstNumber} onChange={handleChange} type="text" placeholder="GST Number (15 Digits)" className="w-full p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none uppercase" required />
-                          <input name="panNumber" value={formData.panNumber} onChange={handleChange} type="text" placeholder="PAN Number" className="w-full p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none uppercase" required />
+                          
+                          {/* PAN IS OPTIONAL */}
+                          <input 
+                            name="panNumber" 
+                            value={formData.panNumber} 
+                            onChange={handleChange} 
+                            type="text" 
+                            placeholder="PAN Number (Optional)" 
+                            className="w-full p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none uppercase" 
+                            // Removed 'required' attribute
+                          />
                       </div>
                       <div className="space-y-4">
                           <div className="relative">
