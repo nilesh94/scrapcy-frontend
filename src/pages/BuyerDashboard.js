@@ -49,25 +49,33 @@ const BuyerDashboard = () => {
       const response = await axios.get('https://scrapcy-backend-new-1.onrender.com/scrap/all');
       
       // Normalize API Data
-      const normalizedData = response.data.map(item => ({
-        id: item.id,
-        industry: item.scrap_type || "General",
-        category: item.category,
-        material: item.material_name || "Unknown Material",
-        form: item.form || "Standard",
-        grade: item.grade || "Standard",
-        qty: item.quantity || 0,
-        unit: item.unit || "MT", 
-        price: item.price || 0,
-        currency: "INR",
-        location: item.location || "India",
-        sellerName: item.seller_name || "Verified Seller",
-        // Fix Image URL
-        image: item.image_path 
-          ? `https://scrapcy-backend-new-1.onrender.com/${item.image_path}` 
-          : "https://images.unsplash.com/photo-1550989460-0adf9ea622e2?q=80&w=300&auto=format&fit=crop",
-        postedAt: new Date(item.created_at).toLocaleDateString()
-      }));
+      const normalizedData = response.data.map(item => {
+        // Extract State from Location (assuming "City, State" format)
+        let cleanLocation = item.location || "India";
+        if (cleanLocation.includes(',')) {
+            const parts = cleanLocation.split(',');
+            cleanLocation = parts[parts.length - 1].trim(); // Get the last part (State)
+        }
+
+        return {
+            id: item.id,
+            industry: item.scrap_type || "General",
+            category: item.category,
+            material: item.material_name || "Unknown Material",
+            form: item.form || "Standard",
+            grade: item.grade || "Standard",
+            qty: item.quantity || 0,
+            unit: item.unit || "MT", 
+            price: item.price || 0,
+            currency: "INR",
+            location: cleanLocation, // Uses only State now
+            sellerName: item.seller_name || "Verified Seller",
+            image: item.image_path 
+            ? `https://scrapcy-backend-new-1.onrender.com/${item.image_path}` 
+            : "https://images.unsplash.com/photo-1550989460-0adf9ea622e2?q=80&w=300&auto=format&fit=crop",
+            postedAt: new Date(item.created_at).toLocaleDateString()
+        };
+      });
       
       setListings(normalizedData);
       setLoading(false);
@@ -112,7 +120,6 @@ const BuyerDashboard = () => {
   // --- HANDLERS ---
   const handleViewDetails = (id) => {
       console.log("View Details for:", id);
-      // Navigate to detail page (Future Implementation)
       // navigate(`/marketplace/${id}`);
   };
 
@@ -256,27 +263,34 @@ const BuyerDashboard = () => {
                 </div>
               ) : filteredListings.length === 0 ? (
                 <div className="bg-white p-12 rounded-lg shadow text-center border border-platinum">
-                   <Package size={48} className="text-gray-300 mx-auto mb-4"/>
-                   <h3 className="text-lg font-bold text-navy">No Listings Found</h3>
-                   <p className="text-sm text-gray-500">Try adjusting your filters or search term.</p>
+                    <Package size={48} className="text-gray-300 mx-auto mb-4"/>
+                    <h3 className="text-lg font-bold text-navy">No Listings Found</h3>
+                    <p className="text-sm text-gray-500">Try adjusting your filters or search term.</p>
                 </div>
               ) : viewMode === 'card' ? (
-                // --- CARD VIEW (UPDATED) ---
+                // --- CARD VIEW (UPDATED LAYOUT) ---
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {filteredListings.map(item => (
                     <div key={item.id} className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-platinum group relative flex flex-col">
-                      <div className="h-48 bg-gray-200 relative overflow-hidden">
+                      
+                      {/* 1. IMAGE AREA (Full Width) */}
+                      <div className="h-56 bg-gray-200 relative overflow-hidden">
                         <img src={item.image} alt={item.material} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                         <div className="absolute top-3 right-3 bg-white/90 backdrop-blur px-2 py-1 rounded text-xs font-bold text-navy shadow-sm">
                           {item.postedAt}
                         </div>
-                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
-                           <h4 className="text-white font-black text-lg shadow-black drop-shadow-md">{item.material}</h4>
-                           <span className="text-orange font-bold text-xs uppercase tracking-wider">{item.form} • {item.grade}</span>
-                        </div>
                       </div>
                       
+                      {/* 2. CONTENT AREA (Below Image) */}
                       <div className="p-5 flex-grow">
+                        
+                        {/* Title & Specs */}
+                        <div className="mb-4">
+                            <h4 className="text-lg font-black text-navy uppercase leading-tight">{item.material}</h4>
+                            <span className="text-xs font-bold text-orange uppercase tracking-wide block mt-1">{item.form} • {item.grade}</span>
+                        </div>
+
+                        {/* Price & Qty Row */}
                         <div className="flex justify-between items-center mb-4 pb-4 border-b border-platinum">
                              <div>
                                 <p className="text-[10px] text-steel font-bold uppercase">Price</p>
@@ -288,6 +302,7 @@ const BuyerDashboard = () => {
                              </div>
                         </div>
 
+                        {/* Metadata */}
                         <div className="space-y-2 text-sm text-gray-600 mb-4">
                              <div className="flex items-center gap-2">
                                   <MapPin size={16} className="text-orange" />
@@ -299,7 +314,7 @@ const BuyerDashboard = () => {
                              </div>
                         </div>
 
-                        {/* --- NEW BUTTONS (View & RFQ) --- */}
+                        {/* Buttons */}
                         <div className="grid grid-cols-2 gap-3 mt-auto">
                              <button 
                                 onClick={() => handleViewDetails(item.id)}
@@ -321,9 +336,9 @@ const BuyerDashboard = () => {
               ) : (
                 // --- LIST VIEW (UPDATED) ---
                 <div className="bg-white rounded-lg shadow-lg border border-platinum overflow-hidden">
-                   <div className="overflow-x-auto">
-                     <table className="w-full text-left border-collapse">
-                        <thead className="bg-navy text-white text-xs uppercase font-bold tracking-wider">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse">
+                         <thead className="bg-navy text-white text-xs uppercase font-bold tracking-wider">
                             <tr>
                                 <th className="p-4">Material</th>
                                 <th className="p-4">Details</th>
@@ -331,8 +346,8 @@ const BuyerDashboard = () => {
                                 <th className="p-4">Location</th>
                                 <th className="p-4 text-right">Actions</th>
                             </tr>
-                        </thead>
-                        <tbody className="divide-y divide-platinum text-sm text-navy">
+                         </thead>
+                         <tbody className="divide-y divide-platinum text-sm text-navy">
                             {filteredListings.map(item => (
                                 <tr key={item.id} className="hover:bg-platinum/20 transition-colors">
                                     <td className="p-4 w-16">
@@ -364,9 +379,9 @@ const BuyerDashboard = () => {
                                     </td>
                                 </tr>
                             ))}
-                        </tbody>
-                     </table>
-                   </div>
+                         </tbody>
+                      </table>
+                    </div>
                 </div>
               )}
             </div>
