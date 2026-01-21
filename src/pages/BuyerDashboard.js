@@ -48,31 +48,47 @@ const BuyerDashboard = () => {
     try {
       const response = await axios.get('https://scrapcy-backend-new-1.onrender.com/scrap/all');
       
-      // Normalize API Data
+      // Normalize API Data based on your JSON structure
       const normalizedData = response.data.map(item => {
-        // Extract State from Location (assuming "City, State" format)
-        let cleanLocation = item.location || "India";
+        // 1. Resolve Location (State/City from address)
+        let cleanLocation = item.address || "India";
         if (cleanLocation.includes(',')) {
             const parts = cleanLocation.split(',');
-            cleanLocation = parts[parts.length - 1].trim(); // Get the last part (State)
+            // Attempt to get the last meaningful part (State/City)
+            cleanLocation = parts[parts.length - 1].trim(); 
+        }
+
+        // 2. Resolve Image URL
+        let imageUrl = "https://images.unsplash.com/photo-1550989460-0adf9ea622e2?q=80&w=300&auto=format&fit=crop"; // Default Fallback
+        
+        if (item.images && item.images.length > 0) {
+            // Case A: Image exists in the 'images' array (New Logic)
+            imageUrl = item.images[0].image_url;
+        } else if (item.image_path) {
+            // Case B: Legacy/Old structure
+            imageUrl = `https://scrapcy-backend-new-1.onrender.com/${item.image_path}`;
         }
 
         return {
             id: item.id,
-            industry: item.scrap_type || "General",
-            category: item.category,
-            material: item.material_name || "Unknown Material",
-            form: item.form || "Standard",
-            grade: item.grade || "Standard",
+            // Use optional chaining (?.) to safely access nested refs
+            industry: item.category_ref?.material_category || item.scrap_type || "General",
+            category: item.category_ref?.scrap_type || "Scrap",
+            
+            // Critical Fixes for "Unknown" values:
+            material: item.material_ref?.material_name || "Material Not Specified",
+            form: item.form_ref?.form_name || item.form || "Standard",
+            grade: item.grade_ref?.grade_name || item.grade || "Standard",
+            
             qty: item.quantity || 0,
-            unit: item.unit || "MT", 
-            price: item.price || 0,
+            unit: item.unit || "Tons", 
+            price: item.price_per_unit || 0, // Changed from item.price to item.price_per_unit based on JSON
             currency: "INR",
-            location: cleanLocation, // Uses only State now
-            sellerName: item.seller_name || "Verified Seller",
-            image: item.image_path 
-            ? `https://scrapcy-backend-new-1.onrender.com/${item.image_path}` 
-            : "https://images.unsplash.com/photo-1550989460-0adf9ea622e2?q=80&w=300&auto=format&fit=crop",
+            
+            location: cleanLocation,
+            sellerName: item.company_name || item.seller_name || "Verified Seller",
+            
+            image: imageUrl,
             postedAt: new Date(item.created_at).toLocaleDateString()
         };
       });
@@ -93,11 +109,14 @@ const BuyerDashboard = () => {
 
   const filteredListings = listings.filter(item => {
     const term = searchTerm.toLowerCase();
-    const matchesSearch = 
-      item.material.toLowerCase().includes(term) ||
-      item.form.toLowerCase().includes(term) ||
-      item.location.toLowerCase().includes(term) ||
-      item.industry.toLowerCase().includes(term);
+    
+    // Safety checks for toLowerCase() in case data is null
+    const matCheck = (item.material || "").toLowerCase().includes(term);
+    const formCheck = (item.form || "").toLowerCase().includes(term);
+    const locCheck = (item.location || "").toLowerCase().includes(term);
+    const indCheck = (item.industry || "").toLowerCase().includes(term);
+
+    const matchesSearch = matCheck || formCheck || locCheck || indCheck;
 
     const matchesIndustry = filters.industry ? item.industry === filters.industry : true;
     const matchesMaterial = filters.material ? item.material === filters.material : true;
@@ -113,7 +132,7 @@ const BuyerDashboard = () => {
   };
 
   const maskString = (str) => {
-    if (!str || str.length <= 4) return "Tra****";
+    if (!str || str.length <= 4) return "Seller";
     return str.substring(0, 2) + "****" + str.substring(str.length - 2);
   };
 
