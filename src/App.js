@@ -8,6 +8,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import CompanyDashboard from './pages/CompanyDashboard';
 import BidderDashboard from './pages/BidderDashboard';
+import BuyerDashboard from './pages/BuyerDashboard'; // <--- ADDED IMPORT
 import About from './pages/About';
 import PriceTracker from './components/PriceTracker/PriceTracker';
 import AdminListingDetail from './pages/AdminListingDetail';
@@ -34,6 +35,7 @@ function App() {
         {/* Helper Routes */}
         <Route path="/company-dashboard" element={<CompanyDashboard />} />
         <Route path="/bidder-dashboard" element={<BidderDashboard />} />
+        <Route path="/buyer-dashboard" element={<BuyerDashboard />} /> {/* <--- ADDED ROUTE */}
 
         {/* ADMIN ROUTES */}
         <Route path="/admin" element={<AdminDashboard />} />
