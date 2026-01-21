@@ -3,10 +3,77 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, Upload, Save, FileText, MapPin, 
-  Search, Filter, Grid, List, ShieldCheck, ExternalLink, Menu, X, ChevronDown, Package, MessageCircle 
+  Search, Filter, Grid, List, ShieldCheck, ExternalLink, Menu, X, ChevronDown, Package, MessageCircle, ChevronLeft, ChevronRight 
 } from 'lucide-react';
 import Header from '../components/Header/Header';
 import Footer from '../components/Footer/Footer';
+
+// --- NEW COMPONENT: IMAGE CAROUSEL ---
+const ImageCarousel = ({ images, title }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  // If no images, show fallback
+  if (!images || images.length === 0) {
+    return (
+      <div className="h-56 bg-gray-200 flex items-center justify-center">
+        <span className="text-gray-400 text-xs font-bold uppercase">No Image</span>
+      </div>
+    );
+  }
+
+  const prevSlide = (e) => {
+    e.stopPropagation(); // Prevent triggering card click
+    setCurrentIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+  };
+
+  const nextSlide = (e) => {
+    e.stopPropagation();
+    setCurrentIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+  };
+
+  return (
+    <div className="h-56 bg-gray-200 relative group overflow-hidden">
+      {/* Main Image */}
+      <img 
+        src={images[currentIndex]} 
+        alt={`${title} - ${currentIndex + 1}`} 
+        className="w-full h-full object-cover transition-transform duration-500" 
+      />
+      
+      {/* Overlay Gradient */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent pointer-events-none" />
+
+      {/* Navigation Arrows (Only if > 1 image) */}
+      {images.length > 1 && (
+        <>
+          <button 
+            onClick={prevSlide}
+            className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <button 
+            onClick={nextSlide}
+            className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <ChevronRight size={20} />
+          </button>
+          
+          {/* Dots Indicator */}
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+            {images.map((_, idx) => (
+              <div 
+                key={idx} 
+                className={`h-1.5 w-1.5 rounded-full shadow-sm ${idx === currentIndex ? 'bg-orange' : 'bg-white/60'}`}
+              />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
 
 const BuyerDashboard = () => {
   const navigate = useNavigate();
@@ -48,47 +115,45 @@ const BuyerDashboard = () => {
     try {
       const response = await axios.get('https://scrapcy-backend-new-1.onrender.com/scrap/all');
       
-      // Normalize API Data based on your JSON structure
       const normalizedData = response.data.map(item => {
-        // 1. Resolve Location (State/City from address)
+        // 1. Resolve Location
         let cleanLocation = item.address || "India";
         if (cleanLocation.includes(',')) {
             const parts = cleanLocation.split(',');
-            // Attempt to get the last meaningful part (State/City)
             cleanLocation = parts[parts.length - 1].trim(); 
         }
 
-        // 2. Resolve Image URL
-        let imageUrl = "https://images.unsplash.com/photo-1550989460-0adf9ea622e2?q=80&w=300&auto=format&fit=crop"; // Default Fallback
+        // 2. Resolve ALL Images
+        let imageList = [];
         
-        if (item.images && item.images.length > 0) {
-            // Case A: Image exists in the 'images' array (New Logic)
-            imageUrl = item.images[0].image_url;
-        } else if (item.image_path) {
-            // Case B: Legacy/Old structure
-            imageUrl = `https://scrapcy-backend-new-1.onrender.com/${item.image_path}`;
+        // Priority A: Check the 'images' array from JSON response
+        if (item.images && Array.isArray(item.images) && item.images.length > 0) {
+            imageList = item.images.map(imgObj => imgObj.image_url);
+        } 
+        // Priority B: Check legacy 'image_path'
+        else if (item.image_path) {
+            imageList.push(`https://scrapcy-backend-new-1.onrender.com/${item.image_path}`);
+        }
+        
+        // Priority C: Fallback if absolutely no images found
+        if (imageList.length === 0) {
+            imageList.push("https://images.unsplash.com/photo-1550989460-0adf9ea622e2?q=80&w=300&auto=format&fit=crop");
         }
 
         return {
             id: item.id,
-            // Use optional chaining (?.) to safely access nested refs
             industry: item.category_ref?.material_category || item.scrap_type || "General",
             category: item.category_ref?.scrap_type || "Scrap",
-            
-            // Critical Fixes for "Unknown" values:
             material: item.material_ref?.material_name || "Material Not Specified",
             form: item.form_ref?.form_name || item.form || "Standard",
             grade: item.grade_ref?.grade_name || item.grade || "Standard",
-            
             qty: item.quantity || 0,
             unit: item.unit || "Tons", 
-            price: item.price_per_unit || 0, // Changed from item.price to item.price_per_unit based on JSON
+            price: item.price_per_unit || 0,
             currency: "INR",
-            
             location: cleanLocation,
             sellerName: item.company_name || item.seller_name || "Verified Seller",
-            
-            image: imageUrl,
+            images: imageList, // Storing Array of URLs
             postedAt: new Date(item.created_at).toLocaleDateString()
         };
       });
@@ -109,14 +174,11 @@ const BuyerDashboard = () => {
 
   const filteredListings = listings.filter(item => {
     const term = searchTerm.toLowerCase();
-    
-    // Safety checks for toLowerCase() in case data is null
-    const matCheck = (item.material || "").toLowerCase().includes(term);
-    const formCheck = (item.form || "").toLowerCase().includes(term);
-    const locCheck = (item.location || "").toLowerCase().includes(term);
-    const indCheck = (item.industry || "").toLowerCase().includes(term);
-
-    const matchesSearch = matCheck || formCheck || locCheck || indCheck;
+    const matchesSearch = 
+      (item.material || "").toLowerCase().includes(term) ||
+      (item.form || "").toLowerCase().includes(term) ||
+      (item.location || "").toLowerCase().includes(term) ||
+      (item.industry || "").toLowerCase().includes(term);
 
     const matchesIndustry = filters.industry ? item.industry === filters.industry : true;
     const matchesMaterial = filters.material ? item.material === filters.material : true;
@@ -139,7 +201,6 @@ const BuyerDashboard = () => {
   // --- HANDLERS ---
   const handleViewDetails = (id) => {
       console.log("View Details for:", id);
-      // navigate(`/marketplace/${id}`);
   };
 
   const handleRFQ = (id) => {
@@ -155,7 +216,7 @@ const BuyerDashboard = () => {
 
       <div className="flex-grow flex flex-col md:flex-row max-w-7xl w-full mx-auto p-4 gap-6 relative">
         
-        {/* --- 1. NAVIGATION SIDEBAR --- */}
+        {/* --- NAVIGATION SIDEBAR --- */}
         <aside className={`
             md:w-64 flex-shrink-0 bg-white rounded-lg shadow-lg border-t-4 border-orange overflow-hidden h-fit
             ${showMobileNav ? 'fixed inset-0 z-50 m-4' : 'hidden md:block'}
@@ -185,7 +246,7 @@ const BuyerDashboard = () => {
            </nav>
         </aside>
 
-        {/* --- 2. MAIN CONTENT AREA --- */}
+        {/* --- MAIN CONTENT AREA --- */}
         <main className="flex-grow">
           
           <div className="md:hidden mb-4">
@@ -287,20 +348,20 @@ const BuyerDashboard = () => {
                     <p className="text-sm text-gray-500">Try adjusting your filters or search term.</p>
                 </div>
               ) : viewMode === 'card' ? (
-                // --- CARD VIEW (UPDATED LAYOUT) ---
+                // --- CARD VIEW WITH CAROUSEL ---
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {filteredListings.map(item => (
                     <div key={item.id} className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-platinum group relative flex flex-col">
                       
-                      {/* 1. IMAGE AREA (Full Width) */}
-                      <div className="h-56 bg-gray-200 relative overflow-hidden">
-                        <img src={item.image} alt={item.material} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                        <div className="absolute top-3 right-3 bg-white/90 backdrop-blur px-2 py-1 rounded text-xs font-bold text-navy shadow-sm">
-                          {item.postedAt}
-                        </div>
+                      {/* 1. IMAGE CAROUSEL COMPONENT */}
+                      <ImageCarousel images={item.images} title={item.material} />
+
+                      {/* Absolute Badge for Posted Date */}
+                      <div className="absolute top-3 right-3 bg-white/90 backdrop-blur px-2 py-1 rounded text-xs font-bold text-navy shadow-sm pointer-events-none">
+                        {item.postedAt}
                       </div>
-                      
-                      {/* 2. CONTENT AREA (Below Image) */}
+
+                      {/* 2. CONTENT AREA */}
                       <div className="p-5 flex-grow">
                         
                         {/* Title & Specs */}
@@ -353,7 +414,7 @@ const BuyerDashboard = () => {
                   ))}
                 </div>
               ) : (
-                // --- LIST VIEW (UPDATED) ---
+                // --- LIST VIEW ---
                 <div className="bg-white rounded-lg shadow-lg border border-platinum overflow-hidden">
                     <div className="overflow-x-auto">
                       <table className="w-full text-left border-collapse">
@@ -371,7 +432,7 @@ const BuyerDashboard = () => {
                                 <tr key={item.id} className="hover:bg-platinum/20 transition-colors">
                                     <td className="p-4 w-16">
                                         <div className="h-12 w-12 bg-gray-200 rounded overflow-hidden border border-platinum">
-                                            <img src={item.image} alt="" className="h-full w-full object-cover"/>
+                                            <img src={item.images[0]} alt="" className="h-full w-full object-cover"/>
                                         </div>
                                     </td>
                                     <td className="p-4">
