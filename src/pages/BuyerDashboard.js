@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { 
-  LayoutDashboard, Upload, Save, CheckCircle, XCircle, FileText, Users, MapPin, TrendingUp,
-  Search, Filter, Grid, List, ShieldCheck, ExternalLink, Menu, X, ChevronDown, Package 
+  LayoutDashboard, Upload, Save, FileText, MapPin, 
+  Search, Filter, Grid, List, ShieldCheck, ExternalLink, Menu, X, ChevronDown, Package, MessageCircle 
 } from 'lucide-react';
 import Header from '../components/Header/Header';
 import Footer from '../components/Footer/Footer';
@@ -30,7 +30,7 @@ const BuyerDashboard = () => {
     material: '',
     form: '',
     grade: '',
-    location: '' // Added Location Filter
+    location: ''
   });
 
   // --- 1. AUTH & DATA FETCHING ---
@@ -47,25 +47,26 @@ const BuyerDashboard = () => {
   const fetchListings = async () => {
     try {
       const response = await axios.get('https://scrapcy-backend-new-1.onrender.com/scrap/all');
-      // Normalize API Data (snake_case) to UI Format (camelCase)
+      
+      // Normalize API Data
       const normalizedData = response.data.map(item => ({
         id: item.id,
-        industry: item.scrap_type || "Unknown",
+        industry: item.scrap_type || "General",
         category: item.category,
-        material: item.material_name || "N/A",
+        material: item.material_name || "Unknown Material",
         form: item.form || "Standard",
         grade: item.grade || "Standard",
         qty: item.quantity || 0,
-        unit: item.unit || "MT", // Fallback if API doesn't send unit
+        unit: item.unit || "MT", 
         price: item.price || 0,
         currency: "INR",
         location: item.location || "India",
-        sellerName: item.seller_name || "Unknown Trader",
-        // Fallback Image
+        sellerName: item.seller_name || "Verified Seller",
+        // Fix Image URL
         image: item.image_path 
           ? `https://scrapcy-backend-new-1.onrender.com/${item.image_path}` 
           : "https://images.unsplash.com/photo-1550989460-0adf9ea622e2?q=80&w=300&auto=format&fit=crop",
-        postedAt: new Date(item.created_at).toLocaleDateString() // Format Date
+        postedAt: new Date(item.created_at).toLocaleDateString()
       }));
       
       setListings(normalizedData);
@@ -78,13 +79,10 @@ const BuyerDashboard = () => {
   };
 
   // --- HELPERS ---
-  
-  // Get unique values for filters dynamically from the fetched data
   const getUniqueOptions = (key) => {
     return [...new Set(listings.map(item => item[key]).filter(Boolean))].sort();
   };
 
-  // Filter Logic
   const filteredListings = listings.filter(item => {
     const term = searchTerm.toLowerCase();
     const matchesSearch = 
@@ -106,10 +104,21 @@ const BuyerDashboard = () => {
     setFilters(prev => ({ ...prev, [key]: value }));
   };
 
-  // Masking Function (Shows first 2 and last 2 chars)
   const maskString = (str) => {
     if (!str || str.length <= 4) return "Tra****";
     return str.substring(0, 2) + "****" + str.substring(str.length - 2);
+  };
+
+  // --- HANDLERS ---
+  const handleViewDetails = (id) => {
+      console.log("View Details for:", id);
+      // Navigate to detail page (Future Implementation)
+      // navigate(`/marketplace/${id}`);
+  };
+
+  const handleRFQ = (id) => {
+      console.log("RFQ Request for:", id);
+      alert("RFQ Sent to Seller! They will contact you shortly.");
   };
 
   if (!isAuthenticated) return null;
@@ -225,7 +234,6 @@ const BuyerDashboard = () => {
                         {getUniqueOptions('grade').map(o => <option key={o} value={o}>{o}</option>)}
                       </select>
                     </div>
-                    {/* NEW: Location Filter */}
                     <div>
                       <label className="text-[10px] font-black text-steel uppercase mb-1 block">Location</label>
                       <select value={filters.location} onChange={(e) => handleFilterChange('location', e.target.value)} className="w-full p-2 bg-platinum/20 border border-platinum rounded text-xs text-navy font-bold focus:border-orange outline-none">
@@ -253,47 +261,57 @@ const BuyerDashboard = () => {
                    <p className="text-sm text-gray-500">Try adjusting your filters or search term.</p>
                 </div>
               ) : viewMode === 'card' ? (
-                // CARD VIEW
+                // --- CARD VIEW (UPDATED) ---
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {filteredListings.map(item => (
-                    <div key={item.id} className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-platinum group relative">
-                      <div className="h-40 bg-gray-200 relative overflow-hidden">
+                    <div key={item.id} className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-platinum group relative flex flex-col">
+                      <div className="h-48 bg-gray-200 relative overflow-hidden">
                         <img src={item.image} alt={item.material} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                         <div className="absolute top-3 right-3 bg-white/90 backdrop-blur px-2 py-1 rounded text-xs font-bold text-navy shadow-sm">
                           {item.postedAt}
                         </div>
+                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
+                           <h4 className="text-white font-black text-lg shadow-black drop-shadow-md">{item.material}</h4>
+                           <span className="text-orange font-bold text-xs uppercase tracking-wider">{item.form} • {item.grade}</span>
+                        </div>
                       </div>
                       
-                      <div className="p-5">
-                        <div className="flex justify-between items-start mb-2">
-                            <div>
-                                <h4 className="text-lg font-black text-navy uppercase leading-tight line-clamp-1">{item.material}</h4>
-                                <span className="text-xs font-bold text-orange uppercase tracking-wide">{item.form} - {item.grade}</span>
-                            </div>
-                            <div className="text-right">
-                                 <span className="block text-xl font-black text-navy">₹{item.price.toLocaleString()}</span>
-                                 <span className="text-[10px] text-steel font-bold uppercase">Per {item.unit}</span>
-                            </div>
-                        </div>
-                        <div className="mt-4 space-y-2 text-sm text-gray-600">
-                             <div className="flex items-center gap-2">
-                                  <div className="w-6 flex justify-center"><CheckCircle size={14} className="text-steel" /></div>
-                                  <span className="font-medium">Qty:</span> {item.qty} {item.unit}
-                             </div>
-                             <div className="flex items-center gap-2">
-                                  <div className="w-6 flex justify-center"><MapPin size={14} className="text-steel" /></div>
-                                  <span className="truncate">{item.location}</span>
-                             </div>
-                        </div>
-                        <div className="mt-4 pt-3 border-t border-platinum flex items-center justify-between">
+                      <div className="p-5 flex-grow">
+                        <div className="flex justify-between items-center mb-4 pb-4 border-b border-platinum">
                              <div>
-                                <p className="text-xs font-bold text-navy flex items-center gap-1">
-                                  <ShieldCheck size={12} className="text-green-500"/>
-                                  {maskString(item.sellerName)}
-                                </p>
+                                <p className="text-[10px] text-steel font-bold uppercase">Price</p>
+                                <p className="text-xl font-black text-navy">₹{item.price.toLocaleString()}</p>
                              </div>
-                             <button className="bg-navy text-white px-4 py-2 rounded text-xs font-bold uppercase hover:bg-orange transition-colors">
-                               Contact
+                             <div className="text-right">
+                                <p className="text-[10px] text-steel font-bold uppercase">Quantity</p>
+                                <p className="text-sm font-bold text-navy">{item.qty} {item.unit}</p>
+                             </div>
+                        </div>
+
+                        <div className="space-y-2 text-sm text-gray-600 mb-4">
+                             <div className="flex items-center gap-2">
+                                  <MapPin size={16} className="text-orange" />
+                                  <span className="font-medium">{item.location}</span>
+                             </div>
+                             <div className="flex items-center gap-2">
+                                  <ShieldCheck size={16} className="text-green-600" />
+                                  <span className="font-bold text-xs uppercase">{maskString(item.sellerName)}</span>
+                             </div>
+                        </div>
+
+                        {/* --- NEW BUTTONS (View & RFQ) --- */}
+                        <div className="grid grid-cols-2 gap-3 mt-auto">
+                             <button 
+                                onClick={() => handleViewDetails(item.id)}
+                                className="px-3 py-2 border-2 border-navy text-navy rounded text-xs font-bold uppercase hover:bg-navy hover:text-white transition-colors flex items-center justify-center gap-1"
+                             >
+                               <ExternalLink size={14} /> Details
+                             </button>
+                             <button 
+                                onClick={() => handleRFQ(item.id)}
+                                className="px-3 py-2 bg-orange text-white rounded text-xs font-bold uppercase hover:bg-navy transition-colors flex items-center justify-center gap-1 shadow-md hover:shadow-lg"
+                             >
+                               <MessageCircle size={14} /> RFQ
                              </button>
                         </div>
                       </div>
@@ -301,44 +319,48 @@ const BuyerDashboard = () => {
                   ))}
                 </div>
               ) : (
-                // LIST VIEW
+                // --- LIST VIEW (UPDATED) ---
                 <div className="bg-white rounded-lg shadow-lg border border-platinum overflow-hidden">
                    <div className="overflow-x-auto">
                      <table className="w-full text-left border-collapse">
                         <thead className="bg-navy text-white text-xs uppercase font-bold tracking-wider">
                             <tr>
-                                <th className="p-4">Material Details</th>
-                                <th className="p-4">Qty</th>
-                                <th className="p-4">Price</th>
+                                <th className="p-4">Material</th>
+                                <th className="p-4">Details</th>
+                                <th className="p-4">Qty & Price</th>
                                 <th className="p-4">Location</th>
-                                <th className="p-4">Seller (Masked)</th>
-                                <th className="p-4 text-right">Action</th>
+                                <th className="p-4 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-platinum text-sm text-navy">
                             {filteredListings.map(item => (
                                 <tr key={item.id} className="hover:bg-platinum/20 transition-colors">
-                                    <td className="p-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="h-10 w-10 bg-gray-200 rounded overflow-hidden">
-                                                <img src={item.image} alt="" className="h-full w-full object-cover"/>
-                                            </div>
-                                            <div>
-                                                <p className="font-bold">{item.material}</p>
-                                                <p className="text-xs text-orange font-semibold">{item.form} ({item.grade})</p>
-                                            </div>
+                                    <td className="p-4 w-16">
+                                        <div className="h-12 w-12 bg-gray-200 rounded overflow-hidden border border-platinum">
+                                            <img src={item.image} alt="" className="h-full w-full object-cover"/>
                                         </div>
                                     </td>
-                                    <td className="p-4 font-medium">{item.qty} {item.unit}</td>
-                                    <td className="p-4 font-bold">₹{item.price.toLocaleString()}</td>
-                                    <td className="p-4"><div className="flex items-center gap-1"><MapPin size={12}/>{item.location}</div></td>
                                     <td className="p-4">
-                                        <p className="font-bold text-xs flex items-center gap-1">
-                                           <ShieldCheck size={12} className="text-green-500"/> {maskString(item.sellerName)}
+                                        <p className="font-bold text-navy">{item.material}</p>
+                                        <p className="text-xs text-orange font-semibold">{item.form} - {item.grade}</p>
+                                        <p className="text-[10px] text-steel mt-1 flex items-center gap-1">
+                                           <ShieldCheck size={10} className="text-green-500"/> {maskString(item.sellerName)}
                                         </p>
                                     </td>
+                                    <td className="p-4">
+                                        <p className="font-bold">{item.qty} {item.unit}</p>
+                                        <p className="text-xs text-steel">₹{item.price.toLocaleString()} / {item.unit}</p>
+                                    </td>
+                                    <td className="p-4">
+                                        <div className="flex items-center gap-1 text-xs font-medium">
+                                            <MapPin size={12} className="text-steel"/> {item.location}
+                                        </div>
+                                    </td>
                                     <td className="p-4 text-right">
-                                        <button className="text-navy hover:text-orange font-bold text-xs uppercase underline">View</button>
+                                        <div className="flex justify-end gap-2">
+                                            <button onClick={() => handleViewDetails(item.id)} className="text-navy font-bold text-xs hover:underline">View</button>
+                                            <button onClick={() => handleRFQ(item.id)} className="bg-orange text-white px-3 py-1 rounded text-xs font-bold hover:bg-navy">RFQ</button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
