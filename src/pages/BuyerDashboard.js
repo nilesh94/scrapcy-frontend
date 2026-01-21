@@ -3,16 +3,15 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, Upload, Save, FileText, MapPin, 
-  Search, Filter, Grid, List, ShieldCheck, ExternalLink, Menu, X, ChevronDown, Package, MessageCircle, ChevronLeft, ChevronRight 
+  Search, Filter, Grid, List, ShieldCheck, ExternalLink, ChevronDown, Package, MessageCircle, ChevronLeft, ChevronRight 
 } from 'lucide-react';
 import Header from '../components/Header/Header';
 import Footer from '../components/Footer/Footer';
 
-// --- NEW COMPONENT: IMAGE CAROUSEL ---
+// --- IMAGE CAROUSEL COMPONENT (Unchanged) ---
 const ImageCarousel = ({ images, title }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  // If no images, show fallback
   if (!images || images.length === 0) {
     return (
       <div className="h-56 bg-gray-200 flex items-center justify-center">
@@ -22,7 +21,7 @@ const ImageCarousel = ({ images, title }) => {
   }
 
   const prevSlide = (e) => {
-    e.stopPropagation(); // Prevent triggering card click
+    e.stopPropagation();
     setCurrentIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
   };
 
@@ -33,39 +32,23 @@ const ImageCarousel = ({ images, title }) => {
 
   return (
     <div className="h-56 bg-gray-200 relative group overflow-hidden">
-      {/* Main Image */}
       <img 
         src={images[currentIndex]} 
         alt={`${title} - ${currentIndex + 1}`} 
         className="w-full h-full object-cover transition-transform duration-500" 
       />
-      
-      {/* Overlay Gradient */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent pointer-events-none" />
-
-      {/* Navigation Arrows (Only if > 1 image) */}
       {images.length > 1 && (
         <>
-          <button 
-            onClick={prevSlide}
-            className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-          >
+          <button onClick={prevSlide} className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
             <ChevronLeft size={20} />
           </button>
-          <button 
-            onClick={nextSlide}
-            className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-          >
+          <button onClick={nextSlide} className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
             <ChevronRight size={20} />
           </button>
-          
-          {/* Dots Indicator */}
           <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
             {images.map((_, idx) => (
-              <div 
-                key={idx} 
-                className={`h-1.5 w-1.5 rounded-full shadow-sm ${idx === currentIndex ? 'bg-orange' : 'bg-white/60'}`}
-              />
+              <div key={idx} className={`h-1.5 w-1.5 rounded-full shadow-sm ${idx === currentIndex ? 'bg-orange' : 'bg-white/60'}`}/>
             ))}
           </div>
         </>
@@ -74,7 +57,6 @@ const ImageCarousel = ({ images, title }) => {
   );
 };
 
-
 const BuyerDashboard = () => {
   const navigate = useNavigate();
   
@@ -82,7 +64,6 @@ const BuyerDashboard = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [activeTab, setActiveTab] = useState('marketplace'); 
   const [viewMode, setViewMode] = useState('card');
-  const [showMobileNav, setShowMobileNav] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   
   // Data State
@@ -116,26 +97,18 @@ const BuyerDashboard = () => {
       const response = await axios.get('https://scrapcy-backend-new-1.onrender.com/scrap/all');
       
       const normalizedData = response.data.map(item => {
-        // 1. Resolve Location
         let cleanLocation = item.address || "India";
         if (cleanLocation.includes(',')) {
             const parts = cleanLocation.split(',');
             cleanLocation = parts[parts.length - 1].trim(); 
         }
 
-        // 2. Resolve ALL Images
         let imageList = [];
-        
-        // Priority A: Check the 'images' array from JSON response
         if (item.images && Array.isArray(item.images) && item.images.length > 0) {
             imageList = item.images.map(imgObj => imgObj.image_url);
-        } 
-        // Priority B: Check legacy 'image_path'
-        else if (item.image_path) {
+        } else if (item.image_path) {
             imageList.push(`https://scrapcy-backend-new-1.onrender.com/${item.image_path}`);
         }
-        
-        // Priority C: Fallback if absolutely no images found
         if (imageList.length === 0) {
             imageList.push("https://images.unsplash.com/photo-1550989460-0adf9ea622e2?q=80&w=300&auto=format&fit=crop");
         }
@@ -153,7 +126,7 @@ const BuyerDashboard = () => {
             currency: "INR",
             location: cleanLocation,
             sellerName: item.company_name || item.seller_name || "Verified Seller",
-            images: imageList, // Storing Array of URLs
+            images: imageList,
             postedAt: new Date(item.created_at).toLocaleDateString()
         };
       });
@@ -198,15 +171,8 @@ const BuyerDashboard = () => {
     return str.substring(0, 2) + "****" + str.substring(str.length - 2);
   };
 
-  // --- HANDLERS ---
-  const handleViewDetails = (id) => {
-      console.log("View Details for:", id);
-  };
-
-  const handleRFQ = (id) => {
-      console.log("RFQ Request for:", id);
-      alert("RFQ Sent to Seller! They will contact you shortly.");
-  };
+  const handleViewDetails = (id) => console.log("View Details for:", id);
+  const handleRFQ = (id) => alert("RFQ Sent to Seller!");
 
   if (!isAuthenticated) return null;
 
@@ -214,51 +180,46 @@ const BuyerDashboard = () => {
     <div className="min-h-screen bg-platinum flex flex-col">
       <Header />
 
-      <div className="flex-grow flex flex-col md:flex-row max-w-7xl w-full mx-auto p-4 gap-6 relative">
-        
-        {/* --- NAVIGATION SIDEBAR --- */}
-        <aside className={`
-            md:w-64 flex-shrink-0 bg-white rounded-lg shadow-lg border-t-4 border-orange overflow-hidden h-fit
-            ${showMobileNav ? 'fixed inset-0 z-50 m-4' : 'hidden md:block'}
-        `}>
-           <div className="p-5 bg-navy text-white flex justify-between items-center">
-              <h3 className="font-black uppercase tracking-widest text-sm flex items-center gap-2">
-                 Buyer Menu
-              </h3>
-              <button onClick={() => setShowMobileNav(false)} className="md:hidden text-white">
-                <X size={20} />
-              </button>
-           </div>
-           
-           <nav className="p-2 space-y-1">
-              <button onClick={() => setActiveTab('marketplace')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-bold rounded transition-colors ${activeTab === 'marketplace' ? 'bg-orange/10 text-orange' : 'text-steel hover:bg-platinum hover:text-navy'}`}>
-                <LayoutDashboard size={18} /> Marketplace
-              </button>
-              <button onClick={() => setActiveTab('requirements')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-bold rounded transition-colors ${activeTab === 'requirements' ? 'bg-orange/10 text-orange' : 'text-steel hover:bg-platinum hover:text-navy'}`}>
-                <Upload size={18} /> Post Requirement
-              </button>
-              <button onClick={() => setActiveTab('saved')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-bold rounded transition-colors ${activeTab === 'saved' ? 'bg-orange/10 text-orange' : 'text-steel hover:bg-platinum hover:text-navy'}`}>
-                <Save size={18} /> Saved Listings
-              </button>
-              <button onClick={() => setActiveTab('orders')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-bold rounded transition-colors ${activeTab === 'orders' ? 'bg-orange/10 text-orange' : 'text-steel hover:bg-platinum hover:text-navy'}`}>
-                <FileText size={18} /> My Orders
-              </button>
-           </nav>
-        </aside>
-
-        {/* --- MAIN CONTENT AREA --- */}
-        <main className="flex-grow">
-          
-          <div className="md:hidden mb-4">
-             <button onClick={() => setShowMobileNav(true)} className="flex items-center gap-2 bg-white px-4 py-2 rounded shadow text-navy font-bold text-sm">
-                <Menu size={18} /> Menu
-             </button>
+      {/* --- NEW: HORIZONTAL NAVIGATION TAB BAR --- */}
+      <div className="bg-white border-b border-platinum shadow-sm sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex space-x-8 overflow-x-auto no-scrollbar">
+            <button 
+              onClick={() => setActiveTab('marketplace')}
+              className={`flex items-center gap-2 py-4 text-sm font-bold uppercase tracking-wider border-b-4 transition-all whitespace-nowrap ${activeTab === 'marketplace' ? 'border-orange text-navy' : 'border-transparent text-steel hover:text-navy'}`}
+            >
+              <LayoutDashboard size={18} /> Marketplace
+            </button>
+            <button 
+              onClick={() => setActiveTab('requirements')}
+              className={`flex items-center gap-2 py-4 text-sm font-bold uppercase tracking-wider border-b-4 transition-all whitespace-nowrap ${activeTab === 'requirements' ? 'border-orange text-navy' : 'border-transparent text-steel hover:text-navy'}`}
+            >
+              <Upload size={18} /> Post Requirement
+            </button>
+            <button 
+              onClick={() => setActiveTab('saved')}
+              className={`flex items-center gap-2 py-4 text-sm font-bold uppercase tracking-wider border-b-4 transition-all whitespace-nowrap ${activeTab === 'saved' ? 'border-orange text-navy' : 'border-transparent text-steel hover:text-navy'}`}
+            >
+              <Save size={18} /> Saved
+            </button>
+            <button 
+              onClick={() => setActiveTab('orders')}
+              className={`flex items-center gap-2 py-4 text-sm font-bold uppercase tracking-wider border-b-4 transition-all whitespace-nowrap ${activeTab === 'orders' ? 'border-orange text-navy' : 'border-transparent text-steel hover:text-navy'}`}
+            >
+              <FileText size={18} /> My Orders
+            </button>
           </div>
+        </div>
+      </div>
 
+      <div className="flex-grow max-w-7xl w-full mx-auto p-4 relative">
+        
+        {/* --- MAIN CONTENT --- */}
+        <main>
           {activeTab === 'marketplace' && (
             <div className="space-y-6 animate-fadeIn">
               
-              {/* TOP BAR */}
+              {/* SEARCH & FILTERS BAR */}
               <div className="bg-white p-4 rounded-lg shadow-lg border border-platinum flex flex-col xl:flex-row gap-4 justify-between items-start xl:items-center">
                   <div className="relative w-full xl:w-96">
                     <Search className="absolute left-3 top-2.5 text-steel" size={18} />
@@ -290,44 +251,18 @@ const BuyerDashboard = () => {
                   </div>
               </div>
 
-              {/* FILTERS PANEL */}
+              {/* EXPANDABLE FILTERS */}
               {showFilters && (
                 <div className="bg-white p-6 rounded-lg shadow-inner border border-platinum grid grid-cols-1 md:grid-cols-5 gap-4 animate-slideDown">
-                    <div>
-                      <label className="text-[10px] font-black text-steel uppercase mb-1 block">Industry</label>
-                      <select value={filters.industry} onChange={(e) => handleFilterChange('industry', e.target.value)} className="w-full p-2 bg-platinum/20 border border-platinum rounded text-xs text-navy font-bold focus:border-orange outline-none">
-                        <option value="">All</option>
-                        {getUniqueOptions('industry').map(o => <option key={o} value={o}>{o}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-black text-steel uppercase mb-1 block">Material</label>
-                      <select value={filters.material} onChange={(e) => handleFilterChange('material', e.target.value)} className="w-full p-2 bg-platinum/20 border border-platinum rounded text-xs text-navy font-bold focus:border-orange outline-none">
-                        <option value="">All</option>
-                        {getUniqueOptions('material').map(o => <option key={o} value={o}>{o}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-black text-steel uppercase mb-1 block">Form</label>
-                      <select value={filters.form} onChange={(e) => handleFilterChange('form', e.target.value)} className="w-full p-2 bg-platinum/20 border border-platinum rounded text-xs text-navy font-bold focus:border-orange outline-none">
-                        <option value="">All</option>
-                        {getUniqueOptions('form').map(o => <option key={o} value={o}>{o}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-black text-steel uppercase mb-1 block">Grade</label>
-                      <select value={filters.grade} onChange={(e) => handleFilterChange('grade', e.target.value)} className="w-full p-2 bg-platinum/20 border border-platinum rounded text-xs text-navy font-bold focus:border-orange outline-none">
-                        <option value="">All</option>
-                        {getUniqueOptions('grade').map(o => <option key={o} value={o}>{o}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-black text-steel uppercase mb-1 block">Location</label>
-                      <select value={filters.location} onChange={(e) => handleFilterChange('location', e.target.value)} className="w-full p-2 bg-platinum/20 border border-platinum rounded text-xs text-navy font-bold focus:border-orange outline-none">
-                        <option value="">All Locations</option>
-                        {getUniqueOptions('location').map(o => <option key={o} value={o}>{o}</option>)}
-                      </select>
-                    </div>
+                    {['industry', 'material', 'form', 'grade', 'location'].map((filterKey) => (
+                      <div key={filterKey}>
+                        <label className="text-[10px] font-black text-steel uppercase mb-1 block">{filterKey}</label>
+                        <select value={filters[filterKey]} onChange={(e) => handleFilterChange(filterKey, e.target.value)} className="w-full p-2 bg-platinum/20 border border-platinum rounded text-xs text-navy font-bold focus:border-orange outline-none capitalize">
+                          <option value="">All</option>
+                          {getUniqueOptions(filterKey).map(o => <option key={o} value={o}>{o}</option>)}
+                        </select>
+                      </div>
+                    ))}
                 </div>
               )}
 
@@ -338,9 +273,7 @@ const BuyerDashboard = () => {
                   <p className="text-steel font-bold uppercase tracking-widest text-xs">Loading Marketplace...</p>
                 </div>
               ) : error ? (
-                <div className="bg-red-100 text-red-700 p-8 rounded-lg text-center font-bold">
-                  {error}
-                </div>
+                <div className="bg-red-100 text-red-700 p-8 rounded-lg text-center font-bold">{error}</div>
               ) : filteredListings.length === 0 ? (
                 <div className="bg-white p-12 rounded-lg shadow text-center border border-platinum">
                     <Package size={48} className="text-gray-300 mx-auto mb-4"/>
@@ -348,45 +281,36 @@ const BuyerDashboard = () => {
                     <p className="text-sm text-gray-500">Try adjusting your filters or search term.</p>
                 </div>
               ) : viewMode === 'card' ? (
-                // --- CARD VIEW WITH CAROUSEL ---
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                // --- CARD VIEW ---
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                   {filteredListings.map(item => (
                     <div key={item.id} className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-platinum group relative flex flex-col">
-                      
-                      {/* 1. IMAGE CAROUSEL COMPONENT */}
                       <ImageCarousel images={item.images} title={item.material} />
-
-                      {/* Absolute Badge for Posted Date */}
                       <div className="absolute top-3 right-3 bg-white/90 backdrop-blur px-2 py-1 rounded text-xs font-bold text-navy shadow-sm pointer-events-none">
                         {item.postedAt}
                       </div>
 
-                      {/* 2. CONTENT AREA */}
-                      <div className="p-5 flex-grow">
-                        
-                        {/* Title & Specs */}
+                      <div className="p-5 flex-grow flex flex-col">
                         <div className="mb-4">
-                            <h4 className="text-lg font-black text-navy uppercase leading-tight">{item.material}</h4>
+                            <h4 className="text-lg font-black text-navy uppercase leading-tight line-clamp-1" title={item.material}>{item.material}</h4>
                             <span className="text-xs font-bold text-orange uppercase tracking-wide block mt-1">{item.form} • {item.grade}</span>
                         </div>
 
-                        {/* Price & Qty Row */}
                         <div className="flex justify-between items-center mb-4 pb-4 border-b border-platinum">
                              <div>
                                 <p className="text-[10px] text-steel font-bold uppercase">Price</p>
                                 <p className="text-xl font-black text-navy">₹{item.price.toLocaleString()}</p>
                              </div>
                              <div className="text-right">
-                                <p className="text-[10px] text-steel font-bold uppercase">Quantity</p>
+                                <p className="text-[10px] text-steel font-bold uppercase">Qty</p>
                                 <p className="text-sm font-bold text-navy">{item.qty} {item.unit}</p>
                              </div>
                         </div>
 
-                        {/* Metadata */}
-                        <div className="space-y-2 text-sm text-gray-600 mb-4">
+                        <div className="space-y-2 text-sm text-gray-600 mb-4 flex-grow">
                              <div className="flex items-center gap-2">
                                   <MapPin size={16} className="text-orange" />
-                                  <span className="font-medium">{item.location}</span>
+                                  <span className="font-medium truncate">{item.location}</span>
                              </div>
                              <div className="flex items-center gap-2">
                                   <ShieldCheck size={16} className="text-green-600" />
@@ -394,18 +318,11 @@ const BuyerDashboard = () => {
                              </div>
                         </div>
 
-                        {/* Buttons */}
                         <div className="grid grid-cols-2 gap-3 mt-auto">
-                             <button 
-                                onClick={() => handleViewDetails(item.id)}
-                                className="px-3 py-2 border-2 border-navy text-navy rounded text-xs font-bold uppercase hover:bg-navy hover:text-white transition-colors flex items-center justify-center gap-1"
-                             >
+                             <button onClick={() => handleViewDetails(item.id)} className="px-3 py-2 border-2 border-navy text-navy rounded text-xs font-bold uppercase hover:bg-navy hover:text-white transition-colors flex items-center justify-center gap-1">
                                <ExternalLink size={14} /> Details
                              </button>
-                             <button 
-                                onClick={() => handleRFQ(item.id)}
-                                className="px-3 py-2 bg-orange text-white rounded text-xs font-bold uppercase hover:bg-navy transition-colors flex items-center justify-center gap-1 shadow-md hover:shadow-lg"
-                             >
+                             <button onClick={() => handleRFQ(item.id)} className="px-3 py-2 bg-orange text-white rounded text-xs font-bold uppercase hover:bg-navy transition-colors flex items-center justify-center gap-1 shadow-md hover:shadow-lg">
                                <MessageCircle size={14} /> RFQ
                              </button>
                         </div>
