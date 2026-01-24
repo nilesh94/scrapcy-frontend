@@ -192,7 +192,7 @@ const PostRequirementModal = ({ isOpen, onClose, isAuthenticated }) => {
 
     if (!isAuthenticated) {
         if(!formData.guestName || !formData.guestEmail || !formData.guestPhone || !formData.guestCompany || !formData.guestGst) {
-            setError("All guest details are mandatory.");
+            setError("All company details are mandatory.");
             setLoading(false);
             return;
         }
@@ -374,29 +374,52 @@ const PostRequirementModal = ({ isOpen, onClose, isAuthenticated }) => {
                 </div>
               </div>
 
-              {/* SECTION 2: GUEST DETAILS */}
+              {/* SECTION 2: COMPANY DETAILS (Updated Order & Title) */}
               {!isAuthenticated && (
                 <div className="animate-fadeIn">
                   <h3 className="text-sm font-black text-navy uppercase border-b-2 border-platinum pb-2 mb-4 flex items-center gap-2">
-                    <User size={16} className="text-orange"/> Your Details
+                    <Building2 size={16} className="text-orange"/> Company Details
                   </h3>
                   <div className="bg-orange/5 border border-orange/20 p-4 rounded-lg mb-4">
                     <p className="text-xs text-orange font-bold uppercase tracking-wide">Please provide your contact info so sellers can reach you.</p>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="relative"><User size={16} className="absolute left-3 top-3.5 text-steel"/><input name="guestName" value={formData.guestName} onChange={handleInputChange} placeholder="Full Name" className="w-full pl-10 p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none" required /></div>
-                    <div className="relative"><Mail size={16} className="absolute left-3 top-3.5 text-steel"/><input name="guestEmail" value={formData.guestEmail} onChange={handleInputChange} placeholder="Email Address" type="email" className="w-full pl-10 p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none" required /></div>
-                    <div className="relative"><Phone size={16} className="absolute left-3 top-3.5 text-steel"/><input name="guestPhone" value={formData.guestPhone} onChange={handleInputChange} placeholder="Phone Number" className="w-full pl-10 p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none" required /></div>
-                    <div className="relative"><Building2 size={16} className="absolute left-3 top-3.5 text-steel"/><input name="guestCompany" value={formData.guestCompany} onChange={handleInputChange} placeholder="Company Name" className="w-full pl-10 p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none" required /></div>
-                    <div className="relative md:col-span-2"><FileText size={16} className="absolute left-3 top-3.5 text-steel"/><input name="guestGst" value={formData.guestGst} onChange={handleInputChange} placeholder="GST Number" className="w-full pl-10 p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none" required /></div>
+                    
+                    {/* Row 1: Company Name & GST */}
+                    <div className="relative">
+                        <Building2 size={16} className="absolute left-3 top-3.5 text-steel"/>
+                        <input name="guestCompany" value={formData.guestCompany} onChange={handleInputChange} placeholder="Company Name" className="w-full pl-10 p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none" required />
+                    </div>
+                    <div className="relative">
+                        <FileText size={16} className="absolute left-3 top-3.5 text-steel"/>
+                        <input name="guestGst" value={formData.guestGst} onChange={handleInputChange} placeholder="GST Number" className="w-full pl-10 p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none" required />
+                    </div>
+
+                    {/* Row 2: Phone */}
+                    <div className="relative md:col-span-2">
+                        <Phone size={16} className="absolute left-3 top-3.5 text-steel"/>
+                        <input name="guestPhone" value={formData.guestPhone} onChange={handleInputChange} placeholder="Phone Number" className="w-full pl-10 p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none" required />
+                    </div>
+
+                    {/* Row 3: Name & Email */}
+                    <div className="relative">
+                        <User size={16} className="absolute left-3 top-3.5 text-steel"/>
+                        <input name="guestName" value={formData.guestName} onChange={handleInputChange} placeholder="Full Name" className="w-full pl-10 p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none" required />
+                    </div>
+                    <div className="relative">
+                        <Mail size={16} className="absolute left-3 top-3.5 text-steel"/>
+                        <input name="guestEmail" value={formData.guestEmail} onChange={handleInputChange} placeholder="Email Address" type="email" className="w-full pl-10 p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none" required />
+                    </div>
+
                   </div>
                 </div>
               )}
 
               {error && <div className="text-red-500 text-sm font-bold text-center">{error}</div>}
 
+              {/* Updated Button Text */}
               <button type="submit" disabled={loading} className="w-full py-4 bg-navy text-white font-black uppercase tracking-widest rounded shadow-lg hover:bg-orange transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                {loading ? "Posting..." : "Post Open RFQ"}
+                {loading ? "Posting..." : "Submit"}
               </button>
 
             </form>
