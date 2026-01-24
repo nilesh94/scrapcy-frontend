@@ -3,12 +3,13 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, Upload, Save, FileText, MapPin, 
-  Search, Filter, Grid, List, ShieldCheck, ExternalLink, ChevronDown, Package, MessageCircle, ChevronLeft, ChevronRight 
+  Search, Filter, Grid, List, ShieldCheck, ExternalLink, Menu, X, ChevronDown, Package, MessageCircle, ChevronLeft, ChevronRight, PlusCircle 
 } from 'lucide-react';
 import Header from '../components/Header/Header';
 import Footer from '../components/Footer/Footer';
+import PostRequirementModal from '../components/PostRequirementModal'; // <--- IMPORT THE MODAL
 
-// --- IMAGE CAROUSEL COMPONENT (Unchanged) ---
+// --- IMAGE CAROUSEL COMPONENT ---
 const ImageCarousel = ({ images, title }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -64,8 +65,12 @@ const BuyerDashboard = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [activeTab, setActiveTab] = useState('marketplace'); 
   const [viewMode, setViewMode] = useState('card');
+  const [showMobileNav, setShowMobileNav] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   
+  // Modal State
+  const [isPostModalOpen, setIsPostModalOpen] = useState(false); // <--- MODAL STATE
+
   // Data State
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -180,7 +185,7 @@ const BuyerDashboard = () => {
     <div className="min-h-screen bg-platinum flex flex-col">
       <Header />
 
-      {/* --- NEW: HORIZONTAL NAVIGATION TAB BAR --- */}
+      {/* --- HORIZONTAL NAVIGATION TAB BAR --- */}
       <div className="bg-white border-b border-platinum shadow-sm sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex space-x-8 overflow-x-auto no-scrollbar">
@@ -281,7 +286,6 @@ const BuyerDashboard = () => {
                     <p className="text-sm text-gray-500">Try adjusting your filters or search term.</p>
                 </div>
               ) : viewMode === 'card' ? (
-                // --- CARD VIEW ---
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                   {filteredListings.map(item => (
                     <div key={item.id} className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-platinum group relative flex flex-col">
@@ -331,7 +335,6 @@ const BuyerDashboard = () => {
                   ))}
                 </div>
               ) : (
-                // --- LIST VIEW ---
                 <div className="bg-white rounded-lg shadow-lg border border-platinum overflow-hidden">
                     <div className="overflow-x-auto">
                       <table className="w-full text-left border-collapse">
@@ -384,19 +387,50 @@ const BuyerDashboard = () => {
             </div>
           )}
 
-          {activeTab !== 'marketplace' && (
+          {/* --- POST REQUIREMENT SECTION --- */}
+          {activeTab === 'requirements' && (
              <div className="bg-white p-12 rounded-lg shadow-lg border border-platinum text-center animate-fadeIn">
-                <div className="inline-block p-4 bg-platinum/50 rounded-full mb-4">
-                   <Upload size={40} className="text-steel"/>
+                <div className="inline-block p-6 bg-orange/10 rounded-full mb-6 text-orange animate-bounce">
+                   <Upload size={48} />
                 </div>
-                <h3 className="text-xl font-black text-navy uppercase">Coming Soon</h3>
-                <p className="text-steel mt-2 max-w-md mx-auto">
-                   The <strong>{activeTab.replace('_', ' ')}</strong> module is currently under development. Stay tuned!
+                <h3 className="text-2xl font-black text-navy uppercase mb-2">Can't Find What You Need?</h3>
+                <p className="text-steel mb-8 max-w-lg mx-auto">
+                   Post an Open RFQ (Request for Quote) to the marketplace. Verified sellers will be notified and can contact you with their best offers.
                 </p>
+                <button 
+                    onClick={() => setIsPostModalOpen(true)}
+                    className="bg-navy text-white px-8 py-4 rounded font-bold uppercase tracking-widest shadow-xl hover:bg-orange hover:-translate-y-1 transition-all flex items-center gap-2 mx-auto"
+                >
+                    <PlusCircle size={20} /> Post New Requirement
+                </button>
+             </div>
+          )}
+
+          {activeTab === 'saved' && (
+             <div className="bg-white p-12 rounded-lg shadow-lg border border-platinum text-center animate-fadeIn">
+                <Save size={40} className="text-steel mx-auto mb-4"/>
+                <h3 className="text-xl font-black text-navy uppercase">Saved Listings</h3>
+                <p className="text-steel mt-2">Feature coming soon.</p>
+             </div>
+          )}
+
+          {activeTab === 'orders' && (
+             <div className="bg-white p-12 rounded-lg shadow-lg border border-platinum text-center animate-fadeIn">
+                <FileText size={40} className="text-steel mx-auto mb-4"/>
+                <h3 className="text-xl font-black text-navy uppercase">My Orders</h3>
+                <p className="text-steel mt-2">Feature coming soon.</p>
              </div>
           )}
         </main>
       </div>
+
+      {/* --- POST REQUIREMENT MODAL --- */}
+      <PostRequirementModal 
+        isOpen={isPostModalOpen} 
+        onClose={() => setIsPostModalOpen(false)} 
+        isAuthenticated={isAuthenticated}
+      />
+
       <Footer />
     </div>
   );
