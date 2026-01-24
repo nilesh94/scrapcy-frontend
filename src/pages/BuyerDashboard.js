@@ -65,7 +65,12 @@ const BuyerDashboard = () => {
   
   // --- STATE ---
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [activeTab, setActiveTab] = useState('marketplace'); 
+  
+  // 1. UPDATED: Initialize from LocalStorage or default to 'marketplace'
+  const [activeTab, setActiveTab] = useState(() => {
+    return localStorage.getItem('buyer_dashboard_active_tab') || 'marketplace';
+  });
+
   const [viewMode, setViewMode] = useState('card');
   const [searchTerm, setSearchTerm] = useState('');
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
@@ -87,7 +92,12 @@ const BuyerDashboard = () => {
     location: ''
   });
 
-  // --- 1. AUTH & INITIAL FETCH ---
+  // 2. UPDATED: Save tab to LocalStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('buyer_dashboard_active_tab', activeTab);
+  }, [activeTab]);
+
+  // --- AUTH & INITIAL FETCH ---
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -155,7 +165,6 @@ const BuyerDashboard = () => {
     }
   };
 
-  // --- REAL FETCH (Replaces Mock Data) ---
   const fetchMyRequirements = async () => {
     setReqLoading(true);
     try {
@@ -164,11 +173,9 @@ const BuyerDashboard = () => {
             headers: { Authorization: `Bearer ${token}` }
         });
         
-        // Map API response to UI
         const mappedData = response.data.map(req => ({
             id: req.id,
             material: req.material,
-            // Display Form & Grade as details since Quantity isn't a column
             specs: `${req.form || 'Any Form'} • ${req.grade || 'Any Grade'}`, 
             location: req.locations || "Anywhere",
             status: req.status,
@@ -178,17 +185,15 @@ const BuyerDashboard = () => {
         setMyRequirements(mappedData);
     } catch (err) {
         console.error("Error fetching requirements:", err);
-        // Explicitly set empty array on error/no data to trigger the empty state UI
         setMyRequirements([]);
     } finally {
         setReqLoading(false);
     }
   };
 
-  // --- STATUS ACTIONS (Real API Calls) ---
+  // --- ACTIONS ---
 
   const handleUpdateStatus = async (id, newStatus) => {
-    // 1. Optimistic UI Update
     setMyRequirements(prev => prev.map(req => 
         req.id === id ? { ...req, status: newStatus } : req
     ));
@@ -203,18 +208,16 @@ const BuyerDashboard = () => {
     } catch (err) {
         console.error("Status update failed", err);
         alert("Failed to update status. Please try again.");
-        fetchMyRequirements(); // Revert on error
+        fetchMyRequirements(); 
     }
   };
 
   const handleDeleteRequirement = async (id) => {
     if(!window.confirm("Are you sure you want to delete this requirement?")) return;
 
-    // 1. Optimistic Delete
     setMyRequirements(prev => prev.filter(req => req.id !== id));
 
     try {
-        // Soft Delete via API
         const token = localStorage.getItem('token');
         await axios.put(
             `https://scrapcy-backend-new-1.onrender.com/requirements/${id}/status`, 
@@ -224,13 +227,13 @@ const BuyerDashboard = () => {
     } catch (err) {
         console.error("Delete failed", err);
         alert("Failed to delete requirement.");
-        fetchMyRequirements(); // Revert on error
+        fetchMyRequirements(); 
     }
   };
 
   const handlePostSuccess = () => {
       setIsPostModalOpen(false);
-      fetchMyRequirements(); // Refresh list to show new item
+      fetchMyRequirements(); 
   };
 
   // --- FILTERS ---
@@ -358,7 +361,7 @@ const BuyerDashboard = () => {
                         </div>
                         <div className="flex justify-between items-center mb-4 pb-4 border-b border-platinum">
                              <div><p className="text-[10px] text-steel font-bold uppercase">Price</p><p className="text-xl font-black text-navy">₹{item.price.toLocaleString()}</p></div>
-                             <div className="text-right"><p className="text-[10px] text-steel font-bold uppercase">Quantity</p><p className="text-sm font-bold text-navy">{item.qty} {item.unit}</p></div>
+                             <div className="text-right"><p className="text-[10px] text-steel font-bold uppercase">Qty</p><p className="text-sm font-bold text-navy">{item.qty} {item.unit}</p></div>
                         </div>
                         <div className="space-y-2 text-sm text-gray-600 mb-4 flex-grow">
                              <div className="flex items-center gap-2"><MapPin size={16} className="text-orange" /><span className="font-medium truncate">{item.location}</span></div>
