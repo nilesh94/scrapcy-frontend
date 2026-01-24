@@ -1,15 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, Upload, Save, FileText, MapPin, 
-  Search, Filter, Grid, List, ShieldCheck, ExternalLink, Menu, X, ChevronDown, Package, MessageCircle, ChevronLeft, ChevronRight, PlusCircle 
+  Search, Filter, Grid, List, ShieldCheck, ExternalLink, Menu, X, ChevronDown, 
+  Package, MessageCircle, ChevronLeft, ChevronRight, PlusCircle, 
+  CheckCircle, XCircle, Trash2, Clock 
 } from 'lucide-react';
 import Header from '../components/Header/Header';
 import Footer from '../components/Footer/Footer';
-import PostRequirementModal from '../components/PostRequirementModal'; // <--- IMPORT THE MODAL
+import PostRequirementModal from '../components/PostRequirementModal';
 
-// --- IMAGE CAROUSEL COMPONENT ---
+// --- IMAGE CAROUSEL COMPONENT (Unchanged) ---
 const ImageCarousel = ({ images, title }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -67,13 +69,13 @@ const BuyerDashboard = () => {
   const [viewMode, setViewMode] = useState('card');
   const [showMobileNav, setShowMobileNav] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  
-  // Modal State
-  const [isPostModalOpen, setIsPostModalOpen] = useState(false); // <--- MODAL STATE
+  const [isPostModalOpen, setIsPostModalOpen] = useState(false);
 
-  // Data State
+  // Data States
   const [listings, setListings] = useState([]);
+  const [myRequirements, setMyRequirements] = useState([]); // <--- New State for RFQs
   const [loading, setLoading] = useState(true);
+  const [reqLoading, setReqLoading] = useState(false); // Loading for RFQ tab
   const [error, setError] = useState('');
 
   // Filter States
@@ -86,7 +88,7 @@ const BuyerDashboard = () => {
     location: ''
   });
 
-  // --- 1. AUTH & DATA FETCHING ---
+  // --- 1. AUTH & INITIAL FETCH ---
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -96,6 +98,15 @@ const BuyerDashboard = () => {
       fetchListings();
     }
   }, [navigate]);
+
+  // Fetch Requirements whenever tab changes to 'requirements'
+  useEffect(() => {
+    if (activeTab === 'requirements' && isAuthenticated) {
+        fetchMyRequirements();
+    }
+  }, [activeTab, isAuthenticated]);
+
+  // --- API CALLS ---
 
   const fetchListings = async () => {
     try {
@@ -145,7 +156,67 @@ const BuyerDashboard = () => {
     }
   };
 
-  // --- HELPERS ---
+  const fetchMyRequirements = async () => {
+    setReqLoading(true);
+    try {
+        // MOCK DATA FOR DEMO - Replace with: axios.get('.../requirements/my')
+        const mockRequirements = [
+            { id: 1, material: 'Copper Wire', qty: '50 MT', location: 'Gujarat', status: 'OPEN', postedAt: '2026-01-20' },
+            { id: 2, material: 'HMS 1&2', qty: '200 MT', location: 'Punjab', status: 'FULFILLED', postedAt: '2026-01-15' },
+        ];
+        
+        // Simulating network delay
+        setTimeout(() => {
+            setMyRequirements(mockRequirements);
+            setReqLoading(false);
+        }, 800);
+    } catch (err) {
+        console.error("Error fetching requirements:", err);
+        setReqLoading(false);
+    }
+  };
+
+  // --- RFQ ACTIONS ---
+
+  const handleUpdateStatus = async (id, newStatus) => {
+    // 1. Optimistic Update (Update UI immediately)
+    setMyRequirements(prev => prev.map(req => 
+        req.id === id ? { ...req, status: newStatus } : req
+    ));
+
+    // 2. API Call (Replace with actual axios.put)
+    try {
+        console.log(`Updating RFQ ${id} to ${newStatus}`);
+        // await axios.put(`.../requirements/${id}/status`, { status: newStatus });
+    } catch (err) {
+        alert("Failed to update status");
+        fetchMyRequirements(); // Revert on error
+    }
+  };
+
+  const handleDeleteRequirement = async (id) => {
+    if(!window.confirm("Are you sure you want to delete this requirement permanently?")) return;
+
+    // 1. Optimistic Delete
+    setMyRequirements(prev => prev.filter(req => req.id !== id));
+
+    // 2. API Call
+    try {
+        console.log(`Deleting RFQ ${id}`);
+        // await axios.delete(`.../requirements/${id}`);
+    } catch (err) {
+        alert("Failed to delete");
+        fetchMyRequirements();
+    }
+  };
+
+  const handlePostSuccess = () => {
+      // Callback from Modal when submission is successful
+      setIsPostModalOpen(false);
+      fetchMyRequirements(); // Refresh list
+  };
+
+  // --- FILTERS ---
   const getUniqueOptions = (key) => {
     return [...new Set(listings.map(item => item[key]).filter(Boolean))].sort();
   };
@@ -185,32 +256,20 @@ const BuyerDashboard = () => {
     <div className="min-h-screen bg-platinum flex flex-col">
       <Header />
 
-      {/* --- HORIZONTAL NAVIGATION TAB BAR --- */}
+      {/* --- HORIZONTAL NAVIGATION --- */}
       <div className="bg-white border-b border-platinum shadow-sm sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex space-x-8 overflow-x-auto no-scrollbar">
-            <button 
-              onClick={() => setActiveTab('marketplace')}
-              className={`flex items-center gap-2 py-4 text-sm font-bold uppercase tracking-wider border-b-4 transition-all whitespace-nowrap ${activeTab === 'marketplace' ? 'border-orange text-navy' : 'border-transparent text-steel hover:text-navy'}`}
-            >
+            <button onClick={() => setActiveTab('marketplace')} className={`flex items-center gap-2 py-4 text-sm font-bold uppercase tracking-wider border-b-4 transition-all whitespace-nowrap ${activeTab === 'marketplace' ? 'border-orange text-navy' : 'border-transparent text-steel hover:text-navy'}`}>
               <LayoutDashboard size={18} /> Marketplace
             </button>
-            <button 
-              onClick={() => setActiveTab('requirements')}
-              className={`flex items-center gap-2 py-4 text-sm font-bold uppercase tracking-wider border-b-4 transition-all whitespace-nowrap ${activeTab === 'requirements' ? 'border-orange text-navy' : 'border-transparent text-steel hover:text-navy'}`}
-            >
+            <button onClick={() => setActiveTab('requirements')} className={`flex items-center gap-2 py-4 text-sm font-bold uppercase tracking-wider border-b-4 transition-all whitespace-nowrap ${activeTab === 'requirements' ? 'border-orange text-navy' : 'border-transparent text-steel hover:text-navy'}`}>
               <Upload size={18} /> Post Requirement
             </button>
-            <button 
-              onClick={() => setActiveTab('saved')}
-              className={`flex items-center gap-2 py-4 text-sm font-bold uppercase tracking-wider border-b-4 transition-all whitespace-nowrap ${activeTab === 'saved' ? 'border-orange text-navy' : 'border-transparent text-steel hover:text-navy'}`}
-            >
+            <button onClick={() => setActiveTab('saved')} className={`flex items-center gap-2 py-4 text-sm font-bold uppercase tracking-wider border-b-4 transition-all whitespace-nowrap ${activeTab === 'saved' ? 'border-orange text-navy' : 'border-transparent text-steel hover:text-navy'}`}>
               <Save size={18} /> Saved
             </button>
-            <button 
-              onClick={() => setActiveTab('orders')}
-              className={`flex items-center gap-2 py-4 text-sm font-bold uppercase tracking-wider border-b-4 transition-all whitespace-nowrap ${activeTab === 'orders' ? 'border-orange text-navy' : 'border-transparent text-steel hover:text-navy'}`}
-            >
+            <button onClick={() => setActiveTab('orders')} className={`flex items-center gap-2 py-4 text-sm font-bold uppercase tracking-wider border-b-4 transition-all whitespace-nowrap ${activeTab === 'orders' ? 'border-orange text-navy' : 'border-transparent text-steel hover:text-navy'}`}>
               <FileText size={18} /> My Orders
             </button>
           </div>
@@ -218,45 +277,29 @@ const BuyerDashboard = () => {
       </div>
 
       <div className="flex-grow max-w-7xl w-full mx-auto p-4 relative">
-        
-        {/* --- MAIN CONTENT --- */}
         <main>
+          {/* ================= MARKETPLACE TAB ================= */}
           {activeTab === 'marketplace' && (
             <div className="space-y-6 animate-fadeIn">
               
-              {/* SEARCH & FILTERS BAR */}
+              {/* SEARCH & FILTERS */}
               <div className="bg-white p-4 rounded-lg shadow-lg border border-platinum flex flex-col xl:flex-row gap-4 justify-between items-start xl:items-center">
                   <div className="relative w-full xl:w-96">
                     <Search className="absolute left-3 top-2.5 text-steel" size={18} />
-                    <input 
-                      type="text" 
-                      placeholder="Search scrap, grade, or location..." 
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full pl-10 p-2 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none"
-                    />
+                    <input type="text" placeholder="Search scrap, grade, or location..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-10 p-2 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none" />
                   </div>
-
                   <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto justify-end">
-                      <button 
-                        onClick={() => setShowFilters(!showFilters)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded text-xs font-bold uppercase tracking-wider border transition-colors ${showFilters ? 'bg-navy text-white border-navy' : 'bg-white text-navy border-platinum hover:border-orange'}`}
-                      >
+                      <button onClick={() => setShowFilters(!showFilters)} className={`flex items-center gap-2 px-4 py-2 rounded text-xs font-bold uppercase tracking-wider border transition-colors ${showFilters ? 'bg-navy text-white border-navy' : 'bg-white text-navy border-platinum hover:border-orange'}`}>
                         <Filter size={16} /> Filters {showFilters ? <ChevronDown size={14}/> : <ExternalLink size={14} className="rotate-90"/>}
                       </button>
-
                       <div className="flex bg-platinum/30 rounded p-1 border border-platinum">
-                        <button onClick={() => setViewMode('card')} className={`p-2 rounded flex items-center gap-2 text-xs font-bold uppercase transition-all ${viewMode === 'card' ? 'bg-white shadow text-orange' : 'text-steel hover:text-navy'}`}>
-                          <Grid size={16} />
-                        </button>
-                        <button onClick={() => setViewMode('list')} className={`p-2 rounded flex items-center gap-2 text-xs font-bold uppercase transition-all ${viewMode === 'list' ? 'bg-white shadow text-orange' : 'text-steel hover:text-navy'}`}>
-                          <List size={16} />
-                        </button>
+                        <button onClick={() => setViewMode('card')} className={`p-2 rounded flex items-center gap-2 text-xs font-bold uppercase transition-all ${viewMode === 'card' ? 'bg-white shadow text-orange' : 'text-steel hover:text-navy'}`}><Grid size={16} /></button>
+                        <button onClick={() => setViewMode('list')} className={`p-2 rounded flex items-center gap-2 text-xs font-bold uppercase transition-all ${viewMode === 'list' ? 'bg-white shadow text-orange' : 'text-steel hover:text-navy'}`}><List size={16} /></button>
                       </div>
                   </div>
               </div>
 
-              {/* EXPANDABLE FILTERS */}
+              {/* FILTERS PANEL */}
               {showFilters && (
                 <div className="bg-white p-6 rounded-lg shadow-inner border border-platinum grid grid-cols-1 md:grid-cols-5 gap-4 animate-slideDown">
                     {['industry', 'material', 'form', 'grade', 'location'].map((filterKey) => (
@@ -286,97 +329,49 @@ const BuyerDashboard = () => {
                     <p className="text-sm text-gray-500">Try adjusting your filters or search term.</p>
                 </div>
               ) : viewMode === 'card' ? (
+                // CARD VIEW
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                   {filteredListings.map(item => (
                     <div key={item.id} className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-platinum group relative flex flex-col">
                       <ImageCarousel images={item.images} title={item.material} />
-                      <div className="absolute top-3 right-3 bg-white/90 backdrop-blur px-2 py-1 rounded text-xs font-bold text-navy shadow-sm pointer-events-none">
-                        {item.postedAt}
-                      </div>
-
+                      <div className="absolute top-3 right-3 bg-white/90 backdrop-blur px-2 py-1 rounded text-xs font-bold text-navy shadow-sm pointer-events-none">{item.postedAt}</div>
                       <div className="p-5 flex-grow flex flex-col">
                         <div className="mb-4">
                             <h4 className="text-lg font-black text-navy uppercase leading-tight line-clamp-1" title={item.material}>{item.material}</h4>
                             <span className="text-xs font-bold text-orange uppercase tracking-wide block mt-1">{item.form} • {item.grade}</span>
                         </div>
-
                         <div className="flex justify-between items-center mb-4 pb-4 border-b border-platinum">
-                             <div>
-                                <p className="text-[10px] text-steel font-bold uppercase">Price</p>
-                                <p className="text-xl font-black text-navy">₹{item.price.toLocaleString()}</p>
-                             </div>
-                             <div className="text-right">
-                                <p className="text-[10px] text-steel font-bold uppercase">Qty</p>
-                                <p className="text-sm font-bold text-navy">{item.qty} {item.unit}</p>
-                             </div>
+                             <div><p className="text-[10px] text-steel font-bold uppercase">Price</p><p className="text-xl font-black text-navy">₹{item.price.toLocaleString()}</p></div>
+                             <div className="text-right"><p className="text-[10px] text-steel font-bold uppercase">Quantity</p><p className="text-sm font-bold text-navy">{item.qty} {item.unit}</p></div>
                         </div>
-
                         <div className="space-y-2 text-sm text-gray-600 mb-4 flex-grow">
-                             <div className="flex items-center gap-2">
-                                  <MapPin size={16} className="text-orange" />
-                                  <span className="font-medium truncate">{item.location}</span>
-                             </div>
-                             <div className="flex items-center gap-2">
-                                  <ShieldCheck size={16} className="text-green-600" />
-                                  <span className="font-bold text-xs uppercase">{maskString(item.sellerName)}</span>
-                             </div>
+                             <div className="flex items-center gap-2"><MapPin size={16} className="text-orange" /><span className="font-medium truncate">{item.location}</span></div>
+                             <div className="flex items-center gap-2"><ShieldCheck size={16} className="text-green-600" /><span className="font-bold text-xs uppercase">{maskString(item.sellerName)}</span></div>
                         </div>
-
                         <div className="grid grid-cols-2 gap-3 mt-auto">
-                             <button onClick={() => handleViewDetails(item.id)} className="px-3 py-2 border-2 border-navy text-navy rounded text-xs font-bold uppercase hover:bg-navy hover:text-white transition-colors flex items-center justify-center gap-1">
-                               <ExternalLink size={14} /> Details
-                             </button>
-                             <button onClick={() => handleRFQ(item.id)} className="px-3 py-2 bg-orange text-white rounded text-xs font-bold uppercase hover:bg-navy transition-colors flex items-center justify-center gap-1 shadow-md hover:shadow-lg">
-                               <MessageCircle size={14} /> RFQ
-                             </button>
+                             <button onClick={() => handleViewDetails(item.id)} className="px-3 py-2 border-2 border-navy text-navy rounded text-xs font-bold uppercase hover:bg-navy hover:text-white transition-colors flex items-center justify-center gap-1"><ExternalLink size={14} /> Details</button>
+                             <button onClick={() => handleRFQ(item.id)} className="px-3 py-2 bg-orange text-white rounded text-xs font-bold uppercase hover:bg-navy transition-colors flex items-center justify-center gap-1 shadow-md hover:shadow-lg"><MessageCircle size={14} /> RFQ</button>
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
+                // LIST VIEW
                 <div className="bg-white rounded-lg shadow-lg border border-platinum overflow-hidden">
                     <div className="overflow-x-auto">
                       <table className="w-full text-left border-collapse">
                          <thead className="bg-navy text-white text-xs uppercase font-bold tracking-wider">
-                            <tr>
-                                <th className="p-4">Material</th>
-                                <th className="p-4">Details</th>
-                                <th className="p-4">Qty & Price</th>
-                                <th className="p-4">Location</th>
-                                <th className="p-4 text-right">Actions</th>
-                            </tr>
+                            <tr><th className="p-4">Material</th><th className="p-4">Details</th><th className="p-4">Qty & Price</th><th className="p-4">Location</th><th className="p-4 text-right">Actions</th></tr>
                          </thead>
                          <tbody className="divide-y divide-platinum text-sm text-navy">
                             {filteredListings.map(item => (
                                 <tr key={item.id} className="hover:bg-platinum/20 transition-colors">
-                                    <td className="p-4 w-16">
-                                        <div className="h-12 w-12 bg-gray-200 rounded overflow-hidden border border-platinum">
-                                            <img src={item.images[0]} alt="" className="h-full w-full object-cover"/>
-                                        </div>
-                                    </td>
-                                    <td className="p-4">
-                                        <p className="font-bold text-navy">{item.material}</p>
-                                        <p className="text-xs text-orange font-semibold">{item.form} - {item.grade}</p>
-                                        <p className="text-[10px] text-steel mt-1 flex items-center gap-1">
-                                           <ShieldCheck size={10} className="text-green-500"/> {maskString(item.sellerName)}
-                                        </p>
-                                    </td>
-                                    <td className="p-4">
-                                        <p className="font-bold">{item.qty} {item.unit}</p>
-                                        <p className="text-xs text-steel">₹{item.price.toLocaleString()} / {item.unit}</p>
-                                    </td>
-                                    <td className="p-4">
-                                        <div className="flex items-center gap-1 text-xs font-medium">
-                                            <MapPin size={12} className="text-steel"/> {item.location}
-                                        </div>
-                                    </td>
-                                    <td className="p-4 text-right">
-                                        <div className="flex justify-end gap-2">
-                                            <button onClick={() => handleViewDetails(item.id)} className="text-navy font-bold text-xs hover:underline">View</button>
-                                            <button onClick={() => handleRFQ(item.id)} className="bg-orange text-white px-3 py-1 rounded text-xs font-bold hover:bg-navy">RFQ</button>
-                                        </div>
-                                    </td>
+                                    <td className="p-4 w-16"><div className="h-12 w-12 bg-gray-200 rounded overflow-hidden border border-platinum"><img src={item.images[0]} alt="" className="h-full w-full object-cover"/></div></td>
+                                    <td className="p-4"><p className="font-bold text-navy">{item.material}</p><p className="text-xs text-orange font-semibold">{item.form} - {item.grade}</p><p className="text-[10px] text-steel mt-1 flex items-center gap-1"><ShieldCheck size={10} className="text-green-500"/> {maskString(item.sellerName)}</p></td>
+                                    <td className="p-4"><p className="font-bold">{item.qty} {item.unit}</p><p className="text-xs text-steel">₹{item.price.toLocaleString()} / {item.unit}</p></td>
+                                    <td className="p-4"><div className="flex items-center gap-1 text-xs font-medium"><MapPin size={12} className="text-steel"/> {item.location}</div></td>
+                                    <td className="p-4 text-right"><div className="flex justify-end gap-2"><button onClick={() => handleViewDetails(item.id)} className="text-navy font-bold text-xs hover:underline">View</button><button onClick={() => handleRFQ(item.id)} className="bg-orange text-white px-3 py-1 rounded text-xs font-bold hover:bg-navy">RFQ</button></div></td>
                                 </tr>
                             ))}
                          </tbody>
@@ -387,38 +382,102 @@ const BuyerDashboard = () => {
             </div>
           )}
 
-          {/* --- POST REQUIREMENT SECTION --- */}
+          {/* ================= REQUIREMENTS TAB (OPEN RFQ) ================= */}
           {activeTab === 'requirements' && (
-             <div className="bg-white p-12 rounded-lg shadow-lg border border-platinum text-center animate-fadeIn">
-                <div className="inline-block p-6 bg-orange/10 rounded-full mb-6 text-orange animate-bounce">
-                   <Upload size={48} />
+             <div className="space-y-6 animate-fadeIn">
+                {/* Header Action */}
+                <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow border border-platinum">
+                    <div>
+                        <h2 className="text-xl font-black text-navy uppercase tracking-tighter">My Open Requirements</h2>
+                        <p className="text-steel text-xs font-medium">Manage your active RFQs visible to sellers.</p>
+                    </div>
+                    <button 
+                        onClick={() => setIsPostModalOpen(true)}
+                        className="bg-navy text-white px-6 py-3 rounded-lg font-bold uppercase text-sm tracking-widest shadow hover:bg-orange transition-all flex items-center gap-2"
+                    >
+                        <PlusCircle size={18} /> Post New
+                    </button>
                 </div>
-                <h3 className="text-2xl font-black text-navy uppercase mb-2">Can't Find What You Need?</h3>
-                <p className="text-steel mb-8 max-w-lg mx-auto">
-                   Post an Open RFQ (Request for Quote) to the marketplace. Verified sellers will be notified and can contact you with their best offers.
-                </p>
-                <button 
-                    onClick={() => setIsPostModalOpen(true)}
-                    className="bg-navy text-white px-8 py-4 rounded font-bold uppercase tracking-widest shadow-xl hover:bg-orange hover:-translate-y-1 transition-all flex items-center gap-2 mx-auto"
-                >
-                    <PlusCircle size={20} /> Post New Requirement
-                </button>
+
+                {/* RFQ List */}
+                {reqLoading ? (
+                    <div className="text-center py-20 bg-white rounded shadow">Loading Requirements...</div>
+                ) : myRequirements.length === 0 ? (
+                    <div className="bg-white p-12 rounded-lg shadow-lg border border-platinum text-center">
+                        <div className="inline-block p-6 bg-orange/10 rounded-full mb-6 text-orange animate-bounce">
+                           <Upload size={48} />
+                        </div>
+                        <h3 className="text-2xl font-black text-navy uppercase mb-2">No Requirements Posted</h3>
+                        <p className="text-steel mb-8 max-w-lg mx-auto">
+                           Post an Open RFQ to the marketplace. Sellers will be notified and can contact you.
+                        </p>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 gap-4">
+                        {myRequirements.map(req => (
+                            <div key={req.id} className="bg-white p-6 rounded-lg shadow hover:shadow-md border border-platinum transition-shadow flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                <div>
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <h4 className="text-lg font-black text-navy">{req.material}</h4>
+                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide
+                                            ${req.status === 'OPEN' ? 'bg-green-100 text-green-700' : 
+                                              req.status === 'FULFILLED' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'}`
+                                        }>
+                                            {req.status}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-4 text-sm text-steel">
+                                        <span className="flex items-center gap-1"><Package size={14}/> {req.qty}</span>
+                                        <span className="flex items-center gap-1"><MapPin size={14}/> {req.location}</span>
+                                        <span className="flex items-center gap-1"><Clock size={14}/> {req.postedAt}</span>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-3 w-full md:w-auto">
+                                    {/* Action Buttons based on Status */}
+                                    {req.status === 'OPEN' && (
+                                        <>
+                                            <button 
+                                                onClick={() => handleUpdateStatus(req.id, 'FULFILLED')}
+                                                className="flex-1 md:flex-none px-4 py-2 border border-green-500 text-green-600 rounded text-xs font-bold uppercase hover:bg-green-50 transition-colors flex items-center justify-center gap-2"
+                                                title="Mark as Fulfilled"
+                                            >
+                                                <CheckCircle size={16} /> Fulfill
+                                            </button>
+                                            <button 
+                                                onClick={() => handleUpdateStatus(req.id, 'CLOSED')}
+                                                className="flex-1 md:flex-none px-4 py-2 border border-gray-400 text-gray-500 rounded text-xs font-bold uppercase hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                                                title="Close Requirement"
+                                            >
+                                                <XCircle size={16} /> Close
+                                            </button>
+                                        </>
+                                    )}
+                                    
+                                    {/* Delete is always available */}
+                                    <button 
+                                        onClick={() => handleDeleteRequirement(req.id)}
+                                        className="px-4 py-2 bg-red-50 text-red-500 rounded text-xs font-bold uppercase hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center gap-2"
+                                        title="Delete Permanently"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
              </div>
           )}
 
-          {activeTab === 'saved' && (
+          {/* Placeholders for Saved/Orders */}
+          {['saved', 'orders'].includes(activeTab) && (
              <div className="bg-white p-12 rounded-lg shadow-lg border border-platinum text-center animate-fadeIn">
-                <Save size={40} className="text-steel mx-auto mb-4"/>
-                <h3 className="text-xl font-black text-navy uppercase">Saved Listings</h3>
-                <p className="text-steel mt-2">Feature coming soon.</p>
-             </div>
-          )}
-
-          {activeTab === 'orders' && (
-             <div className="bg-white p-12 rounded-lg shadow-lg border border-platinum text-center animate-fadeIn">
-                <FileText size={40} className="text-steel mx-auto mb-4"/>
-                <h3 className="text-xl font-black text-navy uppercase">My Orders</h3>
-                <p className="text-steel mt-2">Feature coming soon.</p>
+                <div className="inline-block p-4 bg-platinum/50 rounded-full mb-4">
+                   {activeTab === 'saved' ? <Save size={40} className="text-steel"/> : <FileText size={40} className="text-steel"/>}
+                </div>
+                <h3 className="text-xl font-black text-navy uppercase">{activeTab} Module</h3>
+                <p className="text-steel mt-2">Coming soon.</p>
              </div>
           )}
         </main>
@@ -427,7 +486,7 @@ const BuyerDashboard = () => {
       {/* --- POST REQUIREMENT MODAL --- */}
       <PostRequirementModal 
         isOpen={isPostModalOpen} 
-        onClose={() => setIsPostModalOpen(false)} 
+        onClose={handlePostSuccess} 
         isAuthenticated={isAuthenticated}
       />
 
