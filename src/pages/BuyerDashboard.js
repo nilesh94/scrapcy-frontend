@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, Upload, Save, FileText, MapPin, 
-  Search, Filter, Grid, List, ShieldCheck, ExternalLink, Menu, X, ChevronDown, 
+  Search, Filter, Grid, List, ShieldCheck, ExternalLink, ChevronDown, 
   Package, MessageCircle, ChevronLeft, ChevronRight, PlusCircle, 
   CheckCircle, XCircle, Trash2, Clock 
 } from 'lucide-react';
@@ -11,7 +11,7 @@ import Header from '../components/Header/Header';
 import Footer from '../components/Footer/Footer';
 import PostRequirementModal from '../components/PostRequirementModal';
 
-// --- IMAGE CAROUSEL COMPONENT (Unchanged) ---
+// --- IMAGE CAROUSEL COMPONENT ---
 const ImageCarousel = ({ images, title }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -67,15 +67,14 @@ const BuyerDashboard = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [activeTab, setActiveTab] = useState('marketplace'); 
   const [viewMode, setViewMode] = useState('card');
-  const [showMobileNav, setShowMobileNav] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
 
   // Data States
   const [listings, setListings] = useState([]);
-  const [myRequirements, setMyRequirements] = useState([]); // <--- New State for RFQs
+  const [myRequirements, setMyRequirements] = useState([]); 
   const [loading, setLoading] = useState(true);
-  const [reqLoading, setReqLoading] = useState(false); // Loading for RFQ tab
+  const [reqLoading, setReqLoading] = useState(false);
   const [error, setError] = useState('');
 
   // Filter States
@@ -156,64 +155,82 @@ const BuyerDashboard = () => {
     }
   };
 
+  // --- REAL FETCH (Replaces Mock Data) ---
   const fetchMyRequirements = async () => {
     setReqLoading(true);
     try {
-        // MOCK DATA FOR DEMO - Replace with: axios.get('.../requirements/my')
-        const mockRequirements = [
-            { id: 1, material: 'Copper Wire', qty: '50 MT', location: 'Gujarat', status: 'OPEN', postedAt: '2026-01-20' },
-            { id: 2, material: 'HMS 1&2', qty: '200 MT', location: 'Punjab', status: 'FULFILLED', postedAt: '2026-01-15' },
-        ];
+        const token = localStorage.getItem('token');
+        const response = await axios.get('https://scrapcy-backend-new-1.onrender.com/requirements/my', {
+            headers: { Authorization: `Bearer ${token}` }
+        });
         
-        // Simulating network delay
-        setTimeout(() => {
-            setMyRequirements(mockRequirements);
-            setReqLoading(false);
-        }, 800);
+        // Map API response to UI
+        const mappedData = response.data.map(req => ({
+            id: req.id,
+            material: req.material,
+            // Display Form & Grade as details since Quantity isn't a column
+            specs: `${req.form || 'Any Form'} • ${req.grade || 'Any Grade'}`, 
+            location: req.locations || "Anywhere",
+            status: req.status,
+            postedAt: new Date(req.created_at).toLocaleDateString()
+        }));
+
+        setMyRequirements(mappedData);
     } catch (err) {
         console.error("Error fetching requirements:", err);
+        // Explicitly set empty array on error/no data to trigger the empty state UI
+        setMyRequirements([]);
+    } finally {
         setReqLoading(false);
     }
   };
 
-  // --- RFQ ACTIONS ---
+  // --- STATUS ACTIONS (Real API Calls) ---
 
   const handleUpdateStatus = async (id, newStatus) => {
-    // 1. Optimistic Update (Update UI immediately)
+    // 1. Optimistic UI Update
     setMyRequirements(prev => prev.map(req => 
         req.id === id ? { ...req, status: newStatus } : req
     ));
 
-    // 2. API Call (Replace with actual axios.put)
     try {
-        console.log(`Updating RFQ ${id} to ${newStatus}`);
-        // await axios.put(`.../requirements/${id}/status`, { status: newStatus });
+        const token = localStorage.getItem('token');
+        await axios.put(
+            `https://scrapcy-backend-new-1.onrender.com/requirements/${id}/status`, 
+            { status: newStatus },
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
     } catch (err) {
-        alert("Failed to update status");
+        console.error("Status update failed", err);
+        alert("Failed to update status. Please try again.");
         fetchMyRequirements(); // Revert on error
     }
   };
 
   const handleDeleteRequirement = async (id) => {
-    if(!window.confirm("Are you sure you want to delete this requirement permanently?")) return;
+    if(!window.confirm("Are you sure you want to delete this requirement?")) return;
 
     // 1. Optimistic Delete
     setMyRequirements(prev => prev.filter(req => req.id !== id));
 
-    // 2. API Call
     try {
-        console.log(`Deleting RFQ ${id}`);
-        // await axios.delete(`.../requirements/${id}`);
+        // Soft Delete via API
+        const token = localStorage.getItem('token');
+        await axios.put(
+            `https://scrapcy-backend-new-1.onrender.com/requirements/${id}/status`, 
+            { status: 'DELETED' },
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
     } catch (err) {
-        alert("Failed to delete");
-        fetchMyRequirements();
+        console.error("Delete failed", err);
+        alert("Failed to delete requirement.");
+        fetchMyRequirements(); // Revert on error
     }
   };
 
   const handlePostSuccess = () => {
-      // Callback from Modal when submission is successful
       setIsPostModalOpen(false);
-      fetchMyRequirements(); // Refresh list
+      fetchMyRequirements(); // Refresh list to show new item
   };
 
   // --- FILTERS ---
@@ -329,7 +346,6 @@ const BuyerDashboard = () => {
                     <p className="text-sm text-gray-500">Try adjusting your filters or search term.</p>
                 </div>
               ) : viewMode === 'card' ? (
-                // CARD VIEW
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                   {filteredListings.map(item => (
                     <div key={item.id} className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-platinum group relative flex flex-col">
@@ -357,7 +373,6 @@ const BuyerDashboard = () => {
                   ))}
                 </div>
               ) : (
-                // LIST VIEW
                 <div className="bg-white rounded-lg shadow-lg border border-platinum overflow-hidden">
                     <div className="overflow-x-auto">
                       <table className="w-full text-left border-collapse">
@@ -427,7 +442,7 @@ const BuyerDashboard = () => {
                                         </span>
                                     </div>
                                     <div className="flex items-center gap-4 text-sm text-steel">
-                                        <span className="flex items-center gap-1"><Package size={14}/> {req.qty}</span>
+                                        <span className="flex items-center gap-1"><Package size={14}/> {req.specs}</span>
                                         <span className="flex items-center gap-1"><MapPin size={14}/> {req.location}</span>
                                         <span className="flex items-center gap-1"><Clock size={14}/> {req.postedAt}</span>
                                     </div>
