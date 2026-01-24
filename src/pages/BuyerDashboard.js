@@ -66,9 +66,24 @@ const BuyerDashboard = () => {
   // --- STATE ---
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   
-  // 1. UPDATED: Initialize from LocalStorage or default to 'marketplace'
+  // --- UPDATED TAB INITIALIZATION LOGIC ---
+  // We check if the stored tab belongs to the CURRENT session token.
+  // If tokens match (Refresh), restore tab. If not (New Login), reset to 'marketplace'.
   const [activeTab, setActiveTab] = useState(() => {
-    return localStorage.getItem('buyer_dashboard_active_tab') || 'marketplace';
+    try {
+        const savedState = localStorage.getItem('buyer_dashboard_state');
+        const currentToken = localStorage.getItem('token');
+        
+        if (savedState && currentToken) {
+            const parsed = JSON.parse(savedState);
+            if (parsed.token === currentToken) {
+                return parsed.tab; // Restore tab (Same Session)
+            }
+        }
+    } catch (e) {
+        console.warn("Failed to parse dashboard state", e);
+    }
+    return 'marketplace'; // Default (New Session)
   });
 
   const [viewMode, setViewMode] = useState('card');
@@ -92,12 +107,18 @@ const BuyerDashboard = () => {
     location: ''
   });
 
-  // 2. UPDATED: Save tab to LocalStorage whenever it changes
+  // --- SAVE STATE ON CHANGE ---
   useEffect(() => {
-    localStorage.setItem('buyer_dashboard_active_tab', activeTab);
+    const currentToken = localStorage.getItem('token');
+    if (currentToken) {
+        localStorage.setItem('buyer_dashboard_state', JSON.stringify({
+            tab: activeTab,
+            token: currentToken // Bind tab to this specific token
+        }));
+    }
   }, [activeTab]);
 
-  // --- AUTH & INITIAL FETCH ---
+  // --- 1. AUTH & INITIAL FETCH ---
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -361,7 +382,7 @@ const BuyerDashboard = () => {
                         </div>
                         <div className="flex justify-between items-center mb-4 pb-4 border-b border-platinum">
                              <div><p className="text-[10px] text-steel font-bold uppercase">Price</p><p className="text-xl font-black text-navy">₹{item.price.toLocaleString()}</p></div>
-                             <div className="text-right"><p className="text-[10px] text-steel font-bold uppercase">Qty</p><p className="text-sm font-bold text-navy">{item.qty} {item.unit}</p></div>
+                             <div className="text-right"><p className="text-[10px] text-steel font-bold uppercase">Quantity</p><p className="text-sm font-bold text-navy">{item.qty} {item.unit}</p></div>
                         </div>
                         <div className="space-y-2 text-sm text-gray-600 mb-4 flex-grow">
                              <div className="flex items-center gap-2"><MapPin size={16} className="text-orange" /><span className="font-medium truncate">{item.location}</span></div>
