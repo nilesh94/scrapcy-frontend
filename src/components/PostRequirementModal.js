@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { X, Send, User, Building2, Mail, Phone, FileText, ChevronDown } from 'lucide-react';
+import { X, Send, User, Building2, Mail, Phone, FileText, ChevronDown, AlertCircle } from 'lucide-react';
 
 const PostRequirementModal = ({ isOpen, onClose, isAuthenticated }) => {
   const [loading, setLoading] = useState(false);
@@ -8,14 +8,22 @@ const PostRequirementModal = ({ isOpen, onClose, isAuthenticated }) => {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
 
-  // --- 1. DYNAMIC DROPDOWN OPTIONS ---
-  const [options, setOptions] = useState({
-    scrapType: [],
-    category: [],
-    material: [],
-    form: [],
-    grade: []
-  });
+  // --- 1. MASTER DATA STATE ---
+  const [hierarchy, setHierarchy] = useState([]); // Full Tree from /categories/hierarchy
+
+  // Selection States (To filter dropdowns)
+  const [selectedScrapType, setSelectedScrapType] = useState(''); 
+  const [filteredCategories, setFilteredCategories] = useState([]); 
+  const [selectedCategoryId, setSelectedCategoryId] = useState(''); 
+
+  const [filteredMaterials, setFilteredMaterials] = useState([]); 
+  const [selectedMaterialId, setSelectedMaterialId] = useState(''); 
+
+  const [filteredForms, setFilteredForms] = useState([]); 
+  const [selectedFormId, setSelectedFormId] = useState(''); 
+
+  const [filteredGrades, setFilteredGrades] = useState([]); 
+  const [selectedGradeId, setSelectedGradeId] = useState(''); 
 
   // --- 2. FORM STATE ---
   const [formData, setFormData] = useState({
@@ -36,7 +44,7 @@ const PostRequirementModal = ({ isOpen, onClose, isAuthenticated }) => {
   });
 
   // --- 3. MANUAL ENTRY MODE STATE ---
-  // Tracks which fields have been switched to "Manual Text Input" (Others)
+  // If true, renders an input field instead of select
   const [manualMode, setManualMode] = useState({
     scrapType: false,
     category: false,
@@ -45,73 +53,146 @@ const PostRequirementModal = ({ isOpen, onClose, isAuthenticated }) => {
     grade: false
   });
 
-  // Hierarchy Order: If one becomes manual, all below it must become manual
-  const hierarchy = ['scrapType', 'category', 'material', 'form', 'grade'];
+  const hierarchyKeys = ['scrapType', 'category', 'material', 'form', 'grade'];
 
-  // --- FETCH DROPDOWN DATA ON OPEN ---
+  // --- FETCH MASTER DATA ON OPEN ---
   useEffect(() => {
     if (isOpen) {
       setSuccess(false);
       setError('');
-      fetchDropdownOptions();
+      fetchMasterData();
     }
   }, [isOpen]);
 
-  const fetchDropdownOptions = async () => {
+  const fetchMasterData = async () => {
     setDataLoading(true);
     try {
-        // Fetch existing listings to populate dropdowns dynamically from DB
-        const response = await axios.get('https://scrapcy-backend-new-1.onrender.com/scrap/all');
-        const data = response.data;
-
-        // Extract Unique Values using Set
-        const uniqueOptions = {
-            scrapType: [...new Set(data.map(item => item.scrap_type || item.category_ref?.scrap_type).filter(Boolean))],
-            category: [...new Set(data.map(item => item.category || item.category_ref?.material_category).filter(Boolean))],
-            material: [...new Set(data.map(item => item.material_name || item.material_ref?.material_name).filter(Boolean))],
-            form: [...new Set(data.map(item => item.form || item.form_ref?.form_name).filter(Boolean))],
-            grade: [...new Set(data.map(item => item.grade || item.grade_ref?.grade_name).filter(Boolean))]
-        };
-
-        setOptions(uniqueOptions);
+        const res = await axios.get('https://scrapcy-backend-new-1.onrender.com/categories/hierarchy');
+        if (Array.isArray(res.data) && res.data.length > 0) {
+            setHierarchy(res.data);
+        } else {
+            console.warn("API returned empty hierarchy data.");
+            setHierarchy([]); // Handle empty state
+        }
     } catch (err) {
-        console.error("Failed to load dropdown options:", err);
-        // Fallback or leave empty (user can use 'Others')
+        console.error("Master data fetch error", err);
+        setHierarchy([]); // Allow manual entry if API fails
     } finally {
         setDataLoading(false);
     }
   };
 
-  // --- HANDLE INPUT CHANGE ---
-  const handleInputChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  // --- CASCADING DROPDOWN HANDLERS ---
+
+  const handleScrapTypeChange = (e) => {
+    const val = e.target.value;
+    
+    // Reset lower levels
+    setSelectedCategoryId(''); setFilteredCategories([]);
+    setSelectedMaterialId(''); setFilteredMaterials([]);
+    setSelectedFormId('');     setFilteredForms([]);
+    setSelectedGradeId('');    setFilteredGrades([]);
+    
+    // Reset Manual Modes below
+    setManualMode(prev => ({ ...prev, category: false, material: false, form: false, grade: false }));
+
+    if (val === 'Others') {
+        setManualMode(prev => ({ ...prev, scrapType: true, category: true, material: true, form: true, grade: true }));
+        setFormData(prev => ({ ...prev, scrapType: '' })); // Clear for typing
+    } else {
+        setSelectedScrapType(val);
+        setFormData(prev => ({ ...prev, scrapType: val }));
+        
+        // Filter Categories
+        const categories = hierarchy.filter(item => item.scrap_type === val);
+        setFilteredCategories(categories || []);
+    }
   };
 
-  // --- HANDLE DROPDOWN SELECTION WITH "OTHERS" LOGIC ---
-  const handleSelectChange = (e) => {
-    const { name, value } = e.target;
+  const handleCategoryChange = (e) => {
+    const val = e.target.value;
+    
+    // Reset lower levels
+    setSelectedMaterialId(''); setFilteredMaterials([]);
+    setSelectedFormId('');     setFilteredForms([]);
+    setSelectedGradeId('');    setFilteredGrades([]);
 
-    if (value === 'Others') {
-        // 1. Enable Manual Mode for this field
-        // 2. AND Enable Manual Mode for ALL subsequent fields in hierarchy
-        const startIndex = hierarchy.indexOf(name);
-        const newManualMode = { ...manualMode };
-        
-        // Cascade the "Manual Mode" down the chain
-        for (let i = startIndex; i < hierarchy.length; i++) {
-            newManualMode[hierarchy[i]] = true;
-            // Optional: Clear downstream values to force user entry
-            // setFormData(prev => ({...prev, [hierarchy[i]]: ''})) 
-        }
-        
-        setManualMode(newManualMode);
-        
-        // Clear current field value to allow typing
-        setFormData(prev => ({ ...prev, [name]: '' }));
+    if (val === 'Others') {
+        setManualMode(prev => ({ ...prev, category: true, material: true, form: true, grade: true }));
+        setFormData(prev => ({ ...prev, category: '' }));
     } else {
-        // Standard Selection
-        setFormData(prev => ({ ...prev, [name]: value }));
+        const catId = parseInt(val);
+        setSelectedCategoryId(catId);
+        
+        const catObj = hierarchy.find(item => item.id === catId);
+        if (catObj) {
+            setFormData(prev => ({ ...prev, category: catObj.material_category })); // Store Name, not ID
+            setFilteredMaterials(catObj.materials || []);
+        }
     }
+  };
+
+  const handleMaterialChange = (e) => {
+    const val = e.target.value;
+    
+    setSelectedFormId('');     setFilteredForms([]);
+    setSelectedGradeId('');    setFilteredGrades([]);
+
+    if (val === 'Others') {
+        setManualMode(prev => ({ ...prev, material: true, form: true, grade: true }));
+        setFormData(prev => ({ ...prev, material: '' }));
+    } else {
+        const matId = parseInt(val);
+        setSelectedMaterialId(matId);
+        
+        const matObj = filteredMaterials.find(item => item.id === matId);
+        if (matObj) {
+            setFormData(prev => ({ ...prev, material: matObj.material_name }));
+            setFilteredForms(matObj.forms || []);
+        }
+    }
+  };
+
+  const handleFormChange = (e) => {
+    const val = e.target.value;
+    
+    setSelectedGradeId('');    setFilteredGrades([]);
+
+    if (val === 'Others') {
+        setManualMode(prev => ({ ...prev, form: true, grade: true }));
+        setFormData(prev => ({ ...prev, form: '' }));
+    } else {
+        const fId = parseInt(val);
+        setSelectedFormId(fId);
+        
+        const formObj = filteredForms.find(item => item.id === fId);
+        if (formObj) {
+            setFormData(prev => ({ ...prev, form: formObj.form_name }));
+            setFilteredGrades(formObj.grades || []);
+        }
+    }
+  };
+
+  const handleGradeChange = (e) => {
+    const val = e.target.value;
+    
+    if (val === 'Others') {
+        setManualMode(prev => ({ ...prev, grade: true }));
+        setFormData(prev => ({ ...prev, grade: '' }));
+    } else {
+        const gId = parseInt(val);
+        setSelectedGradeId(gId);
+        
+        const gradeObj = filteredGrades.find(item => item.id === gId);
+        if (gradeObj) {
+            setFormData(prev => ({ ...prev, grade: gradeObj.grade_name }));
+        }
+    }
+  };
+
+  // --- GENERIC INPUT HANDLER ---
+  const handleInputChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   // --- SUBMIT ---
@@ -141,13 +222,19 @@ const PostRequirementModal = ({ isOpen, onClose, isAuthenticated }) => {
       
       setTimeout(() => {
         onClose();
-        // Reset Form
+        // Reset Everything
         setFormData({
             scrapType: '', category: '', material: '', form: '', grade: '', locations: '', description: '', note: '',
             guestName: '', guestEmail: '', guestPhone: '', guestCompany: '', guestGst: ''
         });
-        // Reset Manual Mode
         setManualMode({ scrapType: false, category: false, material: false, form: false, grade: false });
+        
+        setSelectedScrapType(''); setFilteredCategories([]);
+        setSelectedCategoryId(''); setFilteredMaterials([]);
+        setSelectedMaterialId(''); setFilteredForms([]);
+        setSelectedFormId('');     setFilteredGrades([]);
+        setSelectedGradeId('');
+
       }, 2000);
 
     } catch (err) {
@@ -159,46 +246,6 @@ const PostRequirementModal = ({ isOpen, onClose, isAuthenticated }) => {
   };
 
   if (!isOpen) return null;
-
-  // --- HELPER TO RENDER FIELD (Select vs Input) ---
-  const renderField = (key, label, placeholder) => {
-    const isManual = manualMode[key];
-    const dropdownOptions = options[key] || [];
-
-    return (
-        <div className="relative">
-            {isManual ? (
-                <input 
-                    name={key} 
-                    value={formData[key]} 
-                    onChange={handleInputChange} 
-                    placeholder={`Enter ${label} (Manual)`} 
-                    className="w-full p-3 bg-white border-2 border-orange/50 rounded text-sm focus:border-orange outline-none font-medium animate-fadeIn" 
-                    required 
-                    autoFocus={formData[key] === ''} // Focus when switched
-                />
-            ) : (
-                <div className="relative">
-                    <select 
-                        name={key} 
-                        value={formData[key]} 
-                        onChange={handleSelectChange} 
-                        className="w-full p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none appearance-none cursor-pointer" 
-                        required
-                        disabled={dataLoading}
-                    >
-                        <option value="">{dataLoading ? "Loading..." : `Select ${label}`}</option>
-                        {dropdownOptions.map((opt, idx) => (
-                            <option key={idx} value={opt}>{opt}</option>
-                        ))}
-                        <option value="Others" className="font-bold text-orange bg-orange/10">+ Others (Add New)</option>
-                    </select>
-                    <ChevronDown size={16} className="absolute right-3 top-3.5 text-gray-400 pointer-events-none" />
-                </div>
-            )}
-        </div>
-    );
-  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/80 backdrop-blur-sm p-4 animate-fadeIn">
@@ -235,13 +282,90 @@ const PostRequirementModal = ({ isOpen, onClose, isAuthenticated }) => {
                   <FileText size={16} className="text-orange"/> Scrap Details
                 </h3>
                 
+                {/* No Data Warning */}
+                {hierarchy.length === 0 && !dataLoading && (
+                    <div className="mb-4 p-3 bg-yellow-50 text-yellow-700 text-xs font-bold rounded flex items-center gap-2">
+                        <AlertCircle size={16}/> Warning: Unable to load categories. Please type manually using 'Others'.
+                    </div>
+                )}
+
                 {/* Dynamic Fields Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {renderField('scrapType', 'Scrap Type')}
-                  {renderField('category', 'Category')}
-                  {renderField('material', 'Material')}
-                  {renderField('form', 'Form')}
-                  {renderField('grade', 'Grade')}
+                  
+                  {/* 1. Scrap Type */}
+                  <div className="relative">
+                    {manualMode.scrapType ? (
+                        <input name="scrapType" value={formData.scrapType} onChange={handleInputChange} placeholder="Scrap Type (Manual)" className="w-full p-3 bg-white border-2 border-orange/50 rounded text-sm focus:border-orange outline-none font-medium animate-fadeIn" required autoFocus />
+                    ) : (
+                        <select onChange={handleScrapTypeChange} value={selectedScrapType} className="w-full p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none cursor-pointer" required disabled={dataLoading}>
+                            <option value="">{dataLoading ? "Loading..." : "Select Scrap Type"}</option>
+                            {[...new Set(hierarchy.map(item => item.scrap_type))].map(type => (
+                                <option key={type} value={type}>{type}</option>
+                            ))}
+                            <option value="Others" className="font-bold text-orange">+ Others (Add New)</option>
+                        </select>
+                    )}
+                  </div>
+
+                  {/* 2. Category */}
+                  <div className="relative">
+                    {manualMode.category ? (
+                        <input name="category" value={formData.category} onChange={handleInputChange} placeholder="Category (Manual)" className="w-full p-3 bg-white border-2 border-orange/50 rounded text-sm focus:border-orange outline-none font-medium animate-fadeIn" required />
+                    ) : (
+                        <select onChange={handleCategoryChange} value={selectedCategoryId} disabled={!selectedScrapType} className="w-full p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none cursor-pointer disabled:bg-gray-100" required>
+                            <option value="">Select Category</option>
+                            {filteredCategories.map(cat => (
+                                <option key={cat.id} value={cat.id}>{cat.material_category}</option>
+                            ))}
+                            <option value="Others" className="font-bold text-orange">+ Others</option>
+                        </select>
+                    )}
+                  </div>
+
+                  {/* 3. Material */}
+                  <div className="relative">
+                    {manualMode.material ? (
+                        <input name="material" value={formData.material} onChange={handleInputChange} placeholder="Material (Manual)" className="w-full p-3 bg-white border-2 border-orange/50 rounded text-sm focus:border-orange outline-none font-medium animate-fadeIn" required />
+                    ) : (
+                        <select onChange={handleMaterialChange} value={selectedMaterialId} disabled={!selectedCategoryId} className="w-full p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none cursor-pointer disabled:bg-gray-100" required>
+                            <option value="">Select Material</option>
+                            {filteredMaterials.map(mat => (
+                                <option key={mat.id} value={mat.id}>{mat.material_name}</option>
+                            ))}
+                            <option value="Others" className="font-bold text-orange">+ Others</option>
+                        </select>
+                    )}
+                  </div>
+
+                  {/* 4. Form */}
+                  <div className="relative">
+                    {manualMode.form ? (
+                        <input name="form" value={formData.form} onChange={handleInputChange} placeholder="Form (Manual)" className="w-full p-3 bg-white border-2 border-orange/50 rounded text-sm focus:border-orange outline-none font-medium animate-fadeIn" required />
+                    ) : (
+                        <select onChange={handleFormChange} value={selectedFormId} disabled={!selectedMaterialId} className="w-full p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none cursor-pointer disabled:bg-gray-100" required>
+                            <option value="">Select Form</option>
+                            {(filteredForms || []).map(form => (
+                                <option key={form.id} value={form.id}>{form.form_name}</option>
+                            ))}
+                            <option value="Others" className="font-bold text-orange">+ Others</option>
+                        </select>
+                    )}
+                  </div>
+
+                  {/* 5. Grade */}
+                  <div className="relative">
+                    {manualMode.grade ? (
+                        <input name="grade" value={formData.grade} onChange={handleInputChange} placeholder="Grade (Manual)" className="w-full p-3 bg-white border-2 border-orange/50 rounded text-sm focus:border-orange outline-none font-medium animate-fadeIn" required />
+                    ) : (
+                        <select onChange={handleGradeChange} value={selectedGradeId} disabled={!selectedFormId || filteredGrades.length === 0} className="w-full p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none cursor-pointer disabled:bg-gray-100">
+                            <option value="">Select Grade</option>
+                            {(filteredGrades || []).map(grad => (
+                                <option key={grad.id} value={grad.id}>{grad.grade_name}</option>
+                            ))}
+                            <option value="Others" className="font-bold text-orange">+ Others</option>
+                        </select>
+                    )}
+                  </div>
                   
                   {/* Location is always input */}
                   <input 
