@@ -8,16 +8,14 @@ const PostRequirementModal = ({ isOpen, onClose, isAuthenticated }) => {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
 
-  // --- 1. MASTER DATA STATE ---
+  // --- MASTER DATA ---
   const [hierarchy, setHierarchy] = useState([]); 
-
-  // Selection States
   const [filteredCategories, setFilteredCategories] = useState([]); 
   const [filteredMaterials, setFilteredMaterials] = useState([]); 
   const [filteredForms, setFilteredForms] = useState([]); 
   const [filteredGrades, setFilteredGrades] = useState([]); 
 
-  // --- 2. FORM STATE ---
+  // --- FORM STATE ---
   const [formData, setFormData] = useState({
     scrapType: '',
     category: '',
@@ -30,19 +28,13 @@ const PostRequirementModal = ({ isOpen, onClose, isAuthenticated }) => {
     guestName: '', guestEmail: '', guestPhone: '', guestCompany: '', guestGst: ''
   });
 
-  // --- 3. MANUAL ENTRY MODE STATE ---
+  // --- MANUAL MODE ---
   const [manualMode, setManualMode] = useState({
-    scrapType: false,
-    category: false,
-    material: false,
-    form: false,
-    grade: false
+    scrapType: false, category: false, material: false, form: false, grade: false
   });
 
-  // Hierarchy for cascading resets
   const hierarchyKeys = ['scrapType', 'category', 'material', 'form', 'grade'];
 
-  // --- FETCH DATA ---
   useEffect(() => {
     if (isOpen) {
       setSuccess(false);
@@ -55,40 +47,31 @@ const PostRequirementModal = ({ isOpen, onClose, isAuthenticated }) => {
     setDataLoading(true);
     try {
         const res = await axios.get('https://scrapcy-backend-new-1.onrender.com/categories/hierarchy');
-        if (Array.isArray(res.data) && res.data.length > 0) {
-            setHierarchy(res.data);
-        } else {
-            setHierarchy([]); 
-        }
+        if (Array.isArray(res.data) && res.data.length > 0) setHierarchy(res.data);
+        else setHierarchy([]); 
     } catch (err) {
-        console.error("Master data fetch error", err);
+        console.error("Master data error", err);
         setHierarchy([]); 
     } finally {
         setDataLoading(false);
     }
   };
 
-  // --- HELPERS ---
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Function to switch BACK to Dropdown Mode
   const toggleToDropdown = (key) => {
     const startIndex = hierarchyKeys.indexOf(key);
-    
-    // Create copies to update state
     const newManualMode = { ...manualMode };
     const newFormData = { ...formData };
 
-    // Reset this field AND all children to Dropdown Mode + Clear Values
     for (let i = startIndex; i < hierarchyKeys.length; i++) {
         const fieldKey = hierarchyKeys[i];
         newManualMode[fieldKey] = false;
         newFormData[fieldKey] = ''; 
     }
 
-    // Clear specific filtered lists based on what was reset
     if (key === 'scrapType') { setFilteredCategories([]); setFilteredMaterials([]); setFilteredForms([]); setFilteredGrades([]); }
     if (key === 'category') { setFilteredMaterials([]); setFilteredForms([]); setFilteredGrades([]); }
     if (key === 'material') { setFilteredForms([]); setFilteredGrades([]); }
@@ -98,11 +81,9 @@ const PostRequirementModal = ({ isOpen, onClose, isAuthenticated }) => {
     setFormData(newFormData);
   };
 
-  // --- HANDLERS ---
-
+  // --- HANDLERS (Same as before) ---
   const handleScrapTypeChange = (e) => {
     const val = e.target.value;
-    // Reset lower levels
     setFilteredCategories([]); setFilteredMaterials([]); setFilteredForms([]); setFilteredGrades([]);
     setFormData(prev => ({ ...prev, category: '', material: '', form: '', grade: '' }));
 
@@ -190,6 +171,7 @@ const PostRequirementModal = ({ isOpen, onClose, isAuthenticated }) => {
     setLoading(true);
     setError('');
 
+    // Guest Validations
     if (!isAuthenticated) {
         if(!formData.guestName || !formData.guestEmail || !formData.guestPhone || !formData.guestCompany || !formData.guestGst) {
             setError("All company details are mandatory.");
@@ -200,12 +182,23 @@ const PostRequirementModal = ({ isOpen, onClose, isAuthenticated }) => {
 
     try {
       const payload = { ...formData };
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      console.log("Requirement Posted:", payload);
+      
+      // 1. Get Token (if logged in)
+      const token = localStorage.getItem('token');
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+      // 2. REAL API CALL
+      const response = await axios.post(
+          'https://scrapcy-backend-new-1.onrender.com/requirements/create', 
+          payload,
+          { headers }
+      );
+      
+      console.log("Requirement Posted:", response.data);
       setSuccess(true);
       
       setTimeout(() => {
-        onClose();
+        onClose(); // Triggers refresh in parent
         setFormData({
             scrapType: '', category: '', material: '', form: '', grade: '', locations: '', description: '', note: '',
             guestName: '', guestEmail: '', guestPhone: '', guestCompany: '', guestGst: ''
@@ -216,7 +209,7 @@ const PostRequirementModal = ({ isOpen, onClose, isAuthenticated }) => {
 
     } catch (err) {
       console.error(err);
-      setError("Failed to post requirement. Please try again.");
+      setError("Failed to post requirement. Server error.");
     } finally {
       setLoading(false);
     }
@@ -266,8 +259,7 @@ const PostRequirementModal = ({ isOpen, onClose, isAuthenticated }) => {
                 )}
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  
-                  {/* 1. Scrap Type */}
+                  {/* SCRAP TYPE */}
                   <div className="relative">
                     {manualMode.scrapType ? (
                         <div className="relative">
@@ -285,7 +277,7 @@ const PostRequirementModal = ({ isOpen, onClose, isAuthenticated }) => {
                     )}
                   </div>
 
-                  {/* 2. Category */}
+                  {/* CATEGORY */}
                   <div className="relative">
                     {manualMode.category ? (
                         <div className="relative">
@@ -303,7 +295,7 @@ const PostRequirementModal = ({ isOpen, onClose, isAuthenticated }) => {
                     )}
                   </div>
 
-                  {/* 3. Material */}
+                  {/* MATERIAL */}
                   <div className="relative">
                     {manualMode.material ? (
                         <div className="relative">
@@ -321,7 +313,7 @@ const PostRequirementModal = ({ isOpen, onClose, isAuthenticated }) => {
                     )}
                   </div>
 
-                  {/* 4. Form */}
+                  {/* FORM */}
                   <div className="relative">
                     {manualMode.form ? (
                         <div className="relative">
@@ -339,7 +331,7 @@ const PostRequirementModal = ({ isOpen, onClose, isAuthenticated }) => {
                     )}
                   </div>
 
-                  {/* 5. Grade */}
+                  {/* GRADE */}
                   <div className="relative">
                     {manualMode.grade ? (
                         <div className="relative">
@@ -357,7 +349,7 @@ const PostRequirementModal = ({ isOpen, onClose, isAuthenticated }) => {
                     )}
                   </div>
                   
-                  {/* Location */}
+                  {/* LOCATION */}
                   <input 
                     name="locations" 
                     value={formData.locations} 
@@ -374,7 +366,7 @@ const PostRequirementModal = ({ isOpen, onClose, isAuthenticated }) => {
                 </div>
               </div>
 
-              {/* SECTION 2: COMPANY DETAILS (Updated Order & Title) */}
+              {/* SECTION 2: COMPANY DETAILS (Updated) */}
               {!isAuthenticated && (
                 <div className="animate-fadeIn">
                   <h3 className="text-sm font-black text-navy uppercase border-b-2 border-platinum pb-2 mb-4 flex items-center gap-2">
@@ -385,7 +377,7 @@ const PostRequirementModal = ({ isOpen, onClose, isAuthenticated }) => {
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     
-                    {/* Row 1: Company Name & GST */}
+                    {/* Row 1: Company & GST */}
                     <div className="relative">
                         <Building2 size={16} className="absolute left-3 top-3.5 text-steel"/>
                         <input name="guestCompany" value={formData.guestCompany} onChange={handleInputChange} placeholder="Company Name" className="w-full pl-10 p-3 bg-platinum/30 border border-platinum rounded text-sm focus:border-navy outline-none" required />
@@ -419,7 +411,7 @@ const PostRequirementModal = ({ isOpen, onClose, isAuthenticated }) => {
 
               {/* Updated Button Text */}
               <button type="submit" disabled={loading} className="w-full py-4 bg-navy text-white font-black uppercase tracking-widest rounded shadow-lg hover:bg-orange transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                {loading ? "Posting..." : "Submit"}
+                {loading ? "Submitting..." : "Submit"}
               </button>
 
             </form>
