@@ -66,9 +66,7 @@ const BuyerDashboard = () => {
   // --- STATE ---
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   
-  // --- UPDATED TAB INITIALIZATION LOGIC ---
-  // We check if the stored tab belongs to the CURRENT session token.
-  // If tokens match (Refresh), restore tab. If not (New Login), reset to 'marketplace'.
+  // Tab State
   const [activeTab, setActiveTab] = useState(() => {
     try {
         const savedState = localStorage.getItem('buyer_dashboard_state');
@@ -77,18 +75,21 @@ const BuyerDashboard = () => {
         if (savedState && currentToken) {
             const parsed = JSON.parse(savedState);
             if (parsed.token === currentToken) {
-                return parsed.tab; // Restore tab (Same Session)
+                return parsed.tab; 
             }
         }
     } catch (e) {
         console.warn("Failed to parse dashboard state", e);
     }
-    return 'marketplace'; // Default (New Session)
+    return 'marketplace'; 
   });
 
   const [viewMode, setViewMode] = useState('card');
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Modal States
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
+  const [prefillRFQ, setPrefillRFQ] = useState(null); // <--- NEW: Holds item data for RFQ
 
   // Data States
   const [listings, setListings] = useState([]);
@@ -107,18 +108,18 @@ const BuyerDashboard = () => {
     location: ''
   });
 
-  // --- SAVE STATE ON CHANGE ---
+  // --- PERSIST TAB ---
   useEffect(() => {
     const currentToken = localStorage.getItem('token');
     if (currentToken) {
         localStorage.setItem('buyer_dashboard_state', JSON.stringify({
             tab: activeTab,
-            token: currentToken // Bind tab to this specific token
+            token: currentToken 
         }));
     }
   }, [activeTab]);
 
-  // --- 1. AUTH & INITIAL FETCH ---
+  // --- AUTH & FETCH ---
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -129,7 +130,6 @@ const BuyerDashboard = () => {
     }
   }, [navigate]);
 
-  // Fetch Requirements whenever tab changes to 'requirements'
   useEffect(() => {
     if (activeTab === 'requirements' && isAuthenticated) {
         fetchMyRequirements();
@@ -137,7 +137,6 @@ const BuyerDashboard = () => {
   }, [activeTab, isAuthenticated]);
 
   // --- API CALLS ---
-
   const fetchListings = async () => {
     try {
       const response = await axios.get('https://scrapcy-backend-new-1.onrender.com/scrap/all');
@@ -213,7 +212,6 @@ const BuyerDashboard = () => {
   };
 
   // --- ACTIONS ---
-
   const handleUpdateStatus = async (id, newStatus) => {
     setMyRequirements(prev => prev.map(req => 
         req.id === id ? { ...req, status: newStatus } : req
@@ -228,16 +226,14 @@ const BuyerDashboard = () => {
         );
     } catch (err) {
         console.error("Status update failed", err);
-        alert("Failed to update status. Please try again.");
+        alert("Failed to update status.");
         fetchMyRequirements(); 
     }
   };
 
   const handleDeleteRequirement = async (id) => {
     if(!window.confirm("Are you sure you want to delete this requirement?")) return;
-
     setMyRequirements(prev => prev.filter(req => req.id !== id));
-
     try {
         const token = localStorage.getItem('token');
         await axios.put(
@@ -254,10 +250,23 @@ const BuyerDashboard = () => {
 
   const handlePostSuccess = () => {
       setIsPostModalOpen(false);
+      setPrefillRFQ(null); // Reset prefill data
       fetchMyRequirements(); 
   };
 
-  // --- FILTERS ---
+  const handleViewDetails = (id) => console.log("View Details for:", id);
+  
+  // --- UPDATED RFQ HANDLER ---
+  const handleRFQ = (itemId) => {
+      // Find the item object
+      const item = listings.find(l => l.id === itemId);
+      if (item) {
+          setPrefillRFQ(item); // Set Data to be passed to modal
+          setIsPostModalOpen(true); // Open Modal
+      }
+  };
+
+  // --- FILTERS & RENDER ---
   const getUniqueOptions = (key) => {
     return [...new Set(listings.map(item => item[key]).filter(Boolean))].sort();
   };
@@ -288,31 +297,30 @@ const BuyerDashboard = () => {
     return str.substring(0, 2) + "****" + str.substring(str.length - 2);
   };
 
-  const handleViewDetails = (id) => console.log("View Details for:", id);
-  const handleRFQ = (id) => alert("RFQ Sent to Seller!");
-
   if (!isAuthenticated) return null;
 
   return (
     <div className="min-h-screen bg-platinum flex flex-col">
       <Header />
 
-      {/* --- HORIZONTAL NAVIGATION --- */}
+      {/* HORIZONTAL NAVIGATION */}
       <div className="bg-white border-b border-platinum shadow-sm sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex space-x-8 overflow-x-auto no-scrollbar">
-            <button onClick={() => setActiveTab('marketplace')} className={`flex items-center gap-2 py-4 text-sm font-bold uppercase tracking-wider border-b-4 transition-all whitespace-nowrap ${activeTab === 'marketplace' ? 'border-orange text-navy' : 'border-transparent text-steel hover:text-navy'}`}>
-              <LayoutDashboard size={18} /> Marketplace
-            </button>
-            <button onClick={() => setActiveTab('requirements')} className={`flex items-center gap-2 py-4 text-sm font-bold uppercase tracking-wider border-b-4 transition-all whitespace-nowrap ${activeTab === 'requirements' ? 'border-orange text-navy' : 'border-transparent text-steel hover:text-navy'}`}>
-              <Upload size={18} /> Post Requirement
-            </button>
-            <button onClick={() => setActiveTab('saved')} className={`flex items-center gap-2 py-4 text-sm font-bold uppercase tracking-wider border-b-4 transition-all whitespace-nowrap ${activeTab === 'saved' ? 'border-orange text-navy' : 'border-transparent text-steel hover:text-navy'}`}>
-              <Save size={18} /> Saved
-            </button>
-            <button onClick={() => setActiveTab('orders')} className={`flex items-center gap-2 py-4 text-sm font-bold uppercase tracking-wider border-b-4 transition-all whitespace-nowrap ${activeTab === 'orders' ? 'border-orange text-navy' : 'border-transparent text-steel hover:text-navy'}`}>
-              <FileText size={18} /> My Orders
-            </button>
+            {['marketplace', 'requirements', 'saved', 'orders'].map(tab => (
+                <button 
+                    key={tab}
+                    onClick={() => setActiveTab(tab)} 
+                    className={`flex items-center gap-2 py-4 text-sm font-bold uppercase tracking-wider border-b-4 transition-all whitespace-nowrap 
+                    ${activeTab === tab ? 'border-orange text-navy' : 'border-transparent text-steel hover:text-navy'}`}
+                >
+                    {tab === 'marketplace' && <LayoutDashboard size={18} />}
+                    {tab === 'requirements' && <Upload size={18} />}
+                    {tab === 'saved' && <Save size={18} />}
+                    {tab === 'orders' && <FileText size={18} />}
+                    {tab === 'marketplace' ? 'Marketplace' : tab === 'requirements' ? 'Post Requirement' : tab === 'orders' ? 'My Orders' : 'Saved'}
+                </button>
+            ))}
           </div>
         </div>
       </div>
@@ -357,17 +365,13 @@ const BuyerDashboard = () => {
 
               {/* LISTINGS DISPLAY */}
               {loading ? (
-                <div className="text-center py-20 bg-white rounded shadow-lg">
-                  <div className="animate-spin w-8 h-8 border-4 border-orange border-t-transparent rounded-full mx-auto mb-4"></div>
-                  <p className="text-steel font-bold uppercase tracking-widest text-xs">Loading Marketplace...</p>
-                </div>
+                <div className="text-center py-20 bg-white rounded shadow-lg">Loading...</div>
               ) : error ? (
                 <div className="bg-red-100 text-red-700 p-8 rounded-lg text-center font-bold">{error}</div>
               ) : filteredListings.length === 0 ? (
                 <div className="bg-white p-12 rounded-lg shadow text-center border border-platinum">
                     <Package size={48} className="text-gray-300 mx-auto mb-4"/>
                     <h3 className="text-lg font-bold text-navy">No Listings Found</h3>
-                    <p className="text-sm text-gray-500">Try adjusting your filters or search term.</p>
                 </div>
               ) : viewMode === 'card' ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -424,7 +428,6 @@ const BuyerDashboard = () => {
           {/* ================= REQUIREMENTS TAB (OPEN RFQ) ================= */}
           {activeTab === 'requirements' && (
              <div className="space-y-6 animate-fadeIn">
-                {/* Header Action */}
                 <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow border border-platinum">
                     <div>
                         <h2 className="text-xl font-black text-navy uppercase tracking-tighter">My Open Requirements</h2>
@@ -438,18 +441,12 @@ const BuyerDashboard = () => {
                     </button>
                 </div>
 
-                {/* RFQ List */}
                 {reqLoading ? (
                     <div className="text-center py-20 bg-white rounded shadow">Loading Requirements...</div>
                 ) : myRequirements.length === 0 ? (
                     <div className="bg-white p-12 rounded-lg shadow-lg border border-platinum text-center">
-                        <div className="inline-block p-6 bg-orange/10 rounded-full mb-6 text-orange animate-bounce">
-                           <Upload size={48} />
-                        </div>
+                        <div className="inline-block p-6 bg-orange/10 rounded-full mb-6 text-orange animate-bounce"><Upload size={48} /></div>
                         <h3 className="text-2xl font-black text-navy uppercase mb-2">No Requirements Posted</h3>
-                        <p className="text-steel mb-8 max-w-lg mx-auto">
-                           Post an Open RFQ to the marketplace. Sellers will be notified and can contact you.
-                        </p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 gap-4">
@@ -471,36 +468,14 @@ const BuyerDashboard = () => {
                                         <span className="flex items-center gap-1"><Clock size={14}/> {req.postedAt}</span>
                                     </div>
                                 </div>
-
                                 <div className="flex items-center gap-3 w-full md:w-auto">
-                                    {/* Action Buttons based on Status */}
                                     {req.status === 'OPEN' && (
                                         <>
-                                            <button 
-                                                onClick={() => handleUpdateStatus(req.id, 'FULFILLED')}
-                                                className="flex-1 md:flex-none px-4 py-2 border border-green-500 text-green-600 rounded text-xs font-bold uppercase hover:bg-green-50 transition-colors flex items-center justify-center gap-2"
-                                                title="Mark as Fulfilled"
-                                            >
-                                                <CheckCircle size={16} /> Fulfill
-                                            </button>
-                                            <button 
-                                                onClick={() => handleUpdateStatus(req.id, 'CLOSED')}
-                                                className="flex-1 md:flex-none px-4 py-2 border border-gray-400 text-gray-500 rounded text-xs font-bold uppercase hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
-                                                title="Close Requirement"
-                                            >
-                                                <XCircle size={16} /> Close
-                                            </button>
+                                            <button onClick={() => handleUpdateStatus(req.id, 'FULFILLED')} className="flex-1 md:flex-none px-4 py-2 border border-green-500 text-green-600 rounded text-xs font-bold uppercase hover:bg-green-50 transition-colors flex items-center justify-center gap-2"><CheckCircle size={16} /> Fulfill</button>
+                                            <button onClick={() => handleUpdateStatus(req.id, 'CLOSED')} className="flex-1 md:flex-none px-4 py-2 border border-gray-400 text-gray-500 rounded text-xs font-bold uppercase hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"><XCircle size={16} /> Close</button>
                                         </>
                                     )}
-                                    
-                                    {/* Delete is always available */}
-                                    <button 
-                                        onClick={() => handleDeleteRequirement(req.id)}
-                                        className="px-4 py-2 bg-red-50 text-red-500 rounded text-xs font-bold uppercase hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center gap-2"
-                                        title="Delete Permanently"
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
+                                    <button onClick={() => handleDeleteRequirement(req.id)} className="px-4 py-2 bg-red-50 text-red-500 rounded text-xs font-bold uppercase hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center gap-2"><Trash2 size={16} /></button>
                                 </div>
                             </div>
                         ))}
@@ -522,11 +497,12 @@ const BuyerDashboard = () => {
         </main>
       </div>
 
-      {/* --- POST REQUIREMENT MODAL --- */}
+      {/* --- POST REQUIREMENT MODAL (With Prefill Data) --- */}
       <PostRequirementModal 
         isOpen={isPostModalOpen} 
         onClose={handlePostSuccess} 
         isAuthenticated={isAuthenticated}
+        prefillData={prefillRFQ} 
       />
 
       <Footer />
