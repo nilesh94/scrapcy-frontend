@@ -2,20 +2,22 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { X, Send, User, Building2, Mail, Phone, FileText, ChevronDown, AlertCircle, List } from 'lucide-react';
 
-const PostRequirementModal = ({ isOpen, onClose, isAuthenticated }) => {
+const PostRequirementModal = ({ isOpen, onClose, isAuthenticated, prefillData }) => {
   const [loading, setLoading] = useState(false);
   const [dataLoading, setDataLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
 
-  // --- MASTER DATA ---
+  // --- 1. MASTER DATA STATE ---
   const [hierarchy, setHierarchy] = useState([]); 
+
+  // Selection States
   const [filteredCategories, setFilteredCategories] = useState([]); 
   const [filteredMaterials, setFilteredMaterials] = useState([]); 
   const [filteredForms, setFilteredForms] = useState([]); 
   const [filteredGrades, setFilteredGrades] = useState([]); 
 
-  // --- FORM STATE ---
+  // --- 2. FORM STATE ---
   const [formData, setFormData] = useState({
     scrapType: '',
     category: '',
@@ -28,13 +30,18 @@ const PostRequirementModal = ({ isOpen, onClose, isAuthenticated }) => {
     guestName: '', guestEmail: '', guestPhone: '', guestCompany: '', guestGst: ''
   });
 
-  // --- MANUAL MODE ---
+  // --- 3. MANUAL ENTRY MODE STATE ---
   const [manualMode, setManualMode] = useState({
-    scrapType: false, category: false, material: false, form: false, grade: false
+    scrapType: false,
+    category: false,
+    material: false,
+    form: false,
+    grade: false
   });
 
   const hierarchyKeys = ['scrapType', 'category', 'material', 'form', 'grade'];
 
+  // --- FETCH DATA ---
   useEffect(() => {
     if (isOpen) {
       setSuccess(false);
@@ -43,20 +50,52 @@ const PostRequirementModal = ({ isOpen, onClose, isAuthenticated }) => {
     }
   }, [isOpen]);
 
+  // --- PREFILL DATA EFFECT (For RFQ Functionality) ---
+  useEffect(() => {
+    if (prefillData && isOpen) {
+        // 1. Force Manual Mode to show text directly
+        setManualMode({ scrapType: true, category: true, material: true, form: true, grade: true });
+        
+        // 2. Populate Form
+        setFormData(prev => ({
+            ...prev,
+            scrapType: prefillData.industry || '', 
+            category: prefillData.category || '',
+            material: prefillData.material || '',
+            form: prefillData.form || '',
+            grade: prefillData.grade || '',
+            locations: prefillData.location || '',
+            description: `I am interested in buying this item. \n\nReference Listing ID: #${prefillData.id} \nOriginal Quantity: ${prefillData.qty} ${prefillData.unit}`,
+            note: `RFQ initiated for Listing #${prefillData.id}`
+        }));
+    } else if (isOpen && !prefillData) {
+        // Reset to default state if opening as "Post New"
+        setManualMode({ scrapType: false, category: false, material: false, form: false, grade: false });
+        setFormData({
+            scrapType: '', category: '', material: '', form: '', grade: '', locations: '', description: '', note: '',
+            guestName: '', guestEmail: '', guestPhone: '', guestCompany: '', guestGst: ''
+        });
+    }
+  }, [prefillData, isOpen]);
+
   const fetchMasterData = async () => {
     setDataLoading(true);
     try {
         const res = await axios.get('https://scrapcy-backend-new-1.onrender.com/categories/hierarchy');
-        if (Array.isArray(res.data) && res.data.length > 0) setHierarchy(res.data);
-        else setHierarchy([]); 
+        if (Array.isArray(res.data) && res.data.length > 0) {
+            setHierarchy(res.data);
+        } else {
+            setHierarchy([]); 
+        }
     } catch (err) {
-        console.error("Master data error", err);
+        console.error("Master data fetch error", err);
         setHierarchy([]); 
     } finally {
         setDataLoading(false);
     }
   };
 
+  // --- HELPERS ---
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -81,7 +120,7 @@ const PostRequirementModal = ({ isOpen, onClose, isAuthenticated }) => {
     setFormData(newFormData);
   };
 
-  // --- HANDLERS (Same as before) ---
+  // --- HANDLERS (Standard Dropdown Logic) ---
   const handleScrapTypeChange = (e) => {
     const val = e.target.value;
     setFilteredCategories([]); setFilteredMaterials([]); setFilteredForms([]); setFilteredGrades([]);
@@ -171,7 +210,6 @@ const PostRequirementModal = ({ isOpen, onClose, isAuthenticated }) => {
     setLoading(true);
     setError('');
 
-    // Guest Validations
     if (!isAuthenticated) {
         if(!formData.guestName || !formData.guestEmail || !formData.guestPhone || !formData.guestCompany || !formData.guestGst) {
             setError("All company details are mandatory.");
@@ -183,11 +221,9 @@ const PostRequirementModal = ({ isOpen, onClose, isAuthenticated }) => {
     try {
       const payload = { ...formData };
       
-      // 1. Get Token (if logged in)
       const token = localStorage.getItem('token');
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-      // 2. REAL API CALL
       const response = await axios.post(
           'https://scrapcy-backend-new-1.onrender.com/requirements/create', 
           payload,
@@ -198,7 +234,7 @@ const PostRequirementModal = ({ isOpen, onClose, isAuthenticated }) => {
       setSuccess(true);
       
       setTimeout(() => {
-        onClose(); // Triggers refresh in parent
+        onClose(); 
         setFormData({
             scrapType: '', category: '', material: '', form: '', grade: '', locations: '', description: '', note: '',
             guestName: '', guestEmail: '', guestPhone: '', guestCompany: '', guestGst: ''
@@ -209,7 +245,8 @@ const PostRequirementModal = ({ isOpen, onClose, isAuthenticated }) => {
 
     } catch (err) {
       console.error(err);
-      setError("Failed to post requirement. Server error.");
+      const serverMsg = err.response?.data?.detail || "Failed to post requirement. Server error.";
+      setError(serverMsg);
     } finally {
       setLoading(false);
     }
@@ -224,7 +261,9 @@ const PostRequirementModal = ({ isOpen, onClose, isAuthenticated }) => {
         {/* Header */}
         <div className="bg-navy p-6 flex justify-between items-center shrink-0">
           <div>
-            <h2 className="text-2xl font-black text-white uppercase tracking-tighter">Post Requirement</h2>
+            <h2 className="text-2xl font-black text-white uppercase tracking-tighter">
+                {prefillData ? `RFQ: ${prefillData.material}` : "Post Requirement"}
+            </h2>
             <p className="text-orange text-xs font-bold uppercase tracking-widest">Open RFQ to Market</p>
           </div>
           <button onClick={onClose} className="text-white/70 hover:text-white hover:bg-white/10 p-2 rounded-full transition-colors">
@@ -252,7 +291,15 @@ const PostRequirementModal = ({ isOpen, onClose, isAuthenticated }) => {
                   <FileText size={16} className="text-orange"/> Scrap Details
                 </h3>
                 
-                {hierarchy.length === 0 && !dataLoading && (
+                {/* Prefill Info Banner */}
+                {prefillData && (
+                    <div className="mb-4 p-3 bg-blue-50 border border-blue-100 text-blue-800 text-xs font-bold rounded">
+                        Info: This form is pre-filled from Listing #{prefillData.id}. You can edit the details if needed.
+                    </div>
+                )}
+
+                {/* No Data Warning */}
+                {hierarchy.length === 0 && !dataLoading && !prefillData && (
                     <div className="mb-4 p-3 bg-yellow-50 text-yellow-700 text-xs font-bold rounded flex items-center gap-2">
                         <AlertCircle size={16}/> Warning: Unable to load categories. Please type manually using 'Others'.
                     </div>
@@ -366,7 +413,7 @@ const PostRequirementModal = ({ isOpen, onClose, isAuthenticated }) => {
                 </div>
               </div>
 
-              {/* SECTION 2: COMPANY DETAILS (Updated) */}
+              {/* SECTION 2: COMPANY DETAILS */}
               {!isAuthenticated && (
                 <div className="animate-fadeIn">
                   <h3 className="text-sm font-black text-navy uppercase border-b-2 border-platinum pb-2 mb-4 flex items-center gap-2">
