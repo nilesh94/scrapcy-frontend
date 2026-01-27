@@ -7,6 +7,8 @@ import {
 import Header from '../components/Header/Header';
 import Footer from '../components/Footer/Footer';
 
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+
 const AdminDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
@@ -55,7 +57,7 @@ const AdminDashboard = () => {
   useEffect(() => {
     const fetchMasterData = async () => {
       try {
-        const res = await axios.get('https://scrapcy-backend-new-1.onrender.com/categories/hierarchy');
+        const res = await axios.get(`${API_URL}/categories/hierarchy`);
         console.log("Hierarchy Data:", res.data); // Debug: Check console to see if 'forms' exist
         setHierarchy(res.data);
       } catch (err) {
@@ -216,7 +218,7 @@ const AdminDashboard = () => {
       }
 
       const response = await axios.post(
-        'https://scrapcy-backend-new-1.onrender.com/scrap/add', 
+        `${API_URL}/scrap/add`, 
         data,
         { headers: { 'Content-Type': 'multipart/form-data' } }
       );
@@ -248,8 +250,8 @@ const AdminDashboard = () => {
       } else {
          const serverError = err.response?.data?.detail || 'Failed to create listing.';
          const displayMsg = Array.isArray(serverError) 
-            ? `${serverError[0].loc[1]}: ${serverError[0].msg}` 
-            : serverError;
+           ? `${serverError[0].loc[1]}: ${serverError[0].msg}` 
+           : serverError;
          setErrorMsg(displayMsg);
       }
     } finally {
@@ -461,13 +463,13 @@ const AdminDashboard = () => {
                     <div className="mt-4">
                          <label className="block text-xs font-bold uppercase text-navy mb-1">Monthly Supply Capacity (Optional)</label>
                          <input 
-                            name="monthlyCapacity" 
-                            value={formData.monthlyCapacity} 
-                            onChange={handleChange} 
-                            type="text" 
-                            className="w-full p-3 bg-white border border-platinum rounded focus:border-orange outline-none" 
-                            placeholder="e.g. 500 Tons/Month" 
-                          />
+                           name="monthlyCapacity" 
+                           value={formData.monthlyCapacity} 
+                           onChange={handleChange} 
+                           type="text" 
+                           className="w-full p-3 bg-white border border-platinum rounded focus:border-orange outline-none" 
+                           placeholder="e.g. 500 Tons/Month" 
+                         />
                     </div>
                 </div>
 
