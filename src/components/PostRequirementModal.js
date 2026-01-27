@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { X, Send, User, Building2, Mail, Phone, FileText, ChevronDown, AlertCircle, List } from 'lucide-react';
 
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+
 const PostRequirementModal = ({ isOpen, onClose, isAuthenticated, prefillData }) => {
   const [loading, setLoading] = useState(false);
   const [dataLoading, setDataLoading] = useState(false);
@@ -81,7 +83,8 @@ const PostRequirementModal = ({ isOpen, onClose, isAuthenticated, prefillData })
   const fetchMasterData = async () => {
     setDataLoading(true);
     try {
-        const res = await axios.get('https://scrapcy-backend-new-1.onrender.com/categories/hierarchy');
+        // UPDATED: Dynamic URL
+        const res = await axios.get(`${API_URL}/categories/hierarchy`);
         if (Array.isArray(res.data) && res.data.length > 0) {
             setHierarchy(res.data);
         } else {
@@ -224,8 +227,9 @@ const PostRequirementModal = ({ isOpen, onClose, isAuthenticated, prefillData })
       const token = localStorage.getItem('token');
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
+      // UPDATED: Dynamic URL
       const response = await axios.post(
-          'https://scrapcy-backend-new-1.onrender.com/requirements/create', 
+          `${API_URL}/requirements/create`, 
           payload,
           { headers }
       );
