@@ -2,19 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { 
   Anchor, LayoutDashboard, LogOut, LogIn, UserPlus, 
-  Home, Layers, Info, TrendingUp, PlusCircle, Gavel 
+  Home, Layers, Info, TrendingUp, PlusCircle 
 } from 'lucide-react';
 import PostRequirementModal from '../PostRequirementModal'; 
-import EAuctionModal from '../EAuctionModal'; // <--- Import the New E-Auction Modal
 
 const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [user, setUser] = useState(null);
   
-  // Modal States
+  // Modal State for Open RFQ
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
-  const [isAuctionModalOpen, setIsAuctionModalOpen] = useState(false); // <--- New State for E-Auction
 
   // 1. Check Login Status on Mount
   useEffect(() => {
@@ -85,15 +83,6 @@ const Header = () => {
               <TrendingUp size={14} /> Market Price
             </Link>
 
-            {/* --- NEW: E-AUCTION BUTTON --- */}
-            <button 
-              onClick={() => setIsAuctionModalOpen(true)} 
-              className="flex items-center gap-2 text-xs font-bold uppercase text-platinum hover:text-orange transition-colors"
-            >
-              <Gavel size={14} /> E-Auction 
-              <span className="bg-orange text-white text-[9px] px-1 rounded animate-pulse">NEW</span>
-            </button>
-
             <button 
               onClick={() => handleScroll('features')}
               className="flex items-center gap-2 text-xs font-bold uppercase text-platinum hover:text-white transition"
@@ -108,7 +97,7 @@ const Header = () => {
               <Info size={14} /> About
             </Link>
 
-            {/* --- POST OPEN RFQ BUTTON (Visible to All) --- */}
+            {/* --- NEW: POST OPEN RFQ BUTTON (Visible to All) --- */}
             <button
                 onClick={() => setIsPostModalOpen(true)}
                 className="flex items-center gap-2 bg-orange hover:bg-white hover:text-navy text-white px-4 py-2 rounded text-xs font-bold uppercase tracking-wider transition-all shadow-md animate-pulse hover:animate-none"
@@ -158,19 +147,11 @@ const Header = () => {
         </div>
       </header>
 
-      {/* --- GLOBAL MODALS --- */}
-      
-      {/* 1. RFQ Modal */}
+      {/* --- GLOBAL RFQ MODAL --- */}
       <PostRequirementModal 
         isOpen={isPostModalOpen} 
-        onClose={handlePostSuccess} 
+        onClose={() => setIsPostModalOpen(false)} 
         isAuthenticated={!!user} 
-      />
-
-      {/* 2. E-Auction Info Modal */}
-      <EAuctionModal 
-        isOpen={isAuctionModalOpen}
-        onClose={() => setIsAuctionModalOpen(false)}
       />
     </>
   );
