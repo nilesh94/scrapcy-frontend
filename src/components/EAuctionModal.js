@@ -1,8 +1,16 @@
 import React from 'react';
-import { X, Gavel, Zap, ShieldCheck, Users, ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom'; // <--- Import hook
+import { X, Gavel, Zap, ShieldCheck, ArrowRight } from 'lucide-react';
 
 const EAuctionModal = ({ isOpen, onClose }) => {
+  const navigate = useNavigate(); // <--- Initialize hook
+
   if (!isOpen) return null;
+
+  const handleRegisterClick = () => {
+    onClose(); // 1. Close the modal first
+    navigate('/register'); // 2. Navigate internally to register page
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/90 backdrop-blur-sm p-4 animate-fadeIn">
@@ -83,7 +91,7 @@ const EAuctionModal = ({ isOpen, onClose }) => {
 
           <div className="mt-10 pt-6 border-t border-slate-100">
             <button 
-              onClick={() => window.location.href = '/register-auction'} 
+              onClick={handleRegisterClick}  // <--- Calls internal navigation
               className="w-full py-4 bg-navy hover:bg-orange text-white font-black uppercase tracking-widest rounded-xl shadow-xl hover:shadow-2xl transition-all flex items-center justify-center gap-2 transform active:scale-95"
             >
               Register for E-Auction <ArrowRight size={18} />
