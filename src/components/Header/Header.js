@@ -2,17 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { 
   Anchor, LayoutDashboard, LogOut, LogIn, UserPlus, 
-  Home, Layers, Info, TrendingUp, PlusCircle 
+  Home, Layers, Info, TrendingUp, PlusCircle, Gavel 
 } from 'lucide-react';
-import PostRequirementModal from '../PostRequirementModal'; // <--- Import Modal
+import PostRequirementModal from '../PostRequirementModal'; 
+import EAuctionModal from '../EAuctionModal';
 
 const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [user, setUser] = useState(null);
   
-  // Modal State for Open RFQ
+  // Modal States
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
+  const [isAuctionModalOpen, setIsAuctionModalOpen] = useState(false);
 
   // 1. Check Login Status on Mount
   useEffect(() => {
@@ -43,12 +45,6 @@ const Header = () => {
         if (element) element.scrollIntoView({ behavior: 'smooth' });
       }, 500);
     }
-  };
-
-  const handlePostSuccess = () => {
-      setIsPostModalOpen(false);
-      // Optional: If on dashboard, you might want to refresh the list, 
-      // but since Header is global, we just close the modal.
   };
 
   return (
@@ -85,6 +81,15 @@ const Header = () => {
               <TrendingUp size={14} /> Market Price
             </Link>
 
+            {/* --- NEW: E-AUCTION BUTTON --- */}
+            <button 
+              onClick={() => setIsAuctionModalOpen(true)} 
+              className="flex items-center gap-2 text-xs font-bold uppercase text-platinum hover:text-orange transition-colors"
+            >
+              <Gavel size={14} /> E-Auction 
+              <span className="bg-orange text-white text-[9px] px-1 rounded animate-pulse">NEW</span>
+            </button>
+
             <button 
               onClick={() => handleScroll('features')}
               className="flex items-center gap-2 text-xs font-bold uppercase text-platinum hover:text-white transition"
@@ -99,7 +104,7 @@ const Header = () => {
               <Info size={14} /> About
             </Link>
 
-            {/* --- NEW: POST OPEN RFQ BUTTON (Visible to All) --- */}
+            {/* POST OPEN RFQ BUTTON */}
             <button
                 onClick={() => setIsPostModalOpen(true)}
                 className="flex items-center gap-2 bg-orange hover:bg-white hover:text-navy text-white px-4 py-2 rounded text-xs font-bold uppercase tracking-wider transition-all shadow-md animate-pulse hover:animate-none"
@@ -149,11 +154,19 @@ const Header = () => {
         </div>
       </header>
 
-      {/* --- GLOBAL RFQ MODAL --- */}
+      {/* --- MODALS --- */}
+      
+      {/* 1. Global RFQ Modal */}
       <PostRequirementModal 
         isOpen={isPostModalOpen} 
         onClose={() => setIsPostModalOpen(false)} 
-        isAuthenticated={!!user} // Pass auth status to modal
+        isAuthenticated={!!user} 
+      />
+
+      {/* 2. E-Auction Info Modal */}
+      <EAuctionModal 
+        isOpen={isAuctionModalOpen}
+        onClose={() => setIsAuctionModalOpen(false)}
       />
     </>
   );
