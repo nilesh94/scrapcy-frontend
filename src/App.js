@@ -8,11 +8,12 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import CompanyDashboard from './pages/CompanyDashboard';
 import BidderDashboard from './pages/BidderDashboard';
-import BuyerDashboard from './pages/BuyerDashboard'; // <--- ADDED IMPORT
+import BuyerDashboard from './pages/BuyerDashboard';
 import About from './pages/About';
 import PriceTracker from './components/PriceTracker/PriceTracker';
 import AdminListingDetail from './pages/AdminListingDetail';
 import AdminMarketPrice from './pages/AdminMarketPrice';
+import EAuctionLander from './pages/EAuctionLander';
 
 // Import Admin Pages
 import AdminDashboard from './pages/AdminDashboard';
@@ -42,6 +43,9 @@ function App() {
         <Route path="/admin/listings" element={<AdminListings />} />
         <Route path="/admin/listings/:id" element={<AdminListingDetail />} />
         <Route path="/admin/market-prices" element={<AdminMarketPrice />} />
+        
+        {/* E-AUCTION ROUTES */}
+        <Route path="/e-auction" element={<EAuctionLander />} />
       </Routes>
     </Router>
   );
