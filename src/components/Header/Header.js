@@ -5,16 +5,14 @@ import {
   Layers, Info, TrendingUp, PlusCircle, Gavel 
 } from 'lucide-react';
 import PostRequirementModal from '../PostRequirementModal'; 
-import EAuctionModal from '../EAuctionModal'; // <--- Import New Modal
 
 const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [user, setUser] = useState(null);
   
-  // Modal States
+  // Modal State for Open RFQ (Only this one remains)
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
-  const [isAuctionModalOpen, setIsAuctionModalOpen] = useState(false); // <--- New State
 
   // 1. Check Login Status on Mount
   useEffect(() => {
@@ -56,7 +54,7 @@ const Header = () => {
       <header className="bg-navy text-white py-4 shadow-lg sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
           
-          {/* --- LEFT: LOGO (Click to go Home) --- */}
+          {/* --- LEFT: LOGO (Acts as Home Button) --- */}
           <div 
             className="flex items-center gap-2 cursor-pointer hover:opacity-90 transition" 
             onClick={() => navigate('/')}
@@ -73,14 +71,14 @@ const Header = () => {
             
             {/* 1. PUBLIC MENU ITEMS */}
             
-            {/* --- NEW: E-AUCTION BUTTON (Replaced Home) --- */}
-            <button 
-              onClick={() => setIsAuctionModalOpen(true)} 
+            {/* --- E-AUCTION PAGE LINK --- */}
+            <Link 
+              to="/e-auction" 
               className="flex items-center gap-2 text-xs font-bold uppercase text-platinum hover:text-orange transition-colors"
             >
               <Gavel size={14} /> E-Auction 
               <span className="bg-orange text-white text-[9px] px-1 rounded animate-pulse">NEW</span>
-            </button>
+            </Link>
 
             <Link 
               to="/tracker"
@@ -153,19 +151,11 @@ const Header = () => {
         </div>
       </header>
 
-      {/* --- GLOBAL MODALS --- */}
-      
-      {/* 1. RFQ Modal */}
+      {/* --- GLOBAL RFQ MODAL --- */}
       <PostRequirementModal 
         isOpen={isPostModalOpen} 
         onClose={handlePostSuccess} 
         isAuthenticated={!!user} 
-      />
-
-      {/* 2. E-Auction Info Modal */}
-      <EAuctionModal 
-        isOpen={isAuctionModalOpen}
-        onClose={() => setIsAuctionModalOpen(false)}
       />
     </>
   );
