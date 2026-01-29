@@ -126,18 +126,24 @@ const BuyerDashboard = () => {
       navigate('/'); 
     } else {
       setIsAuthenticated(true);
-      fetchListings();
+      // fetchListings(); <--- Removed immediate call here, handled by activeTab effect below to avoid double calls
     }
   }, [navigate]);
 
+  // --- UPDATED: DATA FETCHING EFFECT ---
   useEffect(() => {
-    if (activeTab === 'requirements' && isAuthenticated) {
-        fetchMyRequirements();
+    if (isAuthenticated) {
+        if (activeTab === 'marketplace') {
+            fetchListings();
+        } else if (activeTab === 'requirements') {
+            fetchMyRequirements();
+        }
     }
   }, [activeTab, isAuthenticated]);
 
   // --- API CALLS ---
   const fetchListings = async () => {
+    setLoading(true); // Ensure loading is set
     try {
       const response = await axios.get('https://scrapcy-backend-new-1.onrender.com/scrap/all');
       
@@ -310,7 +316,17 @@ const BuyerDashboard = () => {
             {['marketplace', 'requirements', 'saved', 'orders'].map(tab => (
                 <button 
                     key={tab}
-                    onClick={() => setActiveTab(tab)} 
+                    onClick={() => {
+                        // --- UPDATED: Click-to-Refresh Logic ---
+                        if (activeTab === tab) {
+                            // If clicking the current tab, force a refresh
+                            if (tab === 'marketplace') fetchListings();
+                            if (tab === 'requirements') fetchMyRequirements();
+                        } else {
+                            // Otherwise switch tab (useEffect will handle fetch)
+                            setActiveTab(tab);
+                        }
+                    }} 
                     className={`flex items-center gap-2 py-4 text-sm font-bold uppercase tracking-wider border-b-4 transition-all whitespace-nowrap 
                     ${activeTab === tab ? 'border-orange text-navy' : 'border-transparent text-steel hover:text-navy'}`}
                 >
@@ -404,10 +420,10 @@ const BuyerDashboard = () => {
                 <div className="bg-white rounded-lg shadow-lg border border-platinum overflow-hidden">
                     <div className="overflow-x-auto">
                       <table className="w-full text-left border-collapse">
-                         <thead className="bg-navy text-white text-xs uppercase font-bold tracking-wider">
+                          <thead className="bg-navy text-white text-xs uppercase font-bold tracking-wider">
                             <tr><th className="p-4">Material</th><th className="p-4">Details</th><th className="p-4">Qty & Price</th><th className="p-4">Location</th><th className="p-4 text-right">Actions</th></tr>
-                         </thead>
-                         <tbody className="divide-y divide-platinum text-sm text-navy">
+                          </thead>
+                          <tbody className="divide-y divide-platinum text-sm text-navy">
                             {filteredListings.map(item => (
                                 <tr key={item.id} className="hover:bg-platinum/20 transition-colors">
                                     <td className="p-4 w-16"><div className="h-12 w-12 bg-gray-200 rounded overflow-hidden border border-platinum"><img src={item.images[0]} alt="" className="h-full w-full object-cover"/></div></td>
@@ -417,7 +433,7 @@ const BuyerDashboard = () => {
                                     <td className="p-4 text-right"><div className="flex justify-end gap-2"><button onClick={() => handleViewDetails(item.id)} className="text-navy font-bold text-xs hover:underline">View</button><button onClick={() => handleRFQ(item.id)} className="bg-orange text-white px-3 py-1 rounded text-xs font-bold hover:bg-navy">RFQ</button></div></td>
                                 </tr>
                             ))}
-                         </tbody>
+                          </tbody>
                       </table>
                     </div>
                 </div>
