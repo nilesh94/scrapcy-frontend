@@ -99,7 +99,7 @@ const Home = () => {
             </button>
           </div>
           <div className="rounded-lg shadow-2xl overflow-hidden bg-steel/10 p-2 border border-platinum-dark">
-            <img src="https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?q=80&w=1000" alt="Scrap Yard" className="rounded grayscale hover:grayscale-0 transition-all duration-700 w-full h-full object-cover"/>
+            <img src="https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?q=90&w=2400" alt="Scrap Yard" className="rounded grayscale hover:grayscale-0 transition-all duration-700 w-full h-full object-cover"/>
           </div>
         </section>
 
