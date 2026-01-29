@@ -8,12 +8,12 @@ import Header from '../components/Header/Header';
 import Footer from '../components/Footer/Footer'; 
 
 const MARKET_DATA = [
-  { id: 101, category: "Ferrous", material: "Sponge Iron", location: "Raipur", price: 30500, change: 200, type: "Mandi", contact: "Raipur Ispat Links" },
-  { id: 102, category: "Ferrous", material: "Sponge Iron", location: "Durgapur", price: 34000, change: -150, type: "Mandi", contact: "Durgapur Foundries" },
-  { id: 103, category: "Ferrous", material: "Sponge Iron", location: "Bellary", price: 32200, change: 0, type: "Mandi", contact: "Bellary Steels" },
-  { id: 201, category: "Non-Ferrous", material: "Copper", location: "Delhi", price: 785, change: 12, type: "Millberry", contact: "Delhi Metal Exch" },
-  { id: 202, category: "Non-Ferrous", material: "Copper", location: "Mumbai", price: 760, change: -5, type: "Armature", contact: "Mumbai Scrap Corp" },
-  { id: 203, category: "Non-Ferrous", material: "Aluminium", location: "Alang", price: 212, change: -3, type: "Wire", contact: "Gujarat Alloys" },
+  { id: 101, category: "Ferrous", material: "MS Scrap", form: "Attachment", grade: "Ship Breaking", location: "Alang", price: 33600, unit: "MT", change: 200, contact: "Alang Recyclers" },
+  { id: 104, category: "Ferrous", material: "Sponge Iron", form: "Pellets", grade: "DRI-78", location: "Raipur", price: 30500, unit: "MT", change: 200, contact: "Raipur Ispat" },
+  { id: 105, category: "Ferrous", material: "Sponge Iron", form: "Lumps", grade: "DRI-80", location: "Durgapur", price: 34000, unit: "MT", change: -50, contact: "Durgapur Traders" },
+  { id: 201, category: "Non Ferrous", material: "Copper", form: "Wire Scrap", grade: "Millberry", location: "Delhi", price: 785000, unit: "MT", change: 5000, contact: "Delhi Metal Exch" },
+  { id: 202, category: "Non Ferrous", material: "Aluminium", form: "Extrusion", grade: "6063", location: "Mumbai", price: 212000, unit: "MT", change: -1000, contact: "Gujarat Alloys" },
+  { id: 203, category: "Non Ferrous", material: "Brass", form: "Honey", grade: "IS-319", location: "Jamnagar", price: 490000, unit: "MT", change: 0, contact: "Jamnagar Brass" },
 ];
 
 const Home = () => {
