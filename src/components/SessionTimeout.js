@@ -4,7 +4,7 @@ import axios from 'axios';
 import { Clock, LogOut, RefreshCw } from 'lucide-react';
 
 // TIMINGS (In Milliseconds)
-const WARNING_TIME = 2 * 60 * 1000; // 10 Minutes (Time until warning appears)
+const WARNING_TIME = 15 * 60 * 1000; // 10 Minutes (Time until warning appears)
 const LOGOUT_TIME = 2 * 60 * 1000;   // 2 Minutes (Time to answer warning)
 
 // URL Configuration
