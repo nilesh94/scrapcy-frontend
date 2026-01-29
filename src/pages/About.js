@@ -83,7 +83,7 @@ const About = () => {
                {/* Image Side */}
                <div className="bg-steel/10 min-h-[400px] relative">
                   <img 
-                     src="https://images.unsplash.com/photo-1565620731355-662589e4726b?q=80&w=1000" 
+                     src="https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?auto=format&fit=crop&q=80&w=1000" 
                      alt="Industrial Plant" 
                      className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700"
                   />
