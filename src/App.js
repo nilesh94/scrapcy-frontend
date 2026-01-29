@@ -1,7 +1,10 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
-// Import Pages
+// --- COMPONENTS ---
+import SessionTimeout from './components/SessionTimeout'; // <--- Import Session Timeout Logic
+
+// --- PAGES ---
 import Home from './pages/Home';
 import Register from './pages/Register';
 import Login from './pages/Login';
@@ -15,13 +18,18 @@ import AdminListingDetail from './pages/AdminListingDetail';
 import AdminMarketPrice from './pages/AdminMarketPrice';
 import EAuctionLander from './pages/EAuctionLander';
 
-// Import Admin Pages
+// --- ADMIN PAGES ---
 import AdminDashboard from './pages/AdminDashboard';
 import AdminListings from './pages/AdminListings';
 
 function App() {
   return (
     <Router>
+      {/* SessionTimeout is placed here (inside Router, outside Routes) 
+          so it monitors activity globally across all pages.
+      */}
+      <SessionTimeout />
+
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<Home />} />
@@ -30,13 +38,13 @@ function App() {
         <Route path="/tracker" element={<PriceTracker />} />
         <Route path="/about" element={<About />} />
 
-        {/* Protected Dashboard Route */}
+        {/* Protected Dashboard Route (Main Switcher) */}
         <Route path="/dashboard" element={<Dashboard />} />
         
-        {/* Helper Routes */}
+        {/* Specific Role Dashboards */}
         <Route path="/company-dashboard" element={<CompanyDashboard />} />
         <Route path="/bidder-dashboard" element={<BidderDashboard />} />
-        <Route path="/buyer-dashboard" element={<BuyerDashboard />} /> {/* <--- ADDED ROUTE */}
+        <Route path="/buyer-dashboard" element={<BuyerDashboard />} />
 
         {/* ADMIN ROUTES */}
         <Route path="/admin" element={<AdminDashboard />} />
