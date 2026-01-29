@@ -4,7 +4,7 @@ import axios from 'axios';
 import { Clock, LogOut, RefreshCw } from 'lucide-react';
 
 // TIMINGS (In Milliseconds)
-const WARNING_TIME = 10 * 60 * 1000; // 10 Minutes (Time until warning appears)
+const WARNING_TIME = 2 * 60 * 1000; // 10 Minutes (Time until warning appears)
 const LOGOUT_TIME = 2 * 60 * 1000;   // 2 Minutes (Time to answer warning)
 
 // URL Configuration
@@ -18,6 +18,14 @@ const SessionTimeout = () => {
   // Refs to hold timer IDs so we can clear them
   const warnTimeoutRef = useRef(null);
   const logoutTimeoutRef = useRef(null);
+  
+  // Ref to track modal state inside event listeners without re-binding them
+  const isModalOpenRef = useRef(isWarningModalOpen);
+
+  // Sync the Ref with the State
+  useEffect(() => {
+    isModalOpenRef.current = isWarningModalOpen;
+  }, [isWarningModalOpen]);
 
   // --- 1. LOGOUT FUNCTION ---
   const logoutUser = useCallback(() => {
@@ -49,9 +57,10 @@ const SessionTimeout = () => {
   }, [logoutUser]);
 
   // --- 3. RESET TIMERS (Activity Detected) ---
+  // Using Ref here prevents the need to remove/add listeners constantly
   const resetTimers = useCallback(() => {
     // If modal is open, DO NOT reset. User must explicitly click "Continue".
-    if (isWarningModalOpen) return;
+    if (isModalOpenRef.current) return;
 
     // Clear existing timers
     if (warnTimeoutRef.current) clearTimeout(warnTimeoutRef.current);
@@ -61,7 +70,7 @@ const SessionTimeout = () => {
     if (localStorage.getItem('token')) {
         warnTimeoutRef.current = setTimeout(warnUser, WARNING_TIME);
     }
-  }, [isWarningModalOpen, warnUser]);
+  }, [warnUser]); // Removed isWarningModalOpen dependency to keep listeners stable
 
   // --- 4. "CONTINUE SESSION" CLICKED ---
   const continueSession = async () => {
@@ -88,7 +97,6 @@ const SessionTimeout = () => {
 
   // --- 5. VISUAL COUNTDOWN LOGIC (THE FIX) ---
   // This effect runs ONLY when isWarningModalOpen changes.
-  // It handles the visual timer without being reset by re-renders.
   useEffect(() => {
     let interval = null;
 
@@ -96,36 +104,30 @@ const SessionTimeout = () => {
       interval = setInterval(() => {
         setTimeLeft((prev) => prev > 0 ? prev - 1 : 0);
       }, 1000);
-    } else {
-      clearInterval(interval);
-    }
+    } 
 
-    return () => clearInterval(interval);
+    return () => {
+        if (interval) clearInterval(interval);
+    };
   }, [isWarningModalOpen]);
 
   // --- 6. EVENT LISTENERS ---
   useEffect(() => {
     const events = ['mousemove', 'keydown', 'click', 'scroll'];
     
-    // Attach listeners
+    // Attach listeners once
     events.forEach(event => window.addEventListener(event, resetTimers));
     
     // Init timer
     resetTimers();
 
-    // Cleanup Listeners ONLY (timers are cleaned up in a separate effect if needed)
+    // Cleanup Listeners on unmount
     return () => {
       events.forEach(event => window.removeEventListener(event, resetTimers));
+      if (warnTimeoutRef.current) clearTimeout(warnTimeoutRef.current);
+      if (logoutTimeoutRef.current) clearTimeout(logoutTimeoutRef.current);
     };
   }, [resetTimers]);
-
-  // Cleanup timers on component unmount
-  useEffect(() => {
-      return () => {
-          if (warnTimeoutRef.current) clearTimeout(warnTimeoutRef.current);
-          if (logoutTimeoutRef.current) clearTimeout(logoutTimeoutRef.current);
-      };
-  }, []);
 
   if (!isWarningModalOpen) return null;
 
