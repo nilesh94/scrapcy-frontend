@@ -1,60 +1,59 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { AlertTriangle, Clock, LogOut, RefreshCw } from 'lucide-react';
+import { Clock, LogOut, RefreshCw } from 'lucide-react';
 
 // TIMINGS (In Milliseconds)
 const WARNING_TIME = 10 * 60 * 1000; // 10 Minutes (Time until warning appears)
 const LOGOUT_TIME = 2 * 60 * 1000;   // 2 Minutes (Time to answer warning)
 
+// URL Configuration
+const API_URL = process.env.REACT_APP_API_URL || 'https://scrapcy-backend-new-1.onrender.com';
+
 const SessionTimeout = () => {
   const [isWarningModalOpen, setIsWarningModalOpen] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(120); // 2 minutes in seconds for display
+  const [timeLeft, setTimeLeft] = useState(120); // 2 minutes in seconds
   const navigate = useNavigate();
   
-  // Refs to hold timer IDs
+  // Refs to hold timer IDs so we can clear them
   const warnTimeoutRef = useRef(null);
   const logoutTimeoutRef = useRef(null);
-  const intervalRef = useRef(null);
 
   // --- 1. LOGOUT FUNCTION ---
   const logoutUser = useCallback(() => {
     console.log("Auto-logging out due to inactivity...");
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.removeItem('refreshToken');
     
     // Clear all timers
     if (warnTimeoutRef.current) clearTimeout(warnTimeoutRef.current);
     if (logoutTimeoutRef.current) clearTimeout(logoutTimeoutRef.current);
-    if (intervalRef.current) clearInterval(intervalRef.current);
 
     setIsWarningModalOpen(false);
     navigate('/login');
-    window.location.reload(); // Force refresh to clear state
+    window.location.reload(); 
   }, [navigate]);
 
   // --- 2. SHOW WARNING MODAL ---
-  const warnUser = () => {
-    // Check if user is even logged in
+  const warnUser = useCallback(() => {
+    // Check if user is logged in before bothering them
     if (!localStorage.getItem('token')) return;
 
     setIsWarningModalOpen(true);
-    setTimeLeft(120); // Reset visual countdown
-    
-    // Start countdown for visual display
-    intervalRef.current = setInterval(() => {
-        setTimeLeft((prev) => prev - 1);
-    }, 1000);
+    setTimeLeft(120); // Reset visual countdown to 2 minutes
 
-    // Set hard limit for logout
+    // Set hard limit for auto-logout (safety net)
+    if (logoutTimeoutRef.current) clearTimeout(logoutTimeoutRef.current);
     logoutTimeoutRef.current = setTimeout(logoutUser, LOGOUT_TIME);
-  };
+  }, [logoutUser]);
 
   // --- 3. RESET TIMERS (Activity Detected) ---
   const resetTimers = useCallback(() => {
-    // If modal is open, DO NOT reset automatically. User must click "Continue".
+    // If modal is open, DO NOT reset. User must explicitly click "Continue".
     if (isWarningModalOpen) return;
 
+    // Clear existing timers
     if (warnTimeoutRef.current) clearTimeout(warnTimeoutRef.current);
     if (logoutTimeoutRef.current) clearTimeout(logoutTimeoutRef.current);
 
@@ -62,35 +61,49 @@ const SessionTimeout = () => {
     if (localStorage.getItem('token')) {
         warnTimeoutRef.current = setTimeout(warnUser, WARNING_TIME);
     }
-  }, [isWarningModalOpen, logoutUser]);
+  }, [isWarningModalOpen, warnUser]);
 
   // --- 4. "CONTINUE SESSION" CLICKED ---
   const continueSession = async () => {
-    // Stop the logout timers
+    // Stop the pending logout
     if (logoutTimeoutRef.current) clearTimeout(logoutTimeoutRef.current);
-    if (intervalRef.current) clearInterval(intervalRef.current);
 
     setIsWarningModalOpen(false);
     
-    // Optional: Ping backend to ensure Token is actually still valid
+    // Optional: Ping backend to ensure Token is valid/refresh it
     try {
         const token = localStorage.getItem('token');
         if(token) {
-            // Simple ping to keep backend session alive or verify token
-            // Using your existing endpoint structure
             await axios.get(
-                `${process.env.REACT_APP_API_URL || 'https://scrapcy-backend-new-1.onrender.com'}/users/me`, 
+                `${API_URL}/users/me`, 
                 { headers: { Authorization: `Bearer ${token}` } }
             );
         }
         resetTimers(); // Restart the 10 min loop
     } catch (err) {
         console.error("Session actually expired:", err);
-        logoutUser(); // If token is dead, logout immediately
+        logoutUser(); 
     }
   };
 
-  // --- 5. EVENT LISTENERS ---
+  // --- 5. VISUAL COUNTDOWN LOGIC (THE FIX) ---
+  // This effect runs ONLY when isWarningModalOpen changes.
+  // It handles the visual timer without being reset by re-renders.
+  useEffect(() => {
+    let interval = null;
+
+    if (isWarningModalOpen) {
+      interval = setInterval(() => {
+        setTimeLeft((prev) => prev > 0 ? prev - 1 : 0);
+      }, 1000);
+    } else {
+      clearInterval(interval);
+    }
+
+    return () => clearInterval(interval);
+  }, [isWarningModalOpen]);
+
+  // --- 6. EVENT LISTENERS ---
   useEffect(() => {
     const events = ['mousemove', 'keydown', 'click', 'scroll'];
     
@@ -100,14 +113,19 @@ const SessionTimeout = () => {
     // Init timer
     resetTimers();
 
-    // Cleanup
+    // Cleanup Listeners ONLY (timers are cleaned up in a separate effect if needed)
     return () => {
       events.forEach(event => window.removeEventListener(event, resetTimers));
-      if (warnTimeoutRef.current) clearTimeout(warnTimeoutRef.current);
-      if (logoutTimeoutRef.current) clearTimeout(logoutTimeoutRef.current);
-      if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, [resetTimers]);
+
+  // Cleanup timers on component unmount
+  useEffect(() => {
+      return () => {
+          if (warnTimeoutRef.current) clearTimeout(warnTimeoutRef.current);
+          if (logoutTimeoutRef.current) clearTimeout(logoutTimeoutRef.current);
+      };
+  }, []);
 
   if (!isWarningModalOpen) return null;
 
