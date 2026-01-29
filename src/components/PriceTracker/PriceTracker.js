@@ -1,170 +1,167 @@
-import React, { useState, useMemo } from 'react';
-import { Filter, MapPin, ArrowUpDown, TrendingUp, Search } from 'lucide-react';
-import Header from '../Header/Header'; 
-import Footer from '../Footer/Footer'; 
-import PriceCard from '../PriceCard'; 
+import React from 'react';
+import { Lock, ShieldCheck, ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
 
-// MOCK DATA
-const MARKET_DATA = [
-  { id: 101, category: "Ferrous", material: "Sponge Iron", location: "Raipur", price: 30500, change: 200, type: "Mandi", contact: "Raipur Ispat" },
-  { id: 102, category: "Ferrous", material: "Sponge Iron", location: "Durgapur", price: 34000, change: -50, type: "Mandi", contact: "Durgapur Traders" },
-  { id: 103, category: "Ferrous", material: "Sponge Iron", location: "Bellary", price: 32200, change: 0, type: "Mandi", contact: "Bellary Steels" },
-  { id: 104, category: "Ferrous", material: "Melting Scrap", location: "Alang", price: 36500, change: 150, type: "HMS", contact: "Alang Recyclers" },
-  { id: 201, category: "Non Ferrous", material: "Copper", location: "Delhi", price: 785, change: 5, type: "Millberry", contact: "Delhi Metal Exch" },
-  { id: 202, category: "Non Ferrous", material: "Copper", location: "Mumbai", price: 760, change: -2, type: "Armature", contact: "Mumbai Scrap Corp" },
-  { id: 203, category: "Non Ferrous", material: "Aluminium", location: "Alang", price: 212, change: -1, type: "Wire", contact: "Gujarat Alloys" },
-  { id: 204, category: "Non Ferrous", material: "Brass", location: "Jamnagar", price: 490, change: 0, type: "Honey", contact: "Jamnagar Brass" },
-];
+const PriceCard = ({ item, averagePrice, isUnlocked, onUnlock, className = "" }) => {
+  
+  // --- INTERNAL LOGIC: Determine Status ---
+  const getPriceComparison = () => {
+    // Fallback if no average
+    if (!averagePrice) return { 
+        status: 'Avg', color: '#6b7280', icon: <Minus size={16} strokeWidth={3} />, angle: 90 
+    };
 
-const PriceTracker = () => {
-  const [filterCategory, setFilterCategory] = useState('All');
-  const [filterLocation, setFilterLocation] = useState('All');
-  const [sortOrder, setSortOrder] = useState('default');
-  const [unlockedDetails, setUnlockedDetails] = useState({});
+    const diff = item.price - averagePrice;
+    const threshold = averagePrice * 0.02; // 2% buffer
 
-  // 1. Calculate Averages
-  const materialAverages = useMemo(() => {
-    const sums = {}; const counts = {};
-    MARKET_DATA.forEach(item => {
-      if (!sums[item.material]) { sums[item.material] = 0; counts[item.material] = 0; }
-      sums[item.material] += item.price;
-      counts[item.material] += 1;
-    });
-    const avgs = {};
-    for (const mat in sums) avgs[mat] = sums[mat] / counts[mat];
-    return avgs;
-  }, []);
-
-  // 2. Filter & Sort Logic
-  let processedData = MARKET_DATA.filter(item => {
-    const categoryMatch = filterCategory === 'All' || item.category === filterCategory;
-    const locationMatch = filterLocation === 'All' || item.location === filterLocation;
-    return categoryMatch && locationMatch;
-  });
-
-  if (sortOrder === 'high-low') processedData.sort((a, b) => b.price - a.price);
-  else if (sortOrder === 'low-high') processedData.sort((a, b) => a.price - b.price);
-
-  const uniqueLocations = [...new Set(MARKET_DATA.map(item => item.location))].sort();
-
-  const handleUnlockPrice = (id) => {
-    if (window.confirm("Unlock verified contact details for $5?")) {
-      setTimeout(() => setUnlockedDetails(prev => ({ ...prev, [id]: true })), 500);
+    if (diff > threshold) {
+      return { 
+        status: 'High', 
+        color: '#dc2626', // Red Badge
+        icon: <ArrowUpRight size={16} strokeWidth={3} />, 
+        angle: 30 // Points Right (to Red section)
+      };
     }
+    if (diff < -threshold) {
+      return { 
+        status: 'Low', 
+        color: '#16a34a', // Green Badge
+        icon: <ArrowDownRight size={16} strokeWidth={3} />, 
+        angle: 150 // Points Left (to Green section)
+      };
+    }
+    return { 
+      status: 'Avg', 
+      color: '#6b7280', // Gray Badge
+      icon: <Minus size={16} strokeWidth={3} />, 
+      angle: 90 // Points Up (Yellow section)
+    };
   };
 
+  const { status, color, icon, angle } = getPriceComparison();
+
+  // --- SVG GAUGE SETUP ---
+  const radius = 35;
+  const centerX = 50;
+  const centerY = 45;
+  const strokeWidth = 8;
+
+  // Helper function to calculate arc path
+  const describeArc = (startAngle, endAngle) => {
+      const startRad = (startAngle * Math.PI) / 180;
+      const endRad = (endAngle * Math.PI) / 180;
+      const x1 = centerX + radius * Math.cos(startRad);
+      const y1 = centerY - radius * Math.sin(startRad);
+      const x2 = centerX + radius * Math.cos(endRad);
+      const y2 = centerY - radius * Math.sin(endRad);
+
+      return [
+          "M", x1, y1,
+          "A", radius, radius, 0, 0, 1, x2, y2
+      ].join(" ");
+  };
+
+  // --- FIXED SEGMENTS (Green -> Red) ---
+  const segments = [
+      { color: '#16a34a', start: 180, end: 144 }, // Left: Dark Green (Low Price)
+      { color: '#84cc16', start: 144, end: 108 }, // Light Green
+      { color: '#eab308', start: 108, end: 72 },  // Center: Yellow (Avg)
+      { color: '#f97316', start: 72, end: 36 },   // Orange
+      { color: '#dc2626', start: 36, end: 0 }     // Right: Red (High Price)
+  ];
+
+  // Calculate Needle Position
+  const needleRad = (angle * Math.PI) / 180; 
+  const needleLength = 30;
+  const needleX = centerX + needleLength * Math.cos(needleRad);
+  const needleY = centerY - needleLength * Math.sin(needleRad);
+  const needleColor = "#1f2937"; 
+
   return (
-    <div className="min-h-screen bg-platinum flex flex-col font-sans text-navy">
-      <Header />
+    <div className={`relative group border-4 border-platinum p-6 bg-white transition-all hover:border-navy hover:shadow-xl rounded-xl ${className}`}>
       
-      {/* --- PAGE HEADER BANNER --- */}
-      <div className="bg-navy text-white pt-10 pb-20 px-4 shadow-lg relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-orange/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
-        <div className="max-w-7xl mx-auto relative z-10 text-center md:text-left">
-            <div className="flex flex-col md:flex-row justify-between items-end gap-4">
-                <div>
-                    <h1 className="text-3xl md:text-4xl font-black uppercase tracking-tighter mb-2 flex items-center justify-center md:justify-start gap-3">
-                        <TrendingUp className="text-orange" size={32} /> Market Intelligence
-                    </h1>
-                    <p className="text-blue-100 font-medium text-sm md:text-base max-w-2xl">
-                        Real-time scrap pricing across India. Verified mandi rates updated hourly.
-                    </p>
-                </div>
-                <div className="bg-white/10 backdrop-blur-sm border border-white/20 px-4 py-2 rounded-lg">
-                    <span className="text-orange text-xs font-bold uppercase tracking-widest block">Live Updates</span>
-                    <span className="text-white text-sm font-bold">Last Sync: Just Now</span>
-                </div>
-            </div>
+      {/* 1. HEADER */}
+      <div className="flex justify-between items-start mb-2">
+        <div>
+           <h3 className="text-xl font-black uppercase text-navy leading-none">{item.material}</h3>
+           <p className="text-xs font-bold text-steel uppercase mt-1">
+             {item.location} • {item.type}
+           </p>
         </div>
-      </div>
-
-      <div className="flex-grow max-w-7xl w-full mx-auto px-4 -mt-12 mb-12 relative z-20">
         
-        {/* --- FILTERS BAR --- */}
-        <div className="bg-white p-4 rounded-xl shadow-xl border-t-4 border-orange mb-8 flex flex-col md:flex-row gap-4 items-center justify-between">
+        {/* Status Badge */}
+        <div 
+          className="flex items-center gap-1 font-black px-3 py-1 rounded-full text-xs uppercase tracking-wide shadow-sm text-white"
+          style={{ backgroundColor: color }}
+        >
+            {icon} {status}
+        </div>
+      </div>
+      
+      {/* 2. SVG GAUGE VISUALIZATION */}
+      <div className="flex justify-center my-4">
+          <svg width="140" height="85" viewBox="0 0 100 65" className="overflow-visible">
+            {/* Segments */}
+            {segments.map((seg, i) => (
+                <path 
+                    key={i} 
+                    d={describeArc(seg.start, seg.end)} 
+                    fill="none" 
+                    stroke={seg.color} 
+                    strokeWidth={strokeWidth}
+                    strokeLinecap="butt"
+                />
+            ))}
             
-            <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
-                {/* Category Filter */}
-                <div className="relative group">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-steel group-focus-within:text-orange transition-colors">
-                        <Filter size={16} />
-                    </div>
-                    <select 
-                        onChange={(e) => setFilterCategory(e.target.value)} 
-                        className="pl-10 pr-8 py-3 bg-platinum/30 border border-platinum rounded-lg text-sm font-bold text-navy focus:border-orange focus:ring-2 focus:ring-orange/20 outline-none w-full md:w-48 appearance-none cursor-pointer hover:bg-platinum/50 transition-all"
-                    >
-                        <option value="All">All Categories</option>
-                        <option value="Ferrous">Ferrous</option>
-                        <option value="Non Ferrous">Non Ferrous</option>
-                    </select>
-                </div>
-
-                {/* Location Filter */}
-                <div className="relative group">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-steel group-focus-within:text-orange transition-colors">
-                        <MapPin size={16} />
-                    </div>
-                    <select 
-                        onChange={(e) => setFilterLocation(e.target.value)}
-                        className="pl-10 pr-8 py-3 bg-platinum/30 border border-platinum rounded-lg text-sm font-bold text-navy focus:border-orange focus:ring-2 focus:ring-orange/20 outline-none w-full md:w-48 appearance-none cursor-pointer hover:bg-platinum/50 transition-all"
-                    >
-                        <option value="All">All Locations</option>
-                        {uniqueLocations.map(loc => <option key={loc} value={loc}>{loc}</option>)}
-                    </select>
-                </div>
-            </div>
-
-            {/* Sort Control */}
-            <div className="relative group w-full md:w-auto">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-steel group-focus-within:text-orange transition-colors">
-                    <ArrowUpDown size={16} />
-                </div>
-                <select 
-                    onChange={(e) => setSortOrder(e.target.value)}
-                    className="pl-10 pr-8 py-3 bg-white border-2 border-platinum rounded-lg text-sm font-bold text-navy focus:border-navy outline-none w-full md:w-56 appearance-none cursor-pointer"
-                >
-                    <option value="default">Sort By: Default</option>
-                    <option value="high-low">Price: High to Low</option>
-                    <option value="low-high">Price: Low to High</option>
-                </select>
-            </div>
-        </div>
-
-        {/* --- DATA GRID --- */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {processedData.length > 0 ? (
-                processedData.map(item => (
-                    <div key={item.id} className="transform hover:-translate-y-1 transition-transform duration-300">
-                        <PriceCard 
-                            item={item}
-                            averagePrice={materialAverages[item.material]}
-                            isUnlocked={unlockedDetails[item.id]}
-                            onUnlock={handleUnlockPrice}
-                        />
-                    </div>
-                ))
-            ) : (
-                <div className="col-span-full bg-white p-12 rounded-xl shadow-sm border border-platinum text-center">
-                    <div className="inline-block p-4 bg-platinum/50 rounded-full mb-4 text-steel">
-                        <Search size={48} />
-                    </div>
-                    <h3 className="text-xl font-bold text-navy uppercase">No Market Data Found</h3>
-                    <p className="text-steel mt-2 text-sm">Try adjusting your filters to see more results.</p>
-                    <button 
-                        onClick={() => { setFilterCategory('All'); setFilterLocation('All'); }}
-                        className="mt-6 px-6 py-2 bg-navy text-white rounded text-xs font-bold uppercase hover:bg-orange transition-colors"
-                    >
-                        Clear Filters
-                    </button>
-                </div>
-            )}
-        </div>
-
+            {/* Needle */}
+            <line 
+              x1={centerX} y1={centerY} 
+              x2={needleX} y2={needleY} 
+              stroke={needleColor} 
+              strokeWidth="3" 
+              strokeLinecap="round"
+            />
+            
+            {/* Pivot */}
+            <circle cx={centerX} cy={centerY} r="4" fill={needleColor} />
+            
+            {/* Status Label */}
+            <text x={centerX} y={centerY + 20} textAnchor="middle" fontSize="11" fontWeight="800" fill="#4b5563" className="uppercase">
+                {status}
+            </text>
+          </svg>
       </div>
 
-      <Footer />
+      {/* 3. PRICE DISPLAY */}
+      <div className="text-center mb-4">
+        <p className="text-4xl font-black text-navy tracking-tighter">₹{item.price.toLocaleString()}</p>
+        {averagePrice && (
+             <p className="text-xs font-bold text-gray-400 mt-1">
+               Avg: ₹{Math.round(averagePrice).toLocaleString()}
+             </p>
+        )}
+      </div>
+      
+      {/* 4. UNLOCK BUTTON */}
+      {isUnlocked ? (
+        <div className="mt-4 p-3 bg-green-50 border-l-4 border-green-600 rounded">
+          <p className="text-[10px] font-black uppercase text-green-700 flex items-center gap-1">
+             <ShieldCheck size={12}/> Verified Contact:
+          </p>
+          <p className="text-sm font-bold text-navy mt-1">{item.contact}</p>
+        </div>
+      ) : (
+        <div className="mt-4">
+          <button 
+            onClick={() => onUnlock(item.id)}
+            className="w-full py-3 font-black uppercase text-xs text-white transition-colors flex items-center justify-center gap-2 rounded shadow-md hover:shadow-lg hover:bg-navy"
+            style={{ backgroundColor: '#ff6b00' }}
+          >
+            <Lock size={14} /> Unlock ($5)
+          </button>
+        </div>
+      )}
     </div>
   );
 };
 
-export default PriceTracker;
+export default PriceCard;
