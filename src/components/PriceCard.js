@@ -77,13 +77,15 @@ const PriceCard = ({ item, averagePrice, isUnlocked, onUnlock, className = "" })
   const needleColor = "#1f2937"; 
 
   return (
-    <div className={`relative group border-4 border-platinum p-6 bg-white transition-all hover:border-navy hover:shadow-xl rounded-xl ${className}`}>
+    // Added 'h-full' and 'flex-col' to ensure equal height cards
+    <div className={`relative group border-4 border-platinum p-6 bg-white transition-all hover:border-navy hover:shadow-xl rounded-xl flex flex-col h-full ${className}`}>
       
       {/* 1. HEADER */}
       <div className="flex justify-between items-start mb-2">
         <div>
-           <h3 className="text-xl font-black uppercase text-navy leading-none">{item.material}</h3>
-           {/* UPDATED: Display Location, Form, and Grade */}
+           <h3 className="text-xl font-black uppercase text-navy leading-none line-clamp-1" title={item.material}>
+             {item.material}
+           </h3>
            <p className="text-xs font-bold text-steel uppercase mt-1">
              {item.location} • {item.form} • {item.grade}
            </p>
@@ -91,7 +93,7 @@ const PriceCard = ({ item, averagePrice, isUnlocked, onUnlock, className = "" })
         
         {/* Status Badge */}
         <div 
-          className="flex items-center gap-1 font-black px-3 py-1 rounded-full text-xs uppercase tracking-wide shadow-sm text-white"
+          className="flex items-center gap-1 font-black px-3 py-1 rounded-full text-xs uppercase tracking-wide shadow-sm text-white shrink-0"
           style={{ backgroundColor: color }}
         >
             {icon} {status}
@@ -100,7 +102,7 @@ const PriceCard = ({ item, averagePrice, isUnlocked, onUnlock, className = "" })
       
       {/* 2. SVG GAUGE VISUALIZATION */}
       <div className="flex justify-center my-4">
-          <svg width="140" height="85" viewBox="0 0 100 65" className="overflow-visible">
+          <svg width="140" height="60" viewBox="0 0 100 65" className="overflow-visible">
             {/* Segments */}
             {segments.map((seg, i) => (
                 <path 
@@ -124,17 +126,12 @@ const PriceCard = ({ item, averagePrice, isUnlocked, onUnlock, className = "" })
             
             {/* Pivot */}
             <circle cx={centerX} cy={centerY} r="4" fill={needleColor} />
-            
-            {/* Status Label (Original position) */}
-            <text x={centerX} y={centerY + 20} textAnchor="middle" fontSize="11" fontWeight="800" fill="#4b5563" className="uppercase">
-                {status}
-            </text>
           </svg>
       </div>
 
       {/* 3. PRICE DISPLAY */}
-      <div className="text-center mb-4">
-        {/* UPDATED: Added Unit display */}
+      {/* Added flex-grow to push the button down */}
+      <div className="text-center mb-4 flex-grow">
         <p className="text-4xl font-black text-navy tracking-tighter">
             ₹{item.price.toLocaleString()} <span className="text-lg text-gray-500">/{item.unit}</span>
         </p>
@@ -146,24 +143,25 @@ const PriceCard = ({ item, averagePrice, isUnlocked, onUnlock, className = "" })
       </div>
       
       {/* 4. UNLOCK BUTTON */}
-      {isUnlocked ? (
-        <div className="mt-4 p-3 bg-green-50 border-l-4 border-green-600 rounded">
-          <p className="text-[10px] font-black uppercase text-green-700 flex items-center gap-1">
-             <ShieldCheck size={12}/> Verified Contact:
-          </p>
-          <p className="text-sm font-bold text-navy mt-1">{item.contact}</p>
-        </div>
-      ) : (
-        <div className="mt-4">
-          <button 
-            onClick={() => onUnlock(item.id)}
-            className="w-full py-3 font-black uppercase text-xs text-white transition-colors flex items-center justify-center gap-2 rounded shadow-md hover:shadow-lg hover:bg-navy"
-            style={{ backgroundColor: '#ff6b00' }}
-          >
-            <Lock size={14} /> Unlock ($5)
-          </button>
-        </div>
-      )}
+      {/* Added mt-auto to ensure it sits at the bottom */}
+      <div className="mt-auto">
+        {isUnlocked ? (
+            <div className="p-3 bg-green-50 border-l-4 border-green-600 rounded">
+            <p className="text-[10px] font-black uppercase text-green-700 flex items-center gap-1">
+                <ShieldCheck size={12}/> Verified Contact:
+            </p>
+            <p className="text-sm font-bold text-navy mt-1">{item.contact}</p>
+            </div>
+        ) : (
+            <button 
+                onClick={() => onUnlock(item.id)}
+                className="w-full py-3 font-black uppercase text-xs text-white transition-colors flex items-center justify-center gap-2 rounded shadow-md hover:shadow-lg hover:bg-navy"
+                style={{ backgroundColor: '#ff6b00' }}
+            >
+                <Lock size={14} /> Unlock ($5)
+            </button>
+        )}
+      </div>
     </div>
   );
 };
