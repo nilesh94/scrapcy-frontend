@@ -21,6 +21,7 @@ const PostRequirementModal = ({ isOpen, onClose, isAuthenticated, prefillData })
 
   // --- 2. FORM STATE ---
   const [formData, setFormData] = useState({
+    scrapListingId: null,
     scrapType: '',
     category: '',
     material: '',
@@ -61,6 +62,7 @@ const PostRequirementModal = ({ isOpen, onClose, isAuthenticated, prefillData })
         // 2. Populate Form
         setFormData(prev => ({
             ...prev,
+            scrapListingId: prefillData.id,
             scrapType: prefillData.industry || '', 
             category: prefillData.category || '',
             material: prefillData.material || '',
@@ -74,7 +76,7 @@ const PostRequirementModal = ({ isOpen, onClose, isAuthenticated, prefillData })
         // Reset to default state if opening as "Post New"
         setManualMode({ scrapType: false, category: false, material: false, form: false, grade: false });
         setFormData({
-            scrapType: '', category: '', material: '', form: '', grade: '', locations: '', description: '', note: '',
+            scrapListingId: null,scrapType: '', category: '', material: '', form: '', grade: '', locations: '', description: '', note: '',
             guestName: '', guestEmail: '', guestPhone: '', guestCompany: '', guestGst: ''
         });
     }
@@ -240,7 +242,7 @@ const PostRequirementModal = ({ isOpen, onClose, isAuthenticated, prefillData })
       setTimeout(() => {
         onClose(); 
         setFormData({
-            scrapType: '', category: '', material: '', form: '', grade: '', locations: '', description: '', note: '',
+            scrapListingId: null,scrapType: '', category: '', material: '', form: '', grade: '', locations: '', description: '', note: '',
             guestName: '', guestEmail: '', guestPhone: '', guestCompany: '', guestGst: ''
         });
         setManualMode({ scrapType: false, category: false, material: false, form: false, grade: false });
