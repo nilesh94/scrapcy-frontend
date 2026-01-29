@@ -39,6 +39,11 @@ const Login = () => {
       // 2. Store Token & User Data in LocalStorage
       // This is crucial for the Dashboard to know who is logged in
       localStorage.setItem('token', response.data.access_token);
+      
+      if (response.data.refresh_token) {
+          localStorage.setItem('refreshToken', response.data.refresh_token);
+      }
+      
       localStorage.setItem('user', JSON.stringify(response.data.user));
 
       // 3. Redirect to the Main Dashboard
