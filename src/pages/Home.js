@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Hammer, ArrowRight, Building2, User, Unlock, LayoutDashboard 
+  Hammer, ArrowRight, Building2, User, Unlock, LayoutDashboard, MessageSquare, X 
 } from 'lucide-react';
 import PriceCard from '../components/PriceCard';
 import Header from '../components/Header/Header'; 
 import Footer from '../components/Footer/Footer'; 
 
+// --- COMPACT MOCK DATA ---
 const MARKET_DATA = [
   { id: 101, category: "Ferrous", material: "MS Scrap", form: "Attachment", grade: "Ship Breaking", location: "Alang", price: 33600, unit: "MT", change: 200, contact: "Alang Recyclers" },
   { id: 104, category: "Ferrous", material: "Sponge Iron", form: "Pellets", grade: "DRI-78", location: "Raipur", price: 30500, unit: "MT", change: 200, contact: "Raipur Ispat" },
@@ -16,11 +17,86 @@ const MARKET_DATA = [
   { id: 203, category: "Non Ferrous", material: "Brass", form: "Honey", grade: "IS-319", location: "Jamnagar", price: 490000, unit: "MT", change: 0, contact: "Jamnagar Brass" },
 ];
 
+// --- CONTACT MODAL COMPONENT ---
+const ContactModal = ({ isOpen, onClose }) => {
+  const [formData, setFormData] = useState({ name: '', phone: '', email: '', role: 'Buyer', query: '' });
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setSubmitted(true);
+    // Simulate API call
+    setTimeout(() => {
+      setSubmitted(false);
+      setFormData({ name: '', phone: '', email: '', role: 'Buyer', query: '' });
+      onClose();
+    }, 2500);
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-navy/90 backdrop-blur-sm p-4 animate-fadeIn">
+      <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden relative">
+        <button onClick={onClose} className="absolute top-4 right-4 text-steel hover:text-orange transition-colors"><X size={24}/></button>
+        
+        {submitted ? (
+          <div className="p-12 text-center">
+            <div className="inline-flex p-4 bg-green-100 text-green-600 rounded-full mb-4">
+              <MessageSquare size={48} />
+            </div>
+            <h3 className="text-2xl font-black text-navy uppercase mb-2">Thank You!</h3>
+            <p className="text-steel font-medium">Our Team will reach out to you shortly.</p>
+          </div>
+        ) : (
+          <div className="p-8">
+            <h2 className="text-2xl font-black text-navy uppercase mb-1">Get In Touch</h2>
+            <p className="text-sm text-steel mb-6 font-medium">Fill out the form below and we'll contact you.</p>
+            
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-navy uppercase mb-1">Name</label>
+                <input required type="text" className="w-full p-3 bg-platinum/30 border border-platinum rounded font-medium focus:border-orange outline-none" placeholder="Your Name" value={formData.name} onChange={e=>setFormData({...formData, name: e.target.value})} />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-navy uppercase mb-1">Phone</label>
+                  <input required type="tel" className="w-full p-3 bg-platinum/30 border border-platinum rounded font-medium focus:border-orange outline-none" placeholder="+91 98765..." value={formData.phone} onChange={e=>setFormData({...formData, phone: e.target.value})} />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-navy uppercase mb-1">Role</label>
+                  <select className="w-full p-3 bg-platinum/30 border border-platinum rounded font-medium focus:border-orange outline-none" value={formData.role} onChange={e=>setFormData({...formData, role: e.target.value})}>
+                    <option>Buyer</option>
+                    <option>Seller</option>
+                    <option>Trader</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-navy uppercase mb-1">Email (Optional)</label>
+                <input type="email" className="w-full p-3 bg-platinum/30 border border-platinum rounded font-medium focus:border-orange outline-none" placeholder="name@example.com" value={formData.email} onChange={e=>setFormData({...formData, email: e.target.value})} />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-navy uppercase mb-1">Query</label>
+                <textarea required rows="3" className="w-full p-3 bg-platinum/30 border border-platinum rounded font-medium focus:border-orange outline-none" placeholder="I am interested in..." value={formData.query} onChange={e=>setFormData({...formData, query: e.target.value})}></textarea>
+              </div>
+              <button type="submit" className="w-full py-4 bg-orange text-white font-black uppercase tracking-widest hover:bg-navy transition-colors rounded shadow-lg mt-2">
+                Submit Request
+              </button>
+            </form>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const Home = () => {
   const navigate = useNavigate();
   const [unlockedDetails, setUnlockedDetails] = useState({});
   const [user, setUser] = useState(null); 
   const [userRole, setUserRole] = useState('guest'); 
+  const [isContactOpen, setIsContactOpen] = useState(false); // Contact Modal State
 
   // 1. Check Login Status on Load
   useEffect(() => {
@@ -56,6 +132,9 @@ const Home = () => {
     <div className="min-h-screen bg-platinum flex flex-col relative">
       <Header />
 
+      {/* CONTACT MODAL */}
+      <ContactModal isOpen={isContactOpen} onClose={() => setIsContactOpen(false)} />
+
       <main className="flex-grow">
         
         {/* --- FLOATING DASHBOARD BUTTON (ONLY FOR LOGGED IN USERS) --- */}
@@ -76,7 +155,8 @@ const Home = () => {
                <span key={i} className="mx-8 font-bold uppercase italic tracking-wider flex items-center gap-2 text-sm">
                   <span className="text-navy">LIVE:</span> {item.material} ({item.location}) 
                   <span className={item.change > 0 ? "text-green-100" : "text-red-100"}>
-                    {item.price.toLocaleString()}
+                    {/* UPDATED: Added /Unit here */}
+                    ₹{item.price.toLocaleString()}/{item.unit}
                   </span>
                </span>
             ))}
@@ -90,12 +170,12 @@ const Home = () => {
             <h1 className="text-5xl md:text-7xl font-black uppercase leading-[0.9] mb-6 mt-2 text-navy">The Hub of <br/>Scrap Trade</h1>
             <p className="text-lg text-steel font-medium mb-8">A premium, high-integrity platform bridging scrap producers and professional bidders.</p>
             
-            {/* Main Hero Button (Smart Redirect) */}
+            {/* Main Hero Button (Changed to Contact Form Trigger) */}
             <button 
-              onClick={() => navigate(user ? '/dashboard' : '/login')}
-              className="bg-navy text-white px-8 py-4 font-bold flex items-center gap-2 hover:bg-orange transition-all duration-300 shadow-lg shadow-navy/20"
+              onClick={() => setIsContactOpen(true)}
+              className="bg-navy text-white px-8 py-4 font-bold flex items-center gap-2 hover:bg-orange transition-all duration-300 shadow-lg shadow-navy/20 uppercase tracking-wide"
             >
-                {user ? 'GO TO DASHBOARD' : 'EXPLORE MARKET'} <ArrowRight size={20}/>
+                Get In Touch <MessageSquare size={20}/>
             </button>
           </div>
           <div className="rounded-lg shadow-2xl overflow-hidden bg-steel/10 p-2 border border-platinum-dark">
