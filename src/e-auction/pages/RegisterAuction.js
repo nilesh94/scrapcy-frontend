@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import Header from '../components/Header/Header';
 import Footer from '../components/Footer/Footer';
-import { auctionAPI, lotAPI } from '../services/eAuctionAPI';
+import { auctionAPI, lotAPI } from '../../services/eAuctionAPI';
 
 const RegisterAuction = () => {
   const navigate = useNavigate();
