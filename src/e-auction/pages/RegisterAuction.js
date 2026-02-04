@@ -5,8 +5,8 @@ import {
   Save, ArrowLeft, Calendar, DollarSign, FileText, MapPin, Clock, 
   CheckCircle, XCircle, Upload, Info, Plus, Trash2, Package
 } from 'lucide-react';
-import Header from '../components/Header/Header';
-import Footer from '../components/Footer/Footer';
+import Header from '../../components/Header/Header';
+import Footer from '../../components/Footer/Footer';
 import { auctionAPI, lotAPI } from '../../services/eAuctionAPI';
 
 const RegisterAuction = () => {
