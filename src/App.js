@@ -18,6 +18,10 @@ import AdminListingDetail from './pages/AdminListingDetail';
 import AdminMarketPrice from './pages/AdminMarketPrice';
 import EAuctionLander from './pages/EAuctionLander';
 
+// --- E-AUCTION PAGES ---
+import RegisterAuction from './e-auction/pages/RegisterAuction';
+import MyAuctions from './e-auction/pages/MyAuctions';
+
 // --- ADMIN PAGES ---
 import AdminDashboard from './pages/AdminDashboard';
 import AdminListings from './pages/AdminListings';
@@ -54,6 +58,8 @@ function App() {
         
         {/* E-AUCTION ROUTES */}
         <Route path="/e-auction" element={<EAuctionLander />} />
+        <Route path="/e-auction/register" element={<RegisterAuction />} />
+        <Route path="/e-auction/my-auctions" element={<MyAuctions />} />
       </Routes>
     </Router>
   );
