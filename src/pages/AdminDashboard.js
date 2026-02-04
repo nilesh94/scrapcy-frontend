@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { 
-  LayoutDashboard, Upload, Save, CheckCircle, XCircle, FileText, Users, MapPin, TrendingUp 
+  LayoutDashboard, Upload, Save, CheckCircle, XCircle, FileText, Users, MapPin, TrendingUp, Gavel 
 } from 'lucide-react';
 import Header from '../components/Header/Header';
 import Footer from '../components/Footer/Footer';
@@ -80,9 +80,7 @@ const AdminDashboard = () => {
     setSelectedMaterialId(''); setFilteredMaterials([]);
     setSelectedFormId('');     setFilteredForms([]);
     setSelectedGradeId('');    setFilteredGrades([]);
-
     if (!type) return;
-
     const categories = hierarchy.filter(item => item.scrap_type === type);
     setFilteredCategories(categories || []);
   };
@@ -92,14 +90,11 @@ const AdminDashboard = () => {
     const val = e.target.value;
     const catId = val ? parseInt(val) : '';
     setSelectedCategoryId(catId);
-    
     // Reset lower levels
     setSelectedMaterialId(''); setFilteredMaterials([]);
     setSelectedFormId('');     setFilteredForms([]);
     setSelectedGradeId('');    setFilteredGrades([]);
-
     if (!catId) return;
-
     const catObj = hierarchy.find(item => item.id === catId);
     // SAFETY: || [] prevents crash if materials is missing
     setFilteredMaterials(catObj?.materials || []); 
@@ -110,13 +105,10 @@ const AdminDashboard = () => {
     const val = e.target.value;
     const matId = val ? parseInt(val) : '';
     setSelectedMaterialId(matId);
-    
     // Reset lower levels
     setSelectedFormId('');     setFilteredForms([]);
     setSelectedGradeId('');    setFilteredGrades([]);
-
     if (!matId) return;
-
     const matObj = filteredMaterials.find(item => item.id === matId);
     // SAFETY: This was likely the crash cause. Added ?.forms || []
     setFilteredForms(matObj?.forms || []); 
@@ -127,16 +119,13 @@ const AdminDashboard = () => {
     const val = e.target.value;
     const fId = val ? parseInt(val) : '';
     setSelectedFormId(fId);
-
     // Reset Grade
     setSelectedGradeId('');    setFilteredGrades([]);
-
     if (!fId) return;
-
     const formObj = filteredForms.find(item => item.id === fId);
     // SAFETY: || [] prevents crash
     setFilteredGrades(formObj?.grades || []); 
-  }
+  };
 
   // --- 5. UNIT VALIDATION LOGIC ---
   useEffect(() => {
@@ -195,18 +184,15 @@ const AdminDashboard = () => {
       data.append('email', formData.email);
       data.append('phone', formData.phone);
       if(formData.alternatePhone) data.append('alternate_phone', formData.alternatePhone);
-
       // --- IDs ---
       data.append('category_id', selectedCategoryId);
       data.append('material_id', selectedMaterialId);
       if(selectedFormId) data.append('form_id', selectedFormId);
       if(selectedGradeId) data.append('grade_id', selectedGradeId);
-
       if(formData.description) data.append('description', formData.description);
       data.append('quantity', formData.quantity ? formData.quantity.toString() : "0");
       data.append('unit', formData.quantityUnit);
       if(formData.monthlyCapacity) data.append('monthly_capacity', formData.monthlyCapacity);
-      
       data.append('price_per_unit', formData.pricePerUnit ? formData.pricePerUnit.toString() : "0");
       data.append('price_unit', formData.priceUnit);
       data.append('address', formData.address);
@@ -224,7 +210,6 @@ const AdminDashboard = () => {
       );
 
       setSuccessMsg(`Success! Listing ID: ${response.data.listing_id} created.`);
-      
       setFormData({
         sellerName: 'Admin Entry', companyName: '', gstNumber: '', email: '', phone: '', alternatePhone: '',
         description: '', quantity: '', quantityUnit: 'Tons', 
@@ -233,16 +218,13 @@ const AdminDashboard = () => {
         addedBy: 'admin'
       });
       setSelectedFiles(null);
-      
       // Reset Selects
       setSelectedScrapType('');
       setSelectedCategoryId('');
       setSelectedMaterialId('');
       setSelectedFormId('');
       setSelectedGradeId('');
-      
       document.getElementById('fileInput').value = ""; 
-
     } catch (err) {
       console.error("Submission Error:", err);
       if (err.message === "Network Error" || !err.response) {
@@ -263,6 +245,7 @@ const AdminDashboard = () => {
     <div className="min-h-screen bg-platinum flex flex-col">
       <Header />
       
+      {/* HEADER SECTION WITH UPDATED BUTTONS */}
       <div className="bg-navy text-white py-12 px-4 shadow-lg">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
             <div>
@@ -273,6 +256,23 @@ const AdminDashboard = () => {
             </div>
             
             <div className="flex gap-3">
+                {/* NEW: E-AUCTION BUTTON */}
+                <Link 
+                  to="/e-auction/register" 
+                  className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded shadow-lg transition-all uppercase text-xs tracking-widest flex items-center gap-2"
+                >
+                    <Gavel size={16} /> Register E-Auction
+                </Link>
+
+                {/* NEW: MY AUCTIONS BUTTON */}
+                <Link 
+                  to="/e-auction/my-auctions" 
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded shadow-lg transition-all uppercase text-xs tracking-widest flex items-center gap-2"
+                >
+                    <FileText size={16} /> My Auctions
+                </Link>
+
+                {/* EXISTING BUTTONS */}
                 <Link 
                   to="/admin/market-prices" 
                   className="bg-white text-blue-900 hover:bg-orange hover:text-white font-bold py-3 px-6 rounded shadow-lg transition-all uppercase text-xs tracking-widest flex items-center gap-2"
@@ -309,7 +309,6 @@ const AdminDashboard = () => {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
-                
                 {/* Section 1: Seller Info */}
                 <div className="bg-platinum/20 p-6 rounded-lg border border-platinum">
                     <h3 className="text-sm font-black text-steel uppercase mb-4 flex items-center gap-2">
@@ -365,7 +364,7 @@ const AdminDashboard = () => {
                     </h3>
                     
                     <div className="grid md:grid-cols-2 gap-4 mb-4">
-                        {/* Level 1: Scrap Type */}
+			{/* Level 1: Scrap Type */}
                         <div>
                             <label className="block text-xs font-bold uppercase text-navy mb-1">1. Scrap Type</label>
                             <select value={selectedScrapType} onChange={handleScrapTypeChange} className="w-full p-3 bg-white border border-platinum rounded focus:border-orange outline-none">
@@ -376,7 +375,7 @@ const AdminDashboard = () => {
                             </select>
                         </div>
 
-                        {/* Level 2: Category */}
+			{/* Level 2: Category */}
                         <div>
                             <label className="block text-xs font-bold uppercase text-navy mb-1">2. Category</label>
                             <select value={selectedCategoryId} onChange={handleCategoryChange} disabled={!selectedScrapType} className="w-full p-3 bg-white border border-platinum rounded focus:border-orange outline-none disabled:bg-gray-100">
@@ -387,7 +386,7 @@ const AdminDashboard = () => {
                             </select>
                         </div>
 
-                        {/* Level 3: Material */}
+			{/* Level 3: Material */}
                         <div>
                             <label className="block text-xs font-bold uppercase text-navy mb-1">3. Material Name</label>
                             <select value={selectedMaterialId} onChange={handleMaterialChange} disabled={!selectedCategoryId} className="w-full p-3 bg-white border border-platinum rounded focus:border-orange outline-none disabled:bg-gray-100">
@@ -398,7 +397,7 @@ const AdminDashboard = () => {
                             </select>
                         </div>
 
-                        {/* Level 4: Form */}
+			{/* Level 4: Form */}
                         <div>
                             <label className="block text-xs font-bold uppercase text-navy mb-1">4. Form</label>
                             <select value={selectedFormId} onChange={handleFormChange} disabled={!selectedMaterialId} className="w-full p-3 bg-white border border-platinum rounded focus:border-orange outline-none disabled:bg-gray-100">
@@ -415,7 +414,7 @@ const AdminDashboard = () => {
                             <label className="block text-xs font-bold uppercase text-navy mb-1">5. Grade (Optional)</label>
                             <select value={selectedGradeId} onChange={(e) => setSelectedGradeId(e.target.value)} disabled={!selectedFormId || filteredGrades.length === 0} className="w-full p-3 bg-white border border-platinum rounded focus:border-orange outline-none disabled:bg-gray-100">
                                 <option value="">-- Select Grade --</option>
-                                {/* SAFETY: Added || [] to prevent crash if undefined */}
+                        {/* Level 5: Grade */}
                                 {(filteredGrades || []).map(grad => (
                                     <option key={grad.id} value={grad.id}>{grad.grade_name}</option>
                                 ))}
@@ -458,18 +457,6 @@ const AdminDashboard = () => {
                                 </select>
                             </div>
                         </div>
-                    </div>
-
-                    <div className="mt-4">
-                         <label className="block text-xs font-bold uppercase text-navy mb-1">Monthly Supply Capacity (Optional)</label>
-                         <input 
-                           name="monthlyCapacity" 
-                           value={formData.monthlyCapacity} 
-                           onChange={handleChange} 
-                           type="text" 
-                           className="w-full p-3 bg-white border border-platinum rounded focus:border-orange outline-none" 
-                           placeholder="e.g. 500 Tons/Month" 
-                         />
                     </div>
                 </div>
 
