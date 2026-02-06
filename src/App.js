@@ -26,6 +26,10 @@ import MyAuctions from './e-auction/pages/MyAuctions';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminListings from './pages/AdminListings';
 
+import AdminAuctionDashboard from './e-auction/pages/AdminAuctionDashboard';
+import ManageAuctions from './e-auction/pages/ManageAuctions';
+import AuditTrail from './e-auction/pages/AuditTrail';
+
 function App() {
   return (
     <Router>
@@ -60,6 +64,10 @@ function App() {
         <Route path="/e-auction" element={<EAuctionLander />} />
         <Route path="/e-auction/register" element={<RegisterAuction />} />
         <Route path="/e-auction/my-auctions" element={<MyAuctions />} />
+
+        <Route path="/e-auction/admin/dashboard" element={<AdminAuctionDashboard />} />
+        <Route path="/e-auction/admin/manage" element={<ManageAuctions />} />
+        <Route path="/e-auction/admin/audit/:auctionId" element={<AuditTrail />} />
       </Routes>
     </Router>
   );
