@@ -3,7 +3,7 @@ import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { 
   LayoutDashboard, Upload, Save, CheckCircle, XCircle, FileText, 
-  Users, MapPin, TrendingUp, Gavel, PlusCircle, List, Trash2
+  Users, MapPin, TrendingUp, Gavel, PlusCircle, List, Trash2, Grid, Table as TableIcon
 } from 'lucide-react';
 import Header from '../components/Header/Header';
 import Footer from '../components/Footer/Footer';
@@ -11,23 +11,22 @@ import Footer from '../components/Footer/Footer';
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
 // ==========================================
-// COMPONENT 1: LISTINGS VIEW (Default Tab)
+// SUB-COMPONENT: LISTINGS VIEW (Card & List)
 // ==========================================
 const ListingsView = () => {
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [viewMode, setViewMode] = useState('card'); // 'card' or 'list'
 
   const fetchListings = async () => {
     try {
-      // Assuming endpoint is /scrap/all or similar based on your /scrap/add endpoint
-      // Adjust this URL to match your backend route for fetching all listings
+      // API call to fetch all scrap listings
       const res = await axios.get(`${API_URL}/scrap/all`); 
       setListings(res.data);
       setLoading(false);
     } catch (err) {
       console.error("Fetch Listings Error", err);
-      // Fallback mock data for visualization if API fails
       setListings([]); 
       setError('Could not load listings. Please check API connection.');
       setLoading(false);
@@ -51,76 +50,119 @@ const ListingsView = () => {
   if (loading) return <div className="p-8 text-center text-navy font-bold">Loading Listings...</div>;
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-lg border-t-4 border-navy">
-      <div className="flex justify-between items-center mb-6">
+    <div className="bg-white p-6 rounded-lg shadow-lg border-t-4 border-navy animate-fadeIn">
+      {/* Header & Toggle */}
+      <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
         <h2 className="text-2xl font-black text-navy uppercase flex items-center gap-2">
-            <List className="text-orange" /> All Listings
+            <List className="text-orange" /> All Scrap Listings
         </h2>
-        <span className="text-steel text-sm font-bold">{listings.length} Records Found</span>
+        
+        <div className="flex items-center gap-4">
+            <span className="text-steel text-sm font-bold">{listings.length} Records</span>
+            {/* View Toggle Buttons */}
+            <div className="bg-platinum p-1 rounded flex">
+                <button 
+                    onClick={() => setViewMode('card')}
+                    className={`p-2 rounded ${viewMode === 'card' ? 'bg-white shadow text-orange' : 'text-steel hover:text-navy'}`}
+                    title="Card View"
+                >
+                    <Grid size={18} />
+                </button>
+                <button 
+                    onClick={() => setViewMode('list')}
+                    className={`p-2 rounded ${viewMode === 'list' ? 'bg-white shadow text-orange' : 'text-steel hover:text-navy'}`}
+                    title="List View"
+                >
+                    <TableIcon size={18} />
+                </button>
+            </div>
+        </div>
       </div>
 
       {error && <div className="p-4 bg-red-100 text-red-700 font-bold mb-4 rounded">{error}</div>}
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-platinum/50 text-navy uppercase text-xs font-black">
-              <th className="p-4 border-b border-platinum">ID</th>
-              <th className="p-4 border-b border-platinum">Seller / Company</th>
-              <th className="p-4 border-b border-platinum">Material</th>
-              <th className="p-4 border-b border-platinum">Qty / Price</th>
-              <th className="p-4 border-b border-platinum">Location</th>
-              <th className="p-4 border-b border-platinum">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="text-sm font-medium text-steel">
+      {/* --- CARD VIEW (DEFAULT) --- */}
+      {viewMode === 'card' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {listings.length > 0 ? (
-                listings.map((item) => (
-                    <tr key={item.id} className="hover:bg-orange/5 transition-colors">
-                        <td className="p-4 border-b border-platinum">#{item.id}</td>
-                        <td className="p-4 border-b border-platinum">
-                            <div className="text-navy font-bold">{item.company_name}</div>
-                            <div className="text-xs">{item.seller_name}</div>
-                        </td>
-                        <td className="p-4 border-b border-platinum">
-                            {/* Adjust these fields based on your actual DB response keys */}
-                            {item.material_name} <br/>
-                            <span className="text-xs bg-platinum px-2 py-0.5 rounded">{item.scrap_type}</span>
-                        </td>
-                        <td className="p-4 border-b border-platinum">
-                            {item.quantity} {item.unit} <br/>
-                            <span className="text-green-600 font-bold">{item.price_per_unit} {item.price_unit}</span>
-                        </td>
-                        <td className="p-4 border-b border-platinum max-w-xs truncate" title={item.address}>
-                            {item.location_city || 'N/A'}
-                        </td>
-                        <td className="p-4 border-b border-platinum">
-                            <button 
-                                onClick={() => handleDelete(item.id)}
-                                className="text-red-500 hover:text-red-700 p-2 rounded hover:bg-red-50"
-                                title="Delete Listing"
-                            >
-                                <Trash2 size={18} />
-                            </button>
-                        </td>
-                    </tr>
+                listings.map(item => (
+                    <div key={item.id} className="border border-platinum rounded-lg p-5 hover:shadow-xl hover:border-orange transition-all bg-white relative group">
+                         <div className="flex justify-between items-start mb-2">
+                             <span className="bg-navy text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">{item.scrap_type}</span>
+                             <button onClick={() => handleDelete(item.id)} className="text-platinum hover:text-red-500 transition-colors"><Trash2 size={16}/></button>
+                         </div>
+                         <h3 className="text-lg font-black text-navy uppercase mb-1 truncate" title={item.material_name}>{item.material_name}</h3>
+                         <p className="text-xs font-bold text-steel mb-4">{item.company_name}</p>
+                         
+                         <div className="flex justify-between items-end border-t border-platinum pt-4">
+                             <div>
+                                 <p className="text-xs text-steel uppercase font-bold">Quantity</p>
+                                 <p className="text-sm font-black text-navy">{item.quantity} {item.unit}</p>
+                             </div>
+                             <div className="text-right">
+                                 <p className="text-xs text-steel uppercase font-bold">Price</p>
+                                 <p className="text-lg font-black text-green-600">{item.price_per_unit}</p>
+                             </div>
+                         </div>
+                         <div className="mt-3 text-xs text-steel flex items-center gap-1">
+                             <MapPin size={12}/> {item.location_city || 'Location N/A'}
+                         </div>
+                    </div>
                 ))
             ) : (
-                <tr>
-                    <td colSpan="6" className="p-8 text-center text-gray-400">No listings found. Switch to the 'Add Listing' tab to create one.</td>
-                </tr>
+                <div className="col-span-full text-center py-10 text-gray-400">No listings found.</div>
             )}
-          </tbody>
-        </table>
-      </div>
+        </div>
+      )}
+
+      {/* --- LIST VIEW --- */}
+      {viewMode === 'list' && (
+        <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+            <thead>
+                <tr className="bg-platinum/50 text-navy uppercase text-xs font-black">
+                <th className="p-4 border-b border-platinum">ID</th>
+                <th className="p-4 border-b border-platinum">Seller</th>
+                <th className="p-4 border-b border-platinum">Material</th>
+                <th className="p-4 border-b border-platinum">Qty</th>
+                <th className="p-4 border-b border-platinum">Price</th>
+                <th className="p-4 border-b border-platinum">Location</th>
+                <th className="p-4 border-b border-platinum">Action</th>
+                </tr>
+            </thead>
+            <tbody className="text-sm font-medium text-steel">
+                {listings.map((item) => (
+                    <tr key={item.id} className="hover:bg-orange/5 transition-colors">
+                        <td className="p-4 border-b border-platinum">#{item.id}</td>
+                        <td className="p-4 border-b border-platinum font-bold text-navy">{item.company_name}</td>
+                        <td className="p-4 border-b border-platinum">{item.material_name}</td>
+                        <td className="p-4 border-b border-platinum">{item.quantity} {item.unit}</td>
+                        <td className="p-4 border-b border-platinum text-green-600 font-bold">{item.price_per_unit}</td>
+                        <td className="p-4 border-b border-platinum">{item.location_city}</td>
+                        <td className="p-4 border-b border-platinum">
+                            <button onClick={() => handleDelete(item.id)} className="text-red-500 hover:text-red-700"><Trash2 size={16}/></button>
+                        </td>
+                    </tr>
+                ))}
+            </tbody>
+            </table>
+        </div>
+      )}
     </div>
   );
 };
 
 // ==========================================
-// COMPONENT 2: ADD LISTING FORM (The Logic)
+// SUB-COMPONENT: ADD LISTING FORM
 // ==========================================
 const AddListingForm = ({ hierarchy }) => {
+    // ... (KEEPING THE EXACT SAME FORM LOGIC FROM PREVIOUS RESPONSE) ...
+    // ... Copy the entire AddListingForm component code here ...
+    // For brevity in this answer, assuming you copy the exact code block 
+    // from the previous good response "AddListingForm"
+    // If you need me to paste it again fully, let me know. 
+    // Below is the placeholder wrapper to ensure structure works.
+
   const [loading, setLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -260,7 +302,6 @@ const AddListingForm = ({ hierarchy }) => {
 
     try {
       const data = new FormData();
-      // ... Append logic same as before ...
       data.append('seller_name', formData.sellerName);
       data.append('company_name', formData.companyName || "");
       data.append('gst_number', formData.gstNumber || "");
@@ -316,7 +357,7 @@ const AddListingForm = ({ hierarchy }) => {
   };
 
   return (
-    <div className="bg-white p-8 shadow-2xl rounded-lg border-t-8 border-orange">
+    <div className="bg-white p-8 shadow-2xl rounded-lg border-t-8 border-orange animate-fadeIn">
         <h2 className="text-2xl font-black text-navy uppercase mb-6 flex items-center gap-2">
             <PlusCircle className="text-orange" /> Add New Scrap Listing
         </h2>
@@ -332,7 +373,7 @@ const AddListingForm = ({ hierarchy }) => {
             </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6 animate-fadeIn">
+        <form onSubmit={handleSubmit} className="space-y-6">
             {/* --- SELLER DETAILS --- */}
             <div className="bg-platinum/20 p-6 rounded-lg border border-platinum">
                 <h3 className="text-sm font-black text-steel uppercase mb-4 flex items-center gap-2">
@@ -521,37 +562,58 @@ const AddListingForm = ({ hierarchy }) => {
 // MAIN COMPONENT: ADMIN DASHBOARD (SHELL)
 // ==========================================
 const AdminDashboard = () => {
-  const [activeTab, setActiveTab] = useState('listings'); // Default: Load Listings
-  const [hierarchy, setHierarchy] = useState([]);
-  const [errorMsg, setErrorMsg] = useState('');
+  // --- 1. Main Navigation State ---
+  const [mainTab, setMainTab] = useState('listings'); // 'listings' | 'auction' | 'market'
+  
+  // --- 2. Sub-Tab State (Managed independently) ---
+  const [subTab, setSubTab] = useState('all_listings'); // Default load
 
-  // Fetch Master Data ONCE at the dashboard level
+  const [hierarchy, setHierarchy] = useState([]);
+  
+  // Fetch Master Data for Forms
   useEffect(() => {
     const fetchMasterData = async () => {
       try {
         const res = await axios.get(`${API_URL}/categories/hierarchy`);
-        console.log("Hierarchy Data:", res.data); 
         setHierarchy(res.data);
       } catch (err) {
         console.error("Master data fetch error", err);
-        setErrorMsg("Failed to load category data.");
       }
     };
     fetchMasterData();
   }, []);
 
-  // UI Helper: Tab Button
-  const TabButton = ({ id, label, icon: Icon }) => (
+  // --- TAB HELPERS ---
+  const MainTabButton = ({ id, label, icon: Icon }) => (
     <button
-        onClick={() => setActiveTab(id)}
-        className={`flex items-center gap-2 px-6 py-4 font-bold uppercase text-xs tracking-widest transition-all
-            ${activeTab === id 
-                ? 'bg-orange text-white shadow-lg transform -translate-y-1 rounded-t-lg' 
-                : 'bg-white text-navy hover:bg-platinum'
+        onClick={() => {
+            setMainTab(id);
+            // Set default sub-tab when switching main tabs
+            if(id === 'listings') setSubTab('all_listings');
+            if(id === 'auction') setSubTab('dashboard');
+        }}
+        className={`flex items-center gap-2 px-6 py-4 font-black uppercase text-sm tracking-widest transition-all w-full md:w-auto justify-center md:justify-start
+            ${mainTab === id 
+                ? 'bg-orange text-white shadow-lg transform -translate-y-1' 
+                : 'bg-navy/90 text-white hover:bg-navy'
             }
         `}
     >
-        <Icon size={16} /> {label}
+        <Icon size={18} /> {label}
+    </button>
+  );
+
+  const SubTabButton = ({ id, label }) => (
+    <button
+        onClick={() => setSubTab(id)}
+        className={`px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-full transition-all border-2 
+            ${subTab === id 
+                ? 'bg-navy text-white border-navy' 
+                : 'bg-white text-steel border-platinum hover:border-navy hover:text-navy'
+            }
+        `}
+    >
+        {label}
     </button>
   );
 
@@ -559,42 +621,92 @@ const AdminDashboard = () => {
     <div className="min-h-screen bg-platinum flex flex-col">
       <Header />
       
-      {/* HEADER BANNER */}
-      <div className="bg-navy text-white py-12 px-4 shadow-lg">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-            <div>
-                <h1 className="text-4xl font-black uppercase tracking-tighter mb-1">Admin Console</h1>
-                <p className="text-orange text-sm font-bold uppercase tracking-widest">
-                    System Administrator • Scrap Listings & Auctions
-                </p>
-            </div>
-            
-            {/* Quick External Links (Right Side) */}
-            <div className="flex gap-3">
-                <Link to="/e-auction/admin/dashboard" className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded shadow transition-all uppercase text-[10px] tracking-widest flex items-center gap-2">
-                    <LayoutDashboard size={14} /> E-Auction
-                </Link>
-                <Link to="/admin/market-prices" className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow transition-all uppercase text-[10px] tracking-widest flex items-center gap-2">
-                    <TrendingUp size={14} /> Market Prices
-                </Link>
+      {/* --- HEADER BANNER --- */}
+      <div className="bg-navy text-white pt-10 pb-20 px-4 shadow-lg">
+        <div className="max-w-7xl mx-auto">
+            <h1 className="text-4xl font-black uppercase tracking-tighter mb-1">Admin Console</h1>
+            <p className="text-orange text-sm font-bold uppercase tracking-widest mb-8">
+                System Administrator
+            </p>
+
+            {/* --- MAIN TABS (The 3 Headers) --- */}
+            <div className="flex flex-col md:flex-row gap-4 border-b border-white/20 pb-1">
+                <MainTabButton id="listings" label="Scrap Listings" icon={List} />
+                <MainTabButton id="auction" label="E-Auction" icon={Gavel} />
+                <MainTabButton id="market" label="Market Prices" icon={TrendingUp} />
             </div>
         </div>
       </div>
 
-      {/* DASHBOARD CONTENT */}
-      <div className="flex-grow max-w-7xl mx-auto px-4 w-full -mt-8 pb-20 relative z-10">
+      {/* --- CONTENT AREA --- */}
+      <div className="flex-grow max-w-7xl mx-auto px-4 w-full -mt-12 pb-20 relative z-10">
         
-        {/* TAB NAVIGATION BAR */}
-        <div className="flex border-b-0 pl-4 gap-1 overflow-x-auto">
-            <TabButton id="listings" label="All Listings" icon={List} />
-            <TabButton id="add" label="Add New Listing" icon={PlusCircle} />
-            {/* Add more tabs here later easily */}
+        {/* --- SUB-NAVIGATION BAR --- */}
+        <div className="bg-white p-4 rounded-t-lg border-b border-platinum flex gap-3 overflow-x-auto shadow-sm">
+            {mainTab === 'listings' && (
+                <>
+                    <SubTabButton id="all_listings" label="All Listings" />
+                    <SubTabButton id="add_listing" label="Add New Listing" />
+                </>
+            )}
+            {mainTab === 'auction' && (
+                <>
+                    <SubTabButton id="dashboard" label="Admin Dashboard" />
+                    <SubTabButton id="register" label="Register Auction" />
+                    <SubTabButton id="my_auctions" label="My Auctions" />
+                </>
+            )}
+            {mainTab === 'market' && (
+                <div className="text-sm font-bold text-navy uppercase">Market Price Management</div>
+            )}
         </div>
 
-        {/* TAB CONTENT AREA */}
-        <div className="bg-white min-h-[500px] shadow-2xl rounded-lg rounded-tl-none border-t-0 p-0 overflow-hidden">
-            {activeTab === 'listings' && <ListingsView />}
-            {activeTab === 'add' && <AddListingForm hierarchy={hierarchy} />}
+        {/* --- DYNAMIC CONTENT RENDER --- */}
+        <div className="bg-white min-h-[600px] shadow-2xl rounded-b-lg p-0">
+            
+            {/* 1. LISTINGS SECTION */}
+            {mainTab === 'listings' && (
+                <div className="p-4">
+                    {subTab === 'all_listings' && <ListingsView />}
+                    {subTab === 'add_listing' && <AddListingForm hierarchy={hierarchy} />}
+                </div>
+            )}
+
+            {/* 2. E-AUCTION SECTION (Placeholder Redirects or Components) */}
+            {mainTab === 'auction' && (
+                <div className="p-12 text-center">
+                    <h2 className="text-2xl font-black text-navy uppercase mb-4">E-Auction Management</h2>
+                    <p className="text-steel mb-8">Access the specific modules below:</p>
+                    
+                    <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+                        <Link to="/e-auction/admin/dashboard" className="p-8 border-2 border-platinum rounded-xl hover:border-orange hover:shadow-xl transition-all group">
+                            <LayoutDashboard size={40} className="text-navy group-hover:text-orange mx-auto mb-4"/>
+                            <h3 className="font-black text-navy uppercase">Auction Dashboard</h3>
+                        </Link>
+                        <Link to="/e-auction/register" className="p-8 border-2 border-platinum rounded-xl hover:border-orange hover:shadow-xl transition-all group">
+                            <PlusCircle size={40} className="text-navy group-hover:text-orange mx-auto mb-4"/>
+                            <h3 className="font-black text-navy uppercase">Create Auction</h3>
+                        </Link>
+                        <Link to="/e-auction/my-auctions" className="p-8 border-2 border-platinum rounded-xl hover:border-orange hover:shadow-xl transition-all group">
+                            <FileText size={40} className="text-navy group-hover:text-orange mx-auto mb-4"/>
+                            <h3 className="font-black text-navy uppercase">My Auctions</h3>
+                        </Link>
+                    </div>
+                </div>
+            )}
+
+            {/* 3. MARKET PRICE SECTION */}
+            {mainTab === 'market' && (
+                <div className="p-12 text-center">
+                    <TrendingUp size={64} className="text-orange mx-auto mb-6"/>
+                    <h2 className="text-3xl font-black text-navy uppercase mb-4">Market Prices</h2>
+                    <p className="text-steel mb-8">Manage daily mandi rates and price trends here.</p>
+                    <Link to="/admin/market-prices" className="bg-navy text-white px-8 py-4 font-bold uppercase rounded shadow hover:bg-orange transition-colors">
+                        Go to Price Manager
+                    </Link>
+                </div>
+            )}
+
         </div>
       </div>
 
