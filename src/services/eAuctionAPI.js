@@ -55,9 +55,11 @@ export const auctionAPI = {
     return response.data;
   },
 
-  // Delete auction
-  deleteAuction: async (auctionId) => {
-    const response = await axios.delete(`${AUCTION_BASE}/auctions/${auctionId}`);
+  // Delete auction (Updated)
+  deleteAuction: async (auctionId, reason) => {
+    const response = await axios.delete(`${AUCTION_BASE}/admin/auctions/${auctionId}`, {
+      data: { reason }
+    });
     return response.data;
   },
 
@@ -80,6 +82,64 @@ export const auctionAPI = {
     const response = await axios.get(`${AUCTION_BASE}/auctions/stats/overview`);
     return response.data;
   },
+
+  // --- NEW ADMIN METHODS START ---
+
+  // Get admin statistics
+  getAdminStats: async () => {
+    const response = await axios.get(`${AUCTION_BASE}/admin/stats`);
+    return response.data;
+  },
+
+  // Get all auctions (admin view with filters)
+  getAllAuctionsAdmin: async (filters = {}) => {
+    const params = new URLSearchParams();
+    if (filters.status) params.append('status', filters.status);
+    if (filters.approval_status) params.append('approval_status', filters.approval_status);
+    if (filters.search) params.append('search', filters.search);
+    if (filters.category) params.append('category', filters.category);
+    if (filters.date_from) params.append('date_from', filters.date_from);
+    if (filters.date_to) params.append('date_to', filters.date_to);
+    if (filters.page) params.append('page', filters.page);
+    if (filters.page_size) params.append('page_size', filters.page_size);
+
+    const response = await axios.get(`${AUCTION_BASE}/admin/auctions?${params.toString()}`);
+    return response.data;
+  },
+
+  // Archive auction (admin only)
+  archiveAuction: async (auctionId, reason) => {
+    const response = await axios.post(
+      `${AUCTION_BASE}/admin/auctions/${auctionId}/archive`,
+      { reason }
+    );
+    return response.data;
+  },
+
+  // Restore archived auction (admin only)
+  restoreAuction: async (auctionId) => {
+    const response = await axios.post(
+      `${AUCTION_BASE}/admin/auctions/${auctionId}/restore`
+    );
+    return response.data;
+  },
+
+  // Get audit trail (admin only)
+  getAuditTrail: async (auctionId) => {
+    const response = await axios.get(
+      `${AUCTION_BASE}/admin/audit/${auctionId}`
+    );
+    return response.data;
+  },
+
+  // Get pending approvals (admin only)
+  getPendingApprovalsAdmin: async (page = 1, pageSize = 10) => {
+    const response = await axios.get(
+      `${AUCTION_BASE}/admin/pending-approval?page=${page}&page_size=${pageSize}`
+    );
+    return response.data;
+  },
+  // --- NEW ADMIN METHODS END ---
 };
 
 /**
