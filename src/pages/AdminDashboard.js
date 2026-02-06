@@ -21,7 +21,6 @@ const ListingsView = () => {
 
   const fetchListings = async () => {
     try {
-      // API call to fetch all scrap listings
       const res = await axios.get(`${API_URL}/scrap/all`); 
       setListings(res.data);
       setLoading(false);
@@ -45,6 +44,14 @@ const ListingsView = () => {
     } catch (err) {
         alert("Failed to delete listing");
     }
+  };
+
+  // Helper to handle image source safely
+  const getImageUrl = (item) => {
+      if (item.images && item.images.length > 0) {
+          return item.images[0]; 
+      }
+      return null; 
   };
 
   if (loading) return <div className="p-8 text-center text-navy font-bold">Loading Listings...</div>;
@@ -81,34 +88,62 @@ const ListingsView = () => {
 
       {error && <div className="p-4 bg-red-100 text-red-700 font-bold mb-4 rounded">{error}</div>}
 
-      {/* --- CARD VIEW (DEFAULT) --- */}
+      {/* --- CARD VIEW (WITH IMAGES) --- */}
       {viewMode === 'card' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {listings.length > 0 ? (
-                listings.map(item => (
-                    <div key={item.id} className="border border-platinum rounded-lg p-5 hover:shadow-xl hover:border-orange transition-all bg-white relative group">
-                         <div className="flex justify-between items-start mb-2">
-                             <span className="bg-navy text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">{item.scrap_type}</span>
-                             <button onClick={() => handleDelete(item.id)} className="text-platinum hover:text-red-500 transition-colors"><Trash2 size={16}/></button>
-                         </div>
-                         <h3 className="text-lg font-black text-navy uppercase mb-1 truncate" title={item.material_name}>{item.material_name}</h3>
-                         <p className="text-xs font-bold text-steel mb-4">{item.company_name}</p>
-                         
-                         <div className="flex justify-between items-end border-t border-platinum pt-4">
-                             <div>
-                                 <p className="text-xs text-steel uppercase font-bold">Quantity</p>
-                                 <p className="text-sm font-black text-navy">{item.quantity} {item.unit}</p>
+                listings.map(item => {
+                    const imgUrl = getImageUrl(item);
+                    return (
+                        <div key={item.id} className="border border-platinum rounded-lg overflow-hidden hover:shadow-xl hover:border-orange transition-all bg-white group flex flex-col">
+                             {/* IMAGE SECTION */}
+                             <div className="h-48 w-full bg-gray-200 relative">
+                                {imgUrl ? (
+                                    <img 
+                                        src={imgUrl} 
+                                        alt={item.material_name}
+                                        className="w-full h-full object-cover"
+                                        onError={(e) => {e.target.style.display='none'}} 
+                                    />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-gray-400 bg-gray-100">
+                                        <FileText size={40} />
+                                    </div>
+                                )}
+                                <span className="absolute top-2 left-2 bg-navy/90 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider backdrop-blur-sm shadow-sm">
+                                    {item.scrap_type}
+                                </span>
                              </div>
-                             <div className="text-right">
-                                 <p className="text-xs text-steel uppercase font-bold">Price</p>
-                                 <p className="text-lg font-black text-green-600">{item.price_per_unit}</p>
+
+                             {/* CONTENT SECTION */}
+                             <div className="p-5 flex-grow flex flex-col">
+                                 <div className="flex justify-between items-start mb-2">
+                                     <h3 className="text-lg font-black text-navy uppercase leading-tight line-clamp-1" title={item.material_name}>
+                                        {item.material_name}
+                                     </h3>
+                                     <button onClick={() => handleDelete(item.id)} className="text-platinum hover:text-red-500 transition-colors" title="Delete">
+                                        <Trash2 size={16}/>
+                                     </button>
+                                 </div>
+                                 <p className="text-xs font-bold text-steel mb-4 line-clamp-1">{item.company_name}</p>
+                                 
+                                 <div className="mt-auto pt-4 border-t border-platinum flex justify-between items-end">
+                                     <div>
+                                         <p className="text-[10px] text-steel uppercase font-bold">Quantity</p>
+                                         <p className="text-sm font-black text-navy">{item.quantity} {item.unit}</p>
+                                     </div>
+                                     <div className="text-right">
+                                         <p className="text-[10px] text-steel uppercase font-bold">Price</p>
+                                         <p className="text-lg font-black text-green-600">₹{item.price_per_unit}</p>
+                                     </div>
+                                 </div>
+                                 <div className="mt-3 text-[10px] text-steel flex items-center gap-1">
+                                     <MapPin size={12}/> {item.location_city || 'Location N/A'}
+                                 </div>
                              </div>
-                         </div>
-                         <div className="mt-3 text-xs text-steel flex items-center gap-1">
-                             <MapPin size={12}/> {item.location_city || 'Location N/A'}
-                         </div>
-                    </div>
-                ))
+                        </div>
+                    );
+                })
             ) : (
                 <div className="col-span-full text-center py-10 text-gray-400">No listings found.</div>
             )}
@@ -122,6 +157,7 @@ const ListingsView = () => {
             <thead>
                 <tr className="bg-platinum/50 text-navy uppercase text-xs font-black">
                 <th className="p-4 border-b border-platinum">ID</th>
+                <th className="p-4 border-b border-platinum">Img</th>
                 <th className="p-4 border-b border-platinum">Seller</th>
                 <th className="p-4 border-b border-platinum">Material</th>
                 <th className="p-4 border-b border-platinum">Qty</th>
@@ -131,19 +167,27 @@ const ListingsView = () => {
                 </tr>
             </thead>
             <tbody className="text-sm font-medium text-steel">
-                {listings.map((item) => (
-                    <tr key={item.id} className="hover:bg-orange/5 transition-colors">
-                        <td className="p-4 border-b border-platinum">#{item.id}</td>
-                        <td className="p-4 border-b border-platinum font-bold text-navy">{item.company_name}</td>
-                        <td className="p-4 border-b border-platinum">{item.material_name}</td>
-                        <td className="p-4 border-b border-platinum">{item.quantity} {item.unit}</td>
-                        <td className="p-4 border-b border-platinum text-green-600 font-bold">{item.price_per_unit}</td>
-                        <td className="p-4 border-b border-platinum">{item.location_city}</td>
-                        <td className="p-4 border-b border-platinum">
-                            <button onClick={() => handleDelete(item.id)} className="text-red-500 hover:text-red-700"><Trash2 size={16}/></button>
-                        </td>
-                    </tr>
-                ))}
+                {listings.map((item) => {
+                    const imgUrl = getImageUrl(item);
+                    return (
+                        <tr key={item.id} className="hover:bg-orange/5 transition-colors">
+                            <td className="p-4 border-b border-platinum">#{item.id}</td>
+                            <td className="p-4 border-b border-platinum">
+                                <div className="h-10 w-10 bg-gray-100 rounded overflow-hidden border border-platinum">
+                                    {imgUrl && <img src={imgUrl} className="h-full w-full object-cover" alt="" onError={(e)=>{e.target.style.display='none'}}/>}
+                                </div>
+                            </td>
+                            <td className="p-4 border-b border-platinum font-bold text-navy">{item.company_name}</td>
+                            <td className="p-4 border-b border-platinum">{item.material_name}</td>
+                            <td className="p-4 border-b border-platinum">{item.quantity} {item.unit}</td>
+                            <td className="p-4 border-b border-platinum text-green-600 font-bold">{item.price_per_unit}</td>
+                            <td className="p-4 border-b border-platinum">{item.location_city}</td>
+                            <td className="p-4 border-b border-platinum">
+                                <button onClick={() => handleDelete(item.id)} className="text-red-500 hover:text-red-700"><Trash2 size={16}/></button>
+                            </td>
+                        </tr>
+                    );
+                })}
             </tbody>
             </table>
         </div>
@@ -156,13 +200,6 @@ const ListingsView = () => {
 // SUB-COMPONENT: ADD LISTING FORM
 // ==========================================
 const AddListingForm = ({ hierarchy }) => {
-    // ... (KEEPING THE EXACT SAME FORM LOGIC FROM PREVIOUS RESPONSE) ...
-    // ... Copy the entire AddListingForm component code here ...
-    // For brevity in this answer, assuming you copy the exact code block 
-    // from the previous good response "AddListingForm"
-    // If you need me to paste it again fully, let me know. 
-    // Below is the placeholder wrapper to ensure structure works.
-
   const [loading, setLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -565,12 +602,11 @@ const AdminDashboard = () => {
   // --- 1. Main Navigation State ---
   const [mainTab, setMainTab] = useState('listings'); // 'listings' | 'auction' | 'market'
   
-  // --- 2. Sub-Tab State (Managed independently) ---
+  // --- 2. Sub-Tab State ---
   const [subTab, setSubTab] = useState('all_listings'); // Default load
 
   const [hierarchy, setHierarchy] = useState([]);
   
-  // Fetch Master Data for Forms
   useEffect(() => {
     const fetchMasterData = async () => {
       try {
@@ -588,7 +624,6 @@ const AdminDashboard = () => {
     <button
         onClick={() => {
             setMainTab(id);
-            // Set default sub-tab when switching main tabs
             if(id === 'listings') setSubTab('all_listings');
             if(id === 'auction') setSubTab('dashboard');
         }}
@@ -672,7 +707,7 @@ const AdminDashboard = () => {
                 </div>
             )}
 
-            {/* 2. E-AUCTION SECTION (Placeholder Redirects or Components) */}
+            {/* 2. E-AUCTION SECTION (Placeholder Redirects) */}
             {mainTab === 'auction' && (
                 <div className="p-12 text-center">
                     <h2 className="text-2xl font-black text-navy uppercase mb-4">E-Auction Management</h2>
