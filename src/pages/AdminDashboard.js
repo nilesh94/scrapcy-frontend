@@ -251,11 +251,19 @@ const AdminDashboard = () => {
             <div>
                 <h1 className="text-4xl font-black uppercase tracking-tighter mb-1">Admin Console</h1>
                 <p className="text-orange text-sm font-bold uppercase tracking-widest">
-                    System Administrator • Add New Listings
+                    System Administrator • Add New Listings & E-Auction Management
                 </p>
             </div>
             
             <div className="flex gap-3">
+                {/* NEW: E-Auction Admin Dashboard */}
+                <Link 
+                  to="/e-auction/admin/dashboard" 
+                  className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded shadow-lg transition-all uppercase text-xs tracking-widest flex items-center gap-2"
+                >
+                    <LayoutDashboard size={16} /> E-Auction Admin
+                </Link>
+
                 {/* NEW: E-AUCTION BUTTON */}
                 <Link 
                   to="/e-auction/register" 
@@ -364,7 +372,7 @@ const AdminDashboard = () => {
                     </h3>
                     
                     <div className="grid md:grid-cols-2 gap-4 mb-4">
-			{/* Level 1: Scrap Type */}
+            {/* Level 1: Scrap Type */}
                         <div>
                             <label className="block text-xs font-bold uppercase text-navy mb-1">1. Scrap Type</label>
                             <select value={selectedScrapType} onChange={handleScrapTypeChange} className="w-full p-3 bg-white border border-platinum rounded focus:border-orange outline-none">
@@ -375,7 +383,7 @@ const AdminDashboard = () => {
                             </select>
                         </div>
 
-			{/* Level 2: Category */}
+            {/* Level 2: Category */}
                         <div>
                             <label className="block text-xs font-bold uppercase text-navy mb-1">2. Category</label>
                             <select value={selectedCategoryId} onChange={handleCategoryChange} disabled={!selectedScrapType} className="w-full p-3 bg-white border border-platinum rounded focus:border-orange outline-none disabled:bg-gray-100">
@@ -386,7 +394,7 @@ const AdminDashboard = () => {
                             </select>
                         </div>
 
-			{/* Level 3: Material */}
+            {/* Level 3: Material */}
                         <div>
                             <label className="block text-xs font-bold uppercase text-navy mb-1">3. Material Name</label>
                             <select value={selectedMaterialId} onChange={handleMaterialChange} disabled={!selectedCategoryId} className="w-full p-3 bg-white border border-platinum rounded focus:border-orange outline-none disabled:bg-gray-100">
@@ -397,7 +405,7 @@ const AdminDashboard = () => {
                             </select>
                         </div>
 
-			{/* Level 4: Form */}
+            {/* Level 4: Form */}
                         <div>
                             <label className="block text-xs font-bold uppercase text-navy mb-1">4. Form</label>
                             <select value={selectedFormId} onChange={handleFormChange} disabled={!selectedMaterialId} className="w-full p-3 bg-white border border-platinum rounded focus:border-orange outline-none disabled:bg-gray-100">
