@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, Upload, Save, CheckCircle, XCircle, FileText, 
-  Users, MapPin, TrendingUp, Gavel, PlusCircle, List, Trash2, Grid, Table as TableIcon
+  Users, MapPin, TrendingUp, Gavel, PlusCircle, List, Trash2, Grid, Table as TableIcon, Eye
 } from 'lucide-react';
 import Header from '../components/Header/Header';
 import Footer from '../components/Footer/Footer';
@@ -18,6 +18,7 @@ const ListingsView = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [viewMode, setViewMode] = useState('card'); // 'card' or 'list'
+  const navigate = useNavigate();
 
   const fetchListings = async () => {
     try {
@@ -36,7 +37,8 @@ const ListingsView = () => {
     fetchListings();
   }, []);
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (id, e) => {
+    e.stopPropagation(); // Prevent clicking the card
     if(!window.confirm("Are you sure you want to delete this listing?")) return;
     try {
         await axios.delete(`${API_URL}/scrap/${id}`);
@@ -46,10 +48,17 @@ const ListingsView = () => {
     }
   };
 
-  // Helper to handle image source safely
+  // --- FIXED IMAGE HELPER ---
   const getImageUrl = (item) => {
       if (item.images && item.images.length > 0) {
-          return item.images[0]; 
+          // Check if it's an object with image_url (like in Detail Page)
+          if (typeof item.images[0] === 'object' && item.images[0].image_url) {
+              return item.images[0].image_url;
+          }
+          // Check if it's a direct string URL
+          if (typeof item.images[0] === 'string') {
+              return item.images[0];
+          }
       }
       return null; 
   };
@@ -88,29 +97,37 @@ const ListingsView = () => {
 
       {error && <div className="p-4 bg-red-100 text-red-700 font-bold mb-4 rounded">{error}</div>}
 
-      {/* --- CARD VIEW (WITH IMAGES) --- */}
+      {/* --- CARD VIEW (FIXED) --- */}
       {viewMode === 'card' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {listings.length > 0 ? (
                 listings.map(item => {
                     const imgUrl = getImageUrl(item);
                     return (
-                        <div key={item.id} className="border border-platinum rounded-lg overflow-hidden hover:shadow-xl hover:border-orange transition-all bg-white group flex flex-col">
+                        <div 
+                            key={item.id} 
+                            // Add click to navigate if you have the detail route set up
+                            // onClick={() => navigate(`/admin/listing/${item.id}`)}
+                            className="border border-platinum rounded-lg overflow-hidden hover:shadow-xl hover:border-orange transition-all bg-white group flex flex-col cursor-pointer relative"
+                        >
                              {/* IMAGE SECTION */}
-                             <div className="h-48 w-full bg-gray-200 relative">
+                             <div className="h-48 w-full bg-gray-200 relative overflow-hidden">
                                 {imgUrl ? (
                                     <img 
                                         src={imgUrl} 
                                         alt={item.material_name}
-                                        className="w-full h-full object-cover"
-                                        onError={(e) => {e.target.style.display='none'}} 
+                                        className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
+                                        onError={(e) => {
+                                            e.target.onerror = null; 
+                                            e.target.src="https://via.placeholder.com/400x300?text=No+Image";
+                                        }} 
                                     />
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center text-gray-400 bg-gray-100">
                                         <FileText size={40} />
                                     </div>
                                 )}
-                                <span className="absolute top-2 left-2 bg-navy/90 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider backdrop-blur-sm shadow-sm">
+                                <span className="absolute top-2 left-2 bg-navy/90 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider backdrop-blur-sm shadow-sm z-10">
                                     {item.scrap_type}
                                 </span>
                              </div>
@@ -121,8 +138,12 @@ const ListingsView = () => {
                                      <h3 className="text-lg font-black text-navy uppercase leading-tight line-clamp-1" title={item.material_name}>
                                         {item.material_name}
                                      </h3>
-                                     <button onClick={() => handleDelete(item.id)} className="text-platinum hover:text-red-500 transition-colors" title="Delete">
-                                        <Trash2 size={16}/>
+                                     <button 
+                                        onClick={(e) => handleDelete(item.id, e)} 
+                                        className="text-platinum hover:text-red-500 transition-colors z-20" 
+                                        title="Delete"
+                                     >
+                                        <Trash2 size={18}/>
                                      </button>
                                  </div>
                                  <p className="text-xs font-bold text-steel mb-4 line-clamp-1">{item.company_name}</p>
@@ -137,7 +158,7 @@ const ListingsView = () => {
                                          <p className="text-lg font-black text-green-600">₹{item.price_per_unit}</p>
                                      </div>
                                  </div>
-                                 <div className="mt-3 text-[10px] text-steel flex items-center gap-1">
+                                 <div className="mt-3 text-[10px] text-steel flex items-center gap-1 truncate">
                                      <MapPin size={12}/> {item.location_city || 'Location N/A'}
                                  </div>
                              </div>
@@ -183,7 +204,7 @@ const ListingsView = () => {
                             <td className="p-4 border-b border-platinum text-green-600 font-bold">{item.price_per_unit}</td>
                             <td className="p-4 border-b border-platinum">{item.location_city}</td>
                             <td className="p-4 border-b border-platinum">
-                                <button onClick={() => handleDelete(item.id)} className="text-red-500 hover:text-red-700"><Trash2 size={16}/></button>
+                                <button onClick={(e) => handleDelete(item.id, e)} className="text-red-500 hover:text-red-700"><Trash2 size={16}/></button>
                             </td>
                         </tr>
                     );
