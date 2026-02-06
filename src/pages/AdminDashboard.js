@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { 
   LayoutDashboard, Upload, Save, CheckCircle, XCircle, FileText, 
-  Users, MapPin, TrendingUp, Gavel, PlusCircle, List, Trash2, Grid, Table as TableIcon, Eye
+  Users, MapPin, TrendingUp, Gavel, PlusCircle, List, Trash2, Grid, Table as TableIcon,
+  Phone, Mail, Truck, Layers, Tag, Image as ImageIcon
 } from 'lucide-react';
 import Header from '../components/Header/Header';
 import Footer from '../components/Footer/Footer';
@@ -11,14 +12,154 @@ import Footer from '../components/Footer/Footer';
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
 // ==========================================
-// SUB-COMPONENT: LISTINGS VIEW (Card & List)
+// HELPER: RICH LISTING CARD (Shows ALL Details)
+// ==========================================
+const ListingCard = ({ item, onDelete }) => {
+    // 1. Safe Image Extractor
+    const getImages = () => {
+        if (!item.images || item.images.length === 0) return [];
+        // Handle both string URLs and Object {image_url: "..."}
+        return item.images.map(img => (typeof img === 'object' ? img.image_url : img));
+    };
+
+    const images = getImages();
+    const [activeImage, setActiveImage] = useState(images.length > 0 ? images[0] : null);
+
+    return (
+        <div className="bg-white border border-platinum rounded-xl overflow-hidden shadow-sm hover:shadow-2xl hover:border-orange transition-all duration-300 flex flex-col group h-full">
+            
+            {/* --- TOP: IMAGE GALLERY --- */}
+            <div className="relative h-64 bg-gray-100 border-b border-platinum">
+                {activeImage ? (
+                    <img 
+                        src={activeImage} 
+                        alt="Scrap Preview" 
+                        className="w-full h-full object-contain"
+                        onError={(e) => { e.target.style.display = 'none'; }} 
+                    />
+                ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center text-steel/50">
+                        <ImageIcon size={48} />
+                        <span className="text-xs font-bold uppercase mt-2">No Images</span>
+                    </div>
+                )}
+                
+                {/* Overlay Tags */}
+                <div className="absolute top-3 left-3 flex flex-col gap-1">
+                    <span className="bg-navy/90 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider backdrop-blur-sm shadow-sm">
+                        {item.scrap_type || "Type N/A"}
+                    </span>
+                    <span className="bg-orange/90 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider backdrop-blur-sm shadow-sm">
+                        ID: #{item.id}
+                    </span>
+                </div>
+
+                <button 
+                    onClick={(e) => { e.stopPropagation(); onDelete(item.id); }}
+                    className="absolute top-3 right-3 bg-white/80 p-2 rounded-full text-red-500 hover:bg-red-600 hover:text-white transition-all shadow-sm z-10"
+                    title="Delete Listing"
+                >
+                    <Trash2 size={16} />
+                </button>
+            </div>
+
+            {/* --- THUMBNAIL STRIP (If > 1 image) --- */}
+            {images.length > 1 && (
+                <div className="flex gap-1 p-2 bg-platinum/30 overflow-x-auto">
+                    {images.map((img, idx) => (
+                        <button 
+                            key={idx} 
+                            onClick={(e) => { e.stopPropagation(); setActiveImage(img); }}
+                            className={`w-12 h-12 rounded border-2 flex-shrink-0 overflow-hidden ${activeImage === img ? 'border-orange ring-1 ring-orange' : 'border-transparent opacity-60 hover:opacity-100'}`}
+                        >
+                            <img src={img} className="w-full h-full object-cover" alt="thumb" />
+                        </button>
+                    ))}
+                </div>
+            )}
+
+            {/* --- MIDDLE: MAIN CONTENT --- */}
+            <div className="p-5 flex-grow space-y-4">
+                
+                {/* 1. Header & Price */}
+                <div className="flex justify-between items-start">
+                    <div className="w-2/3">
+                        <h3 className="text-lg font-black text-navy uppercase leading-tight line-clamp-2" title={item.material_name}>
+                            {item.material_name || "Unknown Material"}
+                        </h3>
+                        <p className="text-xs font-bold text-steel mt-1 flex items-center gap-1">
+                            <Layers size={12}/> {item.form_name || item.form || "Form N/A"} • {item.grade_name || item.grade || "Grade N/A"}
+                        </p>
+                    </div>
+                    <div className="text-right">
+                        <p className="text-xl font-black text-green-600">₹{item.price_per_unit}</p>
+                        <p className="text-[10px] font-bold text-steel uppercase">/ {item.price_unit}</p>
+                    </div>
+                </div>
+
+                {/* 2. Quantity & Capacity */}
+                <div className="grid grid-cols-2 gap-2 bg-platinum/20 p-3 rounded border border-platinum">
+                    <div>
+                        <p className="text-[10px] text-steel font-bold uppercase">Quantity</p>
+                        <p className="text-sm font-black text-navy">{item.quantity} {item.unit}</p>
+                    </div>
+                    <div className="text-right border-l border-platinum pl-2">
+                        <p className="text-[10px] text-steel font-bold uppercase">Monthly Cap.</p>
+                        <p className="text-sm font-black text-navy">{item.monthly_capacity || "N/A"}</p>
+                    </div>
+                </div>
+
+                {/* 3. Seller Details */}
+                <div className="space-y-1">
+                    <p className="text-[10px] font-bold text-orange uppercase tracking-widest border-b border-platinum pb-1 mb-2">Seller Details</p>
+                    <div className="flex items-center gap-2 text-xs text-navy font-bold">
+                        <Users size={14} className="text-steel" /> {item.seller_name} ({item.company_name})
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-steel">
+                        <Tag size={14} className="text-steel" /> GST: {item.gst_number || "N/A"}
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-steel">
+                        <Phone size={14} className="text-steel" /> {item.phone} {item.alternate_phone ? `/ ${item.alternate_phone}` : ""}
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-steel">
+                        <Mail size={14} className="text-steel" /> {item.email}
+                    </div>
+                </div>
+
+                {/* 4. Logistics */}
+                <div className="space-y-1 pt-2">
+                    <p className="text-[10px] font-bold text-orange uppercase tracking-widest border-b border-platinum pb-1 mb-2">Logistics</p>
+                    <div className="flex gap-2 text-xs text-steel">
+                        <MapPin size={14} className="text-steel flex-shrink-0" /> 
+                        <span className="line-clamp-2">{item.address}, {item.location_city}</span>
+                    </div>
+                    {item.pickup_conditions && (
+                        <div className="flex gap-2 text-xs text-steel mt-1 bg-yellow-50 p-1.5 rounded border border-yellow-100">
+                            <Truck size={14} className="text-orange flex-shrink-0" /> 
+                            <span className="font-medium text-navy">{item.pickup_conditions}</span>
+                        </div>
+                    )}
+                </div>
+
+                {/* 5. Description (Collapsible logic handled by line-clamp) */}
+                {item.description && (
+                    <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded italic border border-gray-100 line-clamp-3" title={item.description}>
+                        "{item.description}"
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+// ==========================================
+// SUB-COMPONENT: LISTINGS VIEW CONTAINER
 // ==========================================
 const ListingsView = () => {
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [viewMode, setViewMode] = useState('card'); // 'card' or 'list'
-  const navigate = useNavigate();
 
   const fetchListings = async () => {
     try {
@@ -37,57 +178,44 @@ const ListingsView = () => {
     fetchListings();
   }, []);
 
-  const handleDelete = async (id, e) => {
-    e.stopPropagation(); // Prevent clicking the card
-    if(!window.confirm("Are you sure you want to delete this listing?")) return;
+  const handleDelete = async (id) => {
+    if(!window.confirm("Are you sure you want to delete this listing? It cannot be undone.")) return;
     try {
         await axios.delete(`${API_URL}/scrap/${id}`);
         setListings(listings.filter(item => item.id !== id));
     } catch (err) {
-        alert("Failed to delete listing");
+        alert("Failed to delete listing. Check console.");
     }
   };
 
-  // --- FIXED IMAGE HELPER ---
-  const getImageUrl = (item) => {
-      if (item.images && item.images.length > 0) {
-          // Check if it's an object with image_url (like in Detail Page)
-          if (typeof item.images[0] === 'object' && item.images[0].image_url) {
-              return item.images[0].image_url;
-          }
-          // Check if it's a direct string URL
-          if (typeof item.images[0] === 'string') {
-              return item.images[0];
-          }
-      }
-      return null; 
-  };
-
-  if (loading) return <div className="p-8 text-center text-navy font-bold">Loading Listings...</div>;
+  if (loading) return <div className="p-12 text-center text-navy font-bold animate-pulse">Loading listings database...</div>;
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-lg border-t-4 border-navy animate-fadeIn">
       {/* Header & Toggle */}
-      <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-        <h2 className="text-2xl font-black text-navy uppercase flex items-center gap-2">
-            <List className="text-orange" /> All Scrap Listings
-        </h2>
+      <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4 border-b border-platinum pb-6">
+        <div>
+            <h2 className="text-2xl font-black text-navy uppercase flex items-center gap-2">
+                <List className="text-orange" /> All Scrap Listings
+            </h2>
+            <p className="text-xs text-steel mt-1">Manage and view complete details of all inventory.</p>
+        </div>
         
         <div className="flex items-center gap-4">
-            <span className="text-steel text-sm font-bold">{listings.length} Records</span>
+            <span className="bg-navy text-white text-xs font-bold px-3 py-1 rounded-full">{listings.length} Active Listings</span>
             {/* View Toggle Buttons */}
             <div className="bg-platinum p-1 rounded flex">
                 <button 
                     onClick={() => setViewMode('card')}
                     className={`p-2 rounded ${viewMode === 'card' ? 'bg-white shadow text-orange' : 'text-steel hover:text-navy'}`}
-                    title="Card View"
+                    title="Card View (Rich Details)"
                 >
                     <Grid size={18} />
                 </button>
                 <button 
                     onClick={() => setViewMode('list')}
                     className={`p-2 rounded ${viewMode === 'list' ? 'bg-white shadow text-orange' : 'text-steel hover:text-navy'}`}
-                    title="List View"
+                    title="List View (Compact)"
                 >
                     <TableIcon size={18} />
                 </button>
@@ -95,120 +223,61 @@ const ListingsView = () => {
         </div>
       </div>
 
-      {error && <div className="p-4 bg-red-100 text-red-700 font-bold mb-4 rounded">{error}</div>}
+      {error && <div className="p-4 bg-red-100 text-red-700 font-bold mb-4 rounded border-l-4 border-red-500">{error}</div>}
 
-      {/* --- CARD VIEW (FIXED) --- */}
+      {/* --- CARD VIEW (RICH DETAILS) --- */}
       {viewMode === 'card' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
             {listings.length > 0 ? (
-                listings.map(item => {
-                    const imgUrl = getImageUrl(item);
-                    return (
-                        <div 
-                            key={item.id} 
-                            // Add click to navigate if you have the detail route set up
-                            // onClick={() => navigate(`/admin/listing/${item.id}`)}
-                            className="border border-platinum rounded-lg overflow-hidden hover:shadow-xl hover:border-orange transition-all bg-white group flex flex-col cursor-pointer relative"
-                        >
-                             {/* IMAGE SECTION */}
-                             <div className="h-48 w-full bg-gray-200 relative overflow-hidden">
-                                {imgUrl ? (
-                                    <img 
-                                        src={imgUrl} 
-                                        alt={item.material_name}
-                                        className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
-                                        onError={(e) => {
-                                            e.target.onerror = null; 
-                                            e.target.src="https://via.placeholder.com/400x300?text=No+Image";
-                                        }} 
-                                    />
-                                ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-gray-400 bg-gray-100">
-                                        <FileText size={40} />
-                                    </div>
-                                )}
-                                <span className="absolute top-2 left-2 bg-navy/90 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider backdrop-blur-sm shadow-sm z-10">
-                                    {item.scrap_type}
-                                </span>
-                             </div>
-
-                             {/* CONTENT SECTION */}
-                             <div className="p-5 flex-grow flex flex-col">
-                                 <div className="flex justify-between items-start mb-2">
-                                     <h3 className="text-lg font-black text-navy uppercase leading-tight line-clamp-1" title={item.material_name}>
-                                        {item.material_name}
-                                     </h3>
-                                     <button 
-                                        onClick={(e) => handleDelete(item.id, e)} 
-                                        className="text-platinum hover:text-red-500 transition-colors z-20" 
-                                        title="Delete"
-                                     >
-                                        <Trash2 size={18}/>
-                                     </button>
-                                 </div>
-                                 <p className="text-xs font-bold text-steel mb-4 line-clamp-1">{item.company_name}</p>
-                                 
-                                 <div className="mt-auto pt-4 border-t border-platinum flex justify-between items-end">
-                                     <div>
-                                         <p className="text-[10px] text-steel uppercase font-bold">Quantity</p>
-                                         <p className="text-sm font-black text-navy">{item.quantity} {item.unit}</p>
-                                     </div>
-                                     <div className="text-right">
-                                         <p className="text-[10px] text-steel uppercase font-bold">Price</p>
-                                         <p className="text-lg font-black text-green-600">₹{item.price_per_unit}</p>
-                                     </div>
-                                 </div>
-                                 <div className="mt-3 text-[10px] text-steel flex items-center gap-1 truncate">
-                                     <MapPin size={12}/> {item.location_city || 'Location N/A'}
-                                 </div>
-                             </div>
-                        </div>
-                    );
-                })
+                listings.map(item => (
+                    <ListingCard key={item.id} item={item} onDelete={handleDelete} />
+                ))
             ) : (
-                <div className="col-span-full text-center py-10 text-gray-400">No listings found.</div>
+                <div className="col-span-full text-center py-20 bg-platinum/20 rounded border-2 border-dashed border-platinum text-steel">
+                    <FileText size={48} className="mx-auto mb-4 opacity-50"/>
+                    <p className="font-bold">No listings found in the database.</p>
+                    <p className="text-sm">Use the "Add New Listing" tab to create one.</p>
+                </div>
             )}
         </div>
       )}
 
-      {/* --- LIST VIEW --- */}
+      {/* --- LIST VIEW (COMPACT) --- */}
       {viewMode === 'list' && (
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto rounded border border-platinum">
             <table className="w-full text-left border-collapse">
             <thead>
-                <tr className="bg-platinum/50 text-navy uppercase text-xs font-black">
-                <th className="p-4 border-b border-platinum">ID</th>
-                <th className="p-4 border-b border-platinum">Img</th>
-                <th className="p-4 border-b border-platinum">Seller</th>
-                <th className="p-4 border-b border-platinum">Material</th>
-                <th className="p-4 border-b border-platinum">Qty</th>
-                <th className="p-4 border-b border-platinum">Price</th>
-                <th className="p-4 border-b border-platinum">Location</th>
-                <th className="p-4 border-b border-platinum">Action</th>
+                <tr className="bg-platinum text-navy uppercase text-[10px] font-black tracking-wider">
+                    <th className="p-3 border-b border-platinum">ID</th>
+                    <th className="p-3 border-b border-platinum">Material</th>
+                    <th className="p-3 border-b border-platinum">Seller Info</th>
+                    <th className="p-3 border-b border-platinum text-right">Quantity</th>
+                    <th className="p-3 border-b border-platinum text-right">Price</th>
+                    <th className="p-3 border-b border-platinum">Location</th>
+                    <th className="p-3 border-b border-platinum text-center">Action</th>
                 </tr>
             </thead>
-            <tbody className="text-sm font-medium text-steel">
-                {listings.map((item) => {
-                    const imgUrl = getImageUrl(item);
-                    return (
-                        <tr key={item.id} className="hover:bg-orange/5 transition-colors">
-                            <td className="p-4 border-b border-platinum">#{item.id}</td>
-                            <td className="p-4 border-b border-platinum">
-                                <div className="h-10 w-10 bg-gray-100 rounded overflow-hidden border border-platinum">
-                                    {imgUrl && <img src={imgUrl} className="h-full w-full object-cover" alt="" onError={(e)=>{e.target.style.display='none'}}/>}
-                                </div>
-                            </td>
-                            <td className="p-4 border-b border-platinum font-bold text-navy">{item.company_name}</td>
-                            <td className="p-4 border-b border-platinum">{item.material_name}</td>
-                            <td className="p-4 border-b border-platinum">{item.quantity} {item.unit}</td>
-                            <td className="p-4 border-b border-platinum text-green-600 font-bold">{item.price_per_unit}</td>
-                            <td className="p-4 border-b border-platinum">{item.location_city}</td>
-                            <td className="p-4 border-b border-platinum">
-                                <button onClick={(e) => handleDelete(item.id, e)} className="text-red-500 hover:text-red-700"><Trash2 size={16}/></button>
-                            </td>
-                        </tr>
-                    );
-                })}
+            <tbody className="text-xs font-medium text-steel">
+                {listings.map((item) => (
+                    <tr key={item.id} className="hover:bg-orange/5 transition-colors border-b border-platinum last:border-0 bg-white">
+                        <td className="p-3 font-mono">#{item.id}</td>
+                        <td className="p-3">
+                            <span className="block font-bold text-navy text-sm">{item.material_name}</span>
+                            <span className="text-[10px] text-orange bg-orange/10 px-1 rounded">{item.scrap_type}</span>
+                        </td>
+                        <td className="p-3">
+                            <div className="font-bold text-navy">{item.company_name}</div>
+                            <div>{item.seller_name}</div>
+                            <div className="text-[10px] text-steel">{item.phone}</div>
+                        </td>
+                        <td className="p-3 text-right font-bold text-navy">{item.quantity} {item.unit}</td>
+                        <td className="p-3 text-right text-green-600 font-black">₹{item.price_per_unit}</td>
+                        <td className="p-3 max-w-[150px] truncate" title={item.address}>{item.location_city}</td>
+                        <td className="p-3 text-center">
+                            <button onClick={() => handleDelete(item.id)} className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded transition-colors"><Trash2 size={14}/></button>
+                        </td>
+                    </tr>
+                ))}
             </tbody>
             </table>
         </div>
@@ -218,7 +287,7 @@ const ListingsView = () => {
 };
 
 // ==========================================
-// SUB-COMPONENT: ADD LISTING FORM
+// SUB-COMPONENT: ADD LISTING FORM (UNCHANGED)
 // ==========================================
 const AddListingForm = ({ hierarchy }) => {
   const [loading, setLoading] = useState(false);
