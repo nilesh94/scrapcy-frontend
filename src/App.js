@@ -30,6 +30,8 @@ import AdminAuctionDashboard from './e-auction/pages/AdminAuctionDashboard';
 import ManageAuctions from './e-auction/pages/ManageAuctions';
 import AuditTrail from './e-auction/pages/AuditTrail';
 
+import TermsConditions from './pages/TermsConditions';
+
 function App() {
   return (
     <Router>
@@ -68,6 +70,8 @@ function App() {
         <Route path="/e-auction/admin/dashboard" element={<AdminAuctionDashboard />} />
         <Route path="/e-auction/admin/manage" element={<ManageAuctions />} />
         <Route path="/e-auction/admin/audit/:auctionId" element={<AuditTrail />} />
+
+        <Route path="/terms-and-conditions" element={<TermsConditions />} />
       </Routes>
     </Router>
   );
