@@ -117,35 +117,57 @@ const RegisterAuction = () => {
     setErrorMsg('');
 
     try {
-      // Step 1: Create Auction
-      console.log('Creating auction with data:', auctionData);
-      const auctionResponse = await auctionAPI.createAuction(auctionData);
+      // Step 1: Prepare Combined Payload
+      // Extract 'images' from lots as they cannot be sent in JSON
+      // Ensure numeric/date fields are null if empty string to match DB requirements
+      const lotsPayload = lots.map(({ images, ...lotData }) => ({
+        ...lotData,
+        quantity: lotData.quantity ? Number(lotData.quantity) : 0,
+        starting_bid_amount: lotData.starting_bid_amount ? Number(lotData.starting_bid_amount) : 0,
+        reserve_price: lotData.reserve_price ? Number(lotData.reserve_price) : null,
+        min_increment_amount: lotData.min_increment_amount ? Number(lotData.min_increment_amount) : null,
+        buy_now_price: lotData.buy_now_price ? Number(lotData.buy_now_price) : null,
+        lot_start_time: lotData.lot_start_time || null,
+        lot_end_time: lotData.lot_end_time || null,
+        estimated_weight: lotData.estimated_weight ? Number(lotData.estimated_weight) : null,
+      }));
+
+      const fullPayload = {
+        ...auctionData,
+        emd_amount: auctionData.emd_amount ? Number(auctionData.emd_amount) : null,
+        registration_fee: auctionData.registration_fee ? Number(auctionData.registration_fee) : null,
+        inspection_start_date: auctionData.inspection_start_date || null,
+        inspection_end_date: auctionData.inspection_end_date || null,
+        lots: lotsPayload
+      };
+
+      console.log('Creating auction with lots payload:', fullPayload);
+
+      // Step 2: Single API Call to Create Auction AND Lots
+      const auctionResponse = await auctionAPI.createAuction(fullPayload);
       const auctionId = auctionResponse.id;
+      
+      // The backend returns the created items with their new IDs in `items` array
+      const createdItems = auctionResponse.items || [];
 
       console.log('✅ Auction created with ID:', auctionId);
 
-      // Step 2: Create Lots and Upload Images
+      // Step 3: Upload Images 
+      // Map local lots to created backend items by index to get the Lot ID
       for (let i = 0; i < lots.length; i++) {
-        const lot = lots[i];
-        const { images, ...lotData } = lot;
+        const localLot = lots[i];
+        const createdLot = createdItems[i]; 
 
-        // Add auction_id to lot data
-        const lotPayload = {
-          ...lotData,
-          auction_id: auctionId
-        };
-
-        console.log(`Creating lot ${i + 1}...`, lotPayload);
-
-        // Create lot
-        const lotResponse = await lotAPI.createLot(lotPayload);
-        console.log(`✅ Lot ${i + 1} created with ID:`, lotResponse.id);
-
-        // Upload images if any
-        if (images && images.length > 0) {
-          console.log(`Uploading ${images.length} images for lot ${i + 1}...`);
-          await lotAPI.uploadLotImages(lotResponse.id, images);
-          console.log(`✅ Images uploaded for lot ${i + 1}`);
+        // Only attempt upload if we have images and a valid Lot ID
+        if (createdLot && createdLot.id && localLot.images && localLot.images.length > 0) {
+          console.log(`Uploading ${localLot.images.length} images for lot ${i + 1}...`);
+          try {
+            await lotAPI.uploadLotImages(createdLot.id, localLot.images);
+            console.log(`Images uploaded for lot ${i + 1}`);
+          } catch (uploadError) {
+            console.error(`Failed to upload images for lot ${i + 1}:`, uploadError);
+            // We do not stop the process here, just log the error
+          }
         }
       }
 
