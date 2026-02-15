@@ -49,7 +49,7 @@ const RegisterAuction = () => {
     grade: '',
     form: '',
     quantity: '',
-    unit: 'MT',
+    unit: 'TON',
     estimated_weight: '',
     weight_unit: 'KG',
     location_city: '',
@@ -123,7 +123,7 @@ const RegisterAuction = () => {
       grade: '',
       form: '',
       quantity: '',
-      unit: 'MT',
+      unit: 'TON',
       location_city: '',
       location_state: '',
       starting_bid_amount: '',
@@ -838,7 +838,6 @@ const RegisterAuction = () => {
                             onChange={(e) => handleLotChange(index, 'unit', e.target.value)}
                             className="w-1/3 p-3 border border-platinum rounded-r focus:border-orange outline-none bg-gray-50"
                           >
-                            <option value="MT">MT (Metric Ton)</option>
                             <option value="KG">KG</option>
                             <option value="TON">TON</option>
                             <option value="UNIT">Unit</option>
