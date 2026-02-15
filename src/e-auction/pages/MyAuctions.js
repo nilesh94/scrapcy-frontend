@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Plus, Search, Filter, Eye, Edit, Trash2, Send, Ban } from 'lucide-react';
+import { Plus, Search, Filter, Eye, Edit, Trash2, Send, XCircle } from 'lucide-react';
 import Header from '../../components/Header/Header';
 import Footer from '../../components/Footer/Footer';
 import { auctionAPI } from '../../services/eAuctionAPI';
@@ -32,7 +32,7 @@ const MyAuctions = () => {
       };
       const data = await auctionAPI.getAuctions(filters);
       
-      // FIX: Handle both paginated response and direct array
+      // FIX: Handle both paginated response ({ auctions: [...] }) and direct array
       if (data && data.auctions) {
         setAuctions(data.auctions);
       } else if (Array.isArray(data)) {
@@ -286,7 +286,7 @@ const MyAuctions = () => {
                               className="p-2 text-red-600 hover:bg-red-100 rounded"
                               title="Cancel Auction"
                             >
-                              <Ban size={18} />
+                              <XCircle size={18} />
                             </button>
                           )}
                         </div>
