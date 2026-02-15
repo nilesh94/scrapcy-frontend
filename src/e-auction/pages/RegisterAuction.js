@@ -235,6 +235,7 @@ const RegisterAuction = () => {
       }
 
       setSuccessMsg(`🎉 Auction created successfully! ID: ${auctionId}`);
+      window.alert(`Success! Auction ID: ${auctionId} created.`);
       setTimeout(() => {
         navigate('/e-auction/my-auctions');
       }, 2000);
