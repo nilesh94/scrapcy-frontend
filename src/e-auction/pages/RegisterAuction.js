@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { 
   Save, ArrowLeft, Calendar, DollarSign, FileText, MapPin, Clock, 
   CheckCircle, XCircle, Upload, Info, Plus, Trash2, Package, AlertTriangle 
@@ -234,8 +235,12 @@ const RegisterAuction = () => {
         }
       }
 
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
       setSuccessMsg(`🎉 Auction created successfully! ID: ${auctionId}`);
-      window.alert(`Success! Auction ID: ${auctionId} created.`);
+      
+      // alert(`Auction Created Successfully! ID: ${auctionId}`);
+      
       setTimeout(() => {
         navigate('/e-auction/my-auctions');
       }, 2000);
@@ -835,7 +840,7 @@ const RegisterAuction = () => {
                           >
                             <option value="MT">MT (Metric Ton)</option>
                             <option value="KG">KG</option>
-                            <option value="TON">Ton</option>
+                            <option value="TON">TON</option>
                             <option value="UNIT">Unit</option>
                             <option value="LOT">Lot</option>
                           </select>
