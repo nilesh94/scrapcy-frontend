@@ -248,24 +248,24 @@ const MyAuctions = () => {
                       </td>
                       <td className="p-4">
                         <div className="flex justify-center gap-2">
-                          {/* View */}
-                          <Link
-                            to={`/e-auction/auction/${auction.id}`}
+                          {/* View - Redirect to Management Page */}
+                          <button
+                            onClick={() => navigate(`/e-auction/auction/${auction.id}/manage`)}
                             className="p-2 text-blue-600 hover:bg-blue-100 rounded"
                             title="View Details"
                           >
                             <Eye size={18} />
-                          </Link>
+                          </button>
 
-                          {/* Edit (only if DRAFT) */}
+                          {/* Edit (only if DRAFT) - Redirect to Management Page (Edit Mode) */}
                           {auction.status === 'DRAFT' && (
-                            <Link
-                              to={`/e-auction/edit/${auction.id}`}
+                            <button
+                              onClick={() => navigate(`/e-auction/auction/${auction.id}/manage`)}
                               className="p-2 text-green-600 hover:bg-green-100 rounded"
                               title="Edit"
                             >
                               <Edit size={18} />
-                            </Link>
+                            </button>
                           )}
 
                           {/* Submit for Approval (only if DRAFT) */}
