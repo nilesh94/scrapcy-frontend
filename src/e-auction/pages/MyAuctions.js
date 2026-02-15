@@ -31,9 +31,20 @@ const MyAuctions = () => {
         search: searchTerm
       };
       const data = await auctionAPI.getAuctions(filters);
-      setAuctions(data.items || data);
+      
+      // FIX: Handle both paginated response and direct array
+      if (data && data.auctions) {
+        setAuctions(data.auctions);
+      } else if (Array.isArray(data)) {
+        setAuctions(data);
+      } else if (data && data.items) {
+        setAuctions(data.items);
+      } else {
+        setAuctions([]);
+      }
     } catch (error) {
       console.error('Error fetching auctions:', error);
+      setAuctions([]);
     } finally {
       setLoading(false);
     }
