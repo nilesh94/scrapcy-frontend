@@ -11,7 +11,6 @@ const MyAuctions = () => {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState(null);
   
-  // Filters
   const [statusFilter, setStatusFilter] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [page, setPage] = useState(1);
@@ -32,7 +31,7 @@ const MyAuctions = () => {
       };
       const data = await auctionAPI.getAuctions(filters);
       
-      // FIX: Handle both paginated response ({ auctions: [...] }) and direct array
+      // Handle both paginated response ({ auctions: [...] }) and direct array
       if (data && data.auctions) {
         setAuctions(data.auctions);
       } else if (Array.isArray(data)) {
@@ -66,7 +65,6 @@ const MyAuctions = () => {
 
   const handleSubmitForApproval = async (auctionId) => {
     if (!window.confirm('Submit this auction for approval?')) return;
-    
     try {
       await auctionAPI.submitForApproval(auctionId);
       alert('Auction submitted for approval!');
@@ -79,7 +77,6 @@ const MyAuctions = () => {
   const handleCancelAuction = async (auctionId) => {
     const reason = prompt('Enter cancellation reason:');
     if (!reason) return;
-    
     try {
       await auctionAPI.cancelAuction(auctionId, reason);
       alert('Auction cancelled successfully!');
@@ -248,7 +245,7 @@ const MyAuctions = () => {
                       </td>
                       <td className="p-4">
                         <div className="flex justify-center gap-2">
-                          {/* View - Redirect to Management Page */}
+                          {/* View - Redirect to View Mode */}
                           <button
                             onClick={() => navigate(`/e-auction/auction/${auction.id}/manage`)}
                             className="p-2 text-blue-600 hover:bg-blue-100 rounded"
@@ -257,10 +254,10 @@ const MyAuctions = () => {
                             <Eye size={18} />
                           </button>
 
-                          {/* Edit (only if DRAFT) - Redirect to Management Page (Edit Mode) */}
+                          {/* Edit - Redirect to Auto-Edit Mode */}
                           {auction.status === 'DRAFT' && (
                             <button
-                              onClick={() => navigate(`/e-auction/auction/${auction.id}/manage`)}
+                              onClick={() => navigate(`/e-auction/edit/${auction.id}`)}
                               className="p-2 text-green-600 hover:bg-green-100 rounded"
                               title="Edit"
                             >
@@ -299,7 +296,6 @@ const MyAuctions = () => {
           )}
         </div>
 
-        {/* Pagination */}
         {auctions.length > 0 && (
           <div className="mt-6 flex justify-center gap-2">
             <button
