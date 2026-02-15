@@ -7,13 +7,29 @@ import axios from 'axios';
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 const AUCTION_BASE = `${API_URL}/api/v1/e-auction`;
 
+// Create axios instance with interceptor for JWT
+const api = axios.create({
+  baseURL: API_URL,
+});
+
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
 /**
  * Auction CRUD Operations
  */
 export const auctionAPI = {
   // Create new auction
   createAuction: async (auctionData) => {
-    const response = await axios.post(`${AUCTION_BASE}/auctions`, auctionData);
+    const response = await api.post(`${AUCTION_BASE}/auctions`, auctionData);
     return response.data;
   },
 
@@ -25,8 +41,9 @@ export const auctionAPI = {
     if (filters.search) params.append('search', filters.search);
     if (filters.page) params.append('page', filters.page);
     if (filters.page_size) params.append('page_size', filters.page_size);
+    if (filters.created_by_me) params.append('created_by_me', 'true');
 
-    const response = await axios.get(`${AUCTION_BASE}/auctions?${params.toString()}`);
+    const response = await api.get(`${AUCTION_BASE}/auctions?${params.toString()}`);
     return response.data;
   },
 
@@ -43,21 +60,33 @@ export const auctionAPI = {
     return response.data;
   },
 
-  // Get single auction details
+  // Get single auction details (Public Basic Info)
   getAuctionById: async (auctionId) => {
     const response = await axios.get(`${AUCTION_BASE}/auctions/${auctionId}`);
     return response.data;
   },
 
+  // --- NEW: Get Full Details for View/Edit Page (Restricted) ---
+  getAuctionDetails: async (auctionId) => {
+    const response = await api.get(`${AUCTION_BASE}/auctions/${auctionId}/manage`);
+    return response.data;
+  },
+
+  // --- NEW: Get Open Details for Public Website (Safe View) ---
+  getOpenAuctionDetails: async (auctionId) => {
+    const response = await axios.get(`${AUCTION_BASE}/auctions/open/${auctionId}`);
+    return response.data;
+  },
+
   // Update auction
   updateAuction: async (auctionId, auctionData) => {
-    const response = await axios.put(`${AUCTION_BASE}/auctions/${auctionId}`, auctionData);
+    const response = await api.put(`${AUCTION_BASE}/auctions/${auctionId}`, auctionData);
     return response.data;
   },
 
   // Delete auction (Updated)
   deleteAuction: async (auctionId, reason) => {
-    const response = await axios.delete(`${AUCTION_BASE}/admin/auctions/${auctionId}`, {
+    const response = await api.delete(`${AUCTION_BASE}/auctions/${auctionId}`, {
       data: { reason }
     });
     return response.data;
@@ -65,13 +94,13 @@ export const auctionAPI = {
 
   // Submit for approval
   submitForApproval: async (auctionId) => {
-    const response = await axios.post(`${AUCTION_BASE}/auctions/${auctionId}/submit-for-approval`);
+    const response = await api.post(`${AUCTION_BASE}/auctions/${auctionId}/submit-for-approval`);
     return response.data;
   },
 
   // Cancel auction
   cancelAuction: async (auctionId, reason) => {
-    const response = await axios.post(`${AUCTION_BASE}/auctions/${auctionId}/cancel`, {
+    const response = await api.post(`${AUCTION_BASE}/auctions/${auctionId}/cancel`, {
       cancellation_reason: reason
     });
     return response.data;
@@ -79,7 +108,7 @@ export const auctionAPI = {
 
   // Get auction statistics
   getAuctionStats: async () => {
-    const response = await axios.get(`${AUCTION_BASE}/auctions/stats/overview`);
+    const response = await api.get(`${AUCTION_BASE}/auctions/stats/overview`);
     return response.data;
   },
 
@@ -87,7 +116,7 @@ export const auctionAPI = {
 
   // Get admin statistics
   getAdminStats: async () => {
-    const response = await axios.get(`${AUCTION_BASE}/admin/stats`);
+    const response = await api.get(`${AUCTION_BASE}/auctions/admin/stats/all`);
     return response.data;
   },
 
@@ -103,13 +132,13 @@ export const auctionAPI = {
     if (filters.page) params.append('page', filters.page);
     if (filters.page_size) params.append('page_size', filters.page_size);
 
-    const response = await axios.get(`${AUCTION_BASE}/admin/auctions?${params.toString()}`);
+    const response = await api.get(`${AUCTION_BASE}/auctions?${params.toString()}`);
     return response.data;
   },
 
   // Archive auction (admin only)
   archiveAuction: async (auctionId, reason) => {
-    const response = await axios.post(
+    const response = await api.post(
       `${AUCTION_BASE}/admin/auctions/${auctionId}/archive`,
       { reason }
     );
@@ -118,7 +147,7 @@ export const auctionAPI = {
 
   // Restore archived auction (admin only)
   restoreAuction: async (auctionId) => {
-    const response = await axios.post(
+    const response = await api.post(
       `${AUCTION_BASE}/admin/auctions/${auctionId}/restore`
     );
     return response.data;
@@ -126,7 +155,7 @@ export const auctionAPI = {
 
   // Get audit trail (admin only)
   getAuditTrail: async (auctionId) => {
-    const response = await axios.get(
+    const response = await api.get(
       `${AUCTION_BASE}/admin/audit/${auctionId}`
     );
     return response.data;
@@ -134,8 +163,8 @@ export const auctionAPI = {
 
   // Get pending approvals (admin only)
   getPendingApprovalsAdmin: async (page = 1, pageSize = 10) => {
-    const response = await axios.get(
-      `${AUCTION_BASE}/admin/pending-approval?page=${page}&page_size=${pageSize}`
+    const response = await api.get(
+      `${AUCTION_BASE}/auctions/admin/pending-approval?page=${page}&page_size=${pageSize}`
     );
     return response.data;
   },
@@ -148,13 +177,13 @@ export const auctionAPI = {
 export const lotAPI = {
   // Create lot (will be added to current auction creation - for now using lot endpoints)
   createLot: async (lotData) => {
-    const response = await axios.post(`${AUCTION_BASE}/lots`, lotData);
+    const response = await api.post(`${AUCTION_BASE}/lots`, lotData);
     return response.data;
   },
 
   // Get lots for an auction
   getAuctionLots: async (auctionId) => {
-    const response = await axios.get(`${AUCTION_BASE}/lots?auction_id=${auctionId}`);
+    const response = await api.get(`${AUCTION_BASE}/lots?auction_id=${auctionId}`);
     return response.data;
   },
 
@@ -165,7 +194,7 @@ export const lotAPI = {
       formData.append('images', file);
     });
 
-    const response = await axios.post(
+    const response = await api.post(
       `${AUCTION_BASE}/lots/${lotId}/images`,
       formData,
       { headers: { 'Content-Type': 'multipart/form-data' } }
@@ -180,7 +209,7 @@ export const lotAPI = {
 export const biddingAPI = {
   // Place bid
   placeBid: async (lotId, bidAmount) => {
-    const response = await axios.post(`${AUCTION_BASE}/bidding/lots/${lotId}/bid`, {
+    const response = await api.post(`${AUCTION_BASE}/bidding/lots/${lotId}/bid`, {
       bid_amount: bidAmount
     });
     return response.data;
@@ -188,19 +217,19 @@ export const biddingAPI = {
 
   // Get bid history
   getBidHistory: async (lotId, page = 1) => {
-    const response = await axios.get(`${AUCTION_BASE}/bidding/lots/${lotId}/history?page=${page}`);
+    const response = await api.get(`${AUCTION_BASE}/bidding/lots/${lotId}/history?page=${page}`);
     return response.data;
   },
 
   // Get my bids
   getMyBids: async (page = 1) => {
-    const response = await axios.get(`${AUCTION_BASE}/bidding/my-bids?page=${page}`);
+    const response = await api.get(`${AUCTION_BASE}/bidding/my-bids?page=${page}`);
     return response.data;
   },
 
   // Create auto-bid
   createAutoBid: async (lotId, maxBidAmount) => {
-    const response = await axios.post(`${AUCTION_BASE}/bidding/lots/${lotId}/auto-bid`, {
+    const response = await api.post(`${AUCTION_BASE}/bidding/lots/${lotId}/auto-bid`, {
       max_bid_amount: maxBidAmount
     });
     return response.data;
@@ -213,7 +242,7 @@ export const biddingAPI = {
 export const participantAPI = {
   // Register for auction
   registerForAuction: async (auctionId) => {
-    const response = await axios.post(`${AUCTION_BASE}/participants/auctions/${auctionId}/register`, {
+    const response = await api.post(`${AUCTION_BASE}/participants/auctions/${auctionId}/register`, {
       agreed_to_terms: true
     });
     return response.data;
@@ -221,7 +250,7 @@ export const participantAPI = {
 
   // Get participants (admin only)
   getParticipants: async (auctionId) => {
-    const response = await axios.get(`${AUCTION_BASE}/participants/auctions/${auctionId}/participants`);
+    const response = await api.get(`${AUCTION_BASE}/participants/auctions/${auctionId}/participants`);
     return response.data;
   },
 };
@@ -232,19 +261,19 @@ export const participantAPI = {
 export const paymentAPI = {
   // Initiate payment
   initiatePayment: async (paymentData) => {
-    const response = await axios.post(`${AUCTION_BASE}/payments/initiate`, paymentData);
+    const response = await api.post(`${AUCTION_BASE}/payments/initiate`, paymentData);
     return response.data;
   },
 
   // Verify payment
   verifyPayment: async (verificationData) => {
-    const response = await axios.post(`${AUCTION_BASE}/payments/verify`, verificationData);
+    const response = await api.post(`${AUCTION_BASE}/payments/verify`, verificationData);
     return response.data;
   },
 
   // Get payment history
   getPaymentHistory: async (page = 1) => {
-    const response = await axios.get(`${AUCTION_BASE}/payments/history?page=${page}`);
+    const response = await api.get(`${AUCTION_BASE}/payments/history?page=${page}`);
     return response.data;
   },
 };
@@ -255,13 +284,13 @@ export const paymentAPI = {
 export const adminAPI = {
   // Get pending approvals
   getPendingApprovals: async (page = 1) => {
-    const response = await axios.get(`${AUCTION_BASE}/auctions/admin/pending-approval?page=${page}`);
+    const response = await api.get(`${AUCTION_BASE}/auctions/admin/pending-approval?page=${page}`);
     return response.data;
   },
 
   // L1 Approval
   approveL1: async (auctionId, approve, remarks = '') => {
-    const response = await axios.post(`${AUCTION_BASE}/auctions/${auctionId}/approve-l1`, {
+    const response = await api.post(`${AUCTION_BASE}/auctions/${auctionId}/approve-l1`, {
       approve,
       remarks
     });
@@ -270,7 +299,7 @@ export const adminAPI = {
 
   // L2 Approval
   approveL2: async (auctionId, approve, remarks = '') => {
-    const response = await axios.post(`${AUCTION_BASE}/auctions/${auctionId}/approve-l2`, {
+    const response = await api.post(`${AUCTION_BASE}/auctions/${auctionId}/approve-l2`, {
       approve,
       remarks
     });
@@ -279,13 +308,13 @@ export const adminAPI = {
 
   // Publish auction manually
   publishAuction: async (auctionId) => {
-    const response = await axios.post(`${AUCTION_BASE}/auctions/${auctionId}/publish`);
+    const response = await api.post(`${AUCTION_BASE}/auctions/${auctionId}/publish`);
     return response.data;
   },
 
   // Get all stats (admin only)
   getAllStats: async () => {
-    const response = await axios.get(`${AUCTION_BASE}/auctions/admin/stats/all`);
+    const response = await api.get(`${AUCTION_BASE}/auctions/admin/stats/all`);
     return response.data;
   },
 };
