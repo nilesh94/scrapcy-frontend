@@ -21,7 +21,7 @@ import EAuctionLander from './pages/EAuctionLander';
 // --- E-AUCTION PAGES ---
 import RegisterAuction from './e-auction/pages/RegisterAuction';
 import MyAuctions from './e-auction/pages/MyAuctions';
-import AuctionDetails from './e-auction/pages/AuctionDetails'; 
+import AuctionDetails from './e-auction/pages/AuctionDetails';
 
 // --- ADMIN PAGES ---
 import AdminDashboard from './pages/AdminDashboard';
@@ -36,9 +36,6 @@ import TermsConditions from './pages/TermsConditions';
 function App() {
   return (
     <Router>
-      {/* SessionTimeout is placed here (inside Router, outside Routes) 
-          so it monitors activity globally across all pages.
-      */}
       <SessionTimeout />
 
       <Routes>
@@ -68,8 +65,8 @@ function App() {
         <Route path="/e-auction/register" element={<RegisterAuction />} />
         <Route path="/e-auction/my-auctions" element={<MyAuctions />} />
         
-        {/* --- ADDED ROUTES FOR VIEW/EDIT AUCTION --- */}
-        {/* Both point to AuctionDetails, which handles permissions internally */}
+        <Route path="/e-auction/auction/:id/manage" element={<AuctionDetails />} />
+        
         <Route path="/e-auction/auction/:id" element={<AuctionDetails />} /> 
         <Route path="/e-auction/edit/:id" element={<AuctionDetails />} />
 
