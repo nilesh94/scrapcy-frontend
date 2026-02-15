@@ -2,7 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 // --- COMPONENTS ---
-import SessionTimeout from './components/SessionTimeout'; // <--- Import Session Timeout Logic
+import SessionTimeout from './components/SessionTimeout'; 
 
 // --- PAGES ---
 import Home from './pages/Home';
@@ -21,6 +21,7 @@ import EAuctionLander from './pages/EAuctionLander';
 // --- E-AUCTION PAGES ---
 import RegisterAuction from './e-auction/pages/RegisterAuction';
 import MyAuctions from './e-auction/pages/MyAuctions';
+import AuctionDetails from './e-auction/pages/AuctionDetails'; 
 
 // --- ADMIN PAGES ---
 import AdminDashboard from './pages/AdminDashboard';
@@ -66,6 +67,11 @@ function App() {
         <Route path="/e-auction" element={<EAuctionLander />} />
         <Route path="/e-auction/register" element={<RegisterAuction />} />
         <Route path="/e-auction/my-auctions" element={<MyAuctions />} />
+        
+        {/* --- ADDED ROUTES FOR VIEW/EDIT AUCTION --- */}
+        {/* Both point to AuctionDetails, which handles permissions internally */}
+        <Route path="/e-auction/auction/:id" element={<AuctionDetails />} /> 
+        <Route path="/e-auction/edit/:id" element={<AuctionDetails />} />
 
         <Route path="/e-auction/admin/dashboard" element={<AdminAuctionDashboard />} />
         <Route path="/e-auction/admin/manage" element={<ManageAuctions />} />
