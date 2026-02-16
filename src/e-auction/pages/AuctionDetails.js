@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import Header from '../../components/Header/Header';
 import Footer from '../../components/Footer/Footer';
-import { auctionAPI } from '../../services/eAuctionAPI';
+import { auctionAPI, lotAPI } from '../../services/eAuctionAPI';
 
 const AuctionDetails = () => {
   const { id } = useParams();
@@ -23,8 +23,13 @@ const AuctionDetails = () => {
   const [formData, setFormData] = useState({});
   const [currentUser, setCurrentUser] = useState(null); 
 
+  // --- LOT MODAL STATE ---
+  const [selectedLot, setSelectedLot] = useState(null);
+  const [isLotEditing, setIsLotEditing] = useState(false);
+  const [lotFormData, setLotFormData] = useState({});
+  const [lotSaving, setLotSaving] = useState(false);
+
   // --- Helper: Permission Check Logic ---
-  // We define this outside so we can use it in useEffect
   const checkCanEdit = (auctionObj, userObj) => {
     if (!userObj || !auctionObj) return false;
     // Admin: Can edit anything
@@ -74,7 +79,7 @@ const AuctionDetails = () => {
     fetchData();
   }, [id, location.pathname]);
 
-  // --- 2. Handlers ---
+  // --- 2. Handlers (Auction) ---
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
@@ -126,7 +131,59 @@ const AuctionDetails = () => {
     }
   };
 
-  // --- 3. Render Helpers ---
+  // --- 3. Handlers (Lots) ---
+  const openLotModal = (lot) => {
+    setSelectedLot(lot);
+    setLotFormData(lot); // Initialize form data with current lot data
+    setIsLotEditing(false); // Default to view mode
+  };
+
+  const closeLotModal = () => {
+    setSelectedLot(null);
+    setLotFormData({});
+    setIsLotEditing(false);
+  };
+
+  const handleLotChange = (e) => {
+    const { name, value } = e.target;
+    setLotFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSaveLot = async () => {
+    setLotSaving(true);
+    try {
+        // Prepare payload, converting numbers
+        const payload = {
+            ...lotFormData,
+            quantity: Number(lotFormData.quantity),
+            starting_bid_amount: Number(lotFormData.starting_bid_amount),
+            reserve_price: Number(lotFormData.reserve_price),
+            min_increment_amount: Number(lotFormData.min_increment_amount),
+            buy_now_price: Number(lotFormData.buy_now_price),
+            condition_rating: Number(lotFormData.condition_rating)
+        };
+
+        // Call API (assuming updateLot exists in lotAPI based on previous context)
+        // If it doesn't, ensure you add it to eAuctionAPI.js
+        const updatedLot = await lotAPI.updateLot(selectedLot.id, payload);
+
+        // Update local state list so table refreshes
+        const updatedItems = auction.items.map(item => item.id === updatedLot.id ? updatedLot : item);
+        setAuction(prev => ({ ...prev, items: updatedItems }));
+        
+        setSelectedLot(updatedLot); // Update modal view
+        setIsLotEditing(false);
+        alert("Lot updated successfully!"); 
+    } catch (err) {
+        console.error("Lot Update failed:", err);
+        alert("Failed to update lot: " + (err.response?.data?.detail || err.message));
+    } finally {
+        setLotSaving(false);
+    }
+  };
+
+
+  // --- 4. Render Helpers ---
   const renderField = (label, name, type = "text", required = false) => {
     if (!isEditing) {
         return (
@@ -146,6 +203,32 @@ const AuctionDetails = () => {
                 name={name}
                 value={formData[name] || ''}
                 onChange={handleChange}
+                className="w-full p-2 border border-gray-300 rounded focus:border-orange outline-none text-sm font-bold"
+            />
+        </div>
+    );
+  };
+
+  // Helper for Lot Modal Fields (reusing logic but pointing to lotFormData)
+  const renderLotField = (label, name, type = "text", required = false) => {
+    if (!isLotEditing) {
+        return (
+            <div className="mb-4">
+                <label className="block text-xs font-bold uppercase text-gray-500 mb-1">{label}</label>
+                <div className="text-navy font-medium text-sm border-b border-gray-200 pb-2">
+                    {lotFormData[name] !== null && lotFormData[name] !== undefined ? String(lotFormData[name]) : '-'}
+                </div>
+            </div>
+        );
+    }
+    return (
+        <div className="mb-4">
+            <label className="block text-xs font-bold uppercase text-navy mb-1">{label} {required && '*'}</label>
+            <input
+                type={type}
+                name={name}
+                value={lotFormData[name] || ''}
+                onChange={handleLotChange}
                 className="w-full p-2 border border-gray-300 rounded focus:border-orange outline-none text-sm font-bold"
             />
         </div>
@@ -173,7 +256,7 @@ const AuctionDetails = () => {
   if (error && !auction) return <div className="min-h-screen flex items-center justify-center bg-platinum text-red-600 font-bold">{error}</div>;
 
   return (
-    <div className="min-h-screen bg-platinum flex flex-col">
+    <div className="min-h-screen bg-platinum flex flex-col relative">
       <Header />
       
       {/* --- Action Header --- */}
@@ -225,7 +308,6 @@ const AuctionDetails = () => {
             
             {/* --- LEFT COL: AUCTION INFO --- */}
             <div className="md:col-span-2 space-y-6">
-                
                 {/* 1. Basic Info */}
                 <div className="bg-white p-6 rounded shadow border-l-4 border-orange">
                     <h3 className="text-sm font-black text-navy uppercase mb-4 flex items-center gap-2 border-b pb-2">
@@ -247,7 +329,6 @@ const AuctionDetails = () => {
                     <div className="grid md:grid-cols-2 gap-4">
                         {renderField("Start Time", "scheduled_start_time", "datetime-local", true)}
                         {renderField("End Time", "scheduled_end_time", "datetime-local", true)}
-                        
                         {isEditing && (
                             <div className="md:col-span-2 bg-blue-50 p-3 rounded text-xs text-blue-800">
                                 ℹ️ Note: Changing dates will update the schedule for all Lots that use default timings.
@@ -273,7 +354,6 @@ const AuctionDetails = () => {
 
             {/* --- RIGHT COL: SIDEBAR INFO --- */}
             <div className="space-y-6">
-                
                 {/* 1. Financials */}
                 <div className="bg-white p-6 rounded shadow border-t-4 border-green-600">
                     <h3 className="text-sm font-black text-navy uppercase mb-4 flex items-center gap-2">
@@ -372,7 +452,12 @@ const AuctionDetails = () => {
                                     <td className="p-4 text-sm font-mono text-green-700">₹ {lot.starting_bid_amount?.toLocaleString()}</td>
                                     <td className="p-4">{getStatusBadge(lot.lot_status)}</td>
                                     <td className="p-4">
-                                        <button className="text-blue-600 font-bold text-xs hover:underline">VIEW LOT</button>
+                                        <button 
+                                            onClick={() => openLotModal(lot)}
+                                            className="text-blue-600 font-bold text-xs hover:underline uppercase"
+                                        >
+                                            View / Edit
+                                        </button>
                                     </td>
                                 </tr>
                             ))}
@@ -386,6 +471,107 @@ const AuctionDetails = () => {
                 </div>
             </div>
         </div>
+
+        {/* --- LOT DETAILS MODAL --- */}
+        {selectedLot && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                <div className="bg-white rounded-lg shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+                    {/* Modal Header */}
+                    <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-gray-50 sticky top-0 z-10">
+                        <div>
+                            <h3 className="text-lg font-black text-navy uppercase">
+                                Lot #{selectedLot.lot_number || 'N/A'} - {selectedLot.item_name}
+                            </h3>
+                            <div className="text-xs text-gray-500 font-bold flex gap-2">
+                                Status: {getStatusBadge(selectedLot.lot_status)}
+                            </div>
+                        </div>
+                        <div className="flex gap-2">
+                            {isLotEditing ? (
+                                <button onClick={() => { setIsLotEditing(false); setLotFormData(selectedLot); }} className="px-3 py-1 text-xs font-bold text-gray-600 hover:text-red-600 border border-gray-300 rounded">
+                                    Cancel
+                                </button>
+                            ) : (
+                                checkCanEdit(auction, currentUser) && (
+                                    <button onClick={() => setIsLotEditing(true)} className="px-3 py-1 text-xs font-bold bg-navy text-white rounded hover:bg-orange transition-colors">
+                                        <Edit size={14} className="inline mr-1"/> Edit Lot
+                                    </button>
+                                )
+                            )}
+                            <button onClick={closeLotModal} className="text-gray-400 hover:text-red-500 transition-colors">
+                                <X size={24} />
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Modal Body */}
+                    <div className="p-6">
+                        <div className="grid md:grid-cols-2 gap-6">
+                            {/* Left Col */}
+                            <div className="space-y-4">
+                                <h4 className="text-xs font-black uppercase text-orange border-b pb-1 mb-2">Material Info</h4>
+                                {renderLotField("Item Name", "item_name", "text", true)}
+                                {renderLotField("Scrap Type", "scrap_type")}
+                                {renderLotField("Category", "category")}
+                                {renderLotField("Material", "material")}
+                                {renderLotField("Grade", "grade")}
+                                {renderLotField("Form", "form")}
+                            </div>
+
+                            {/* Right Col */}
+                            <div className="space-y-4">
+                                <h4 className="text-xs font-black uppercase text-green-600 border-b pb-1 mb-2">Pricing & Logistics</h4>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {renderLotField("Quantity", "quantity", "number", true)}
+                                    {renderLotField("Unit", "unit")}
+                                </div>
+                                {renderLotField("Starting Bid", "starting_bid_amount", "number", true)}
+                                {renderLotField("Reserve Price", "reserve_price", "number")}
+                                {renderLotField("Min Increment", "min_increment_amount", "number")}
+                                
+                                <div className="grid grid-cols-2 gap-2">
+                                    {renderLotField("City", "location_city")}
+                                    {renderLotField("State", "location_state")}
+                                </div>
+                            </div>
+                            
+                            {/* Full Width */}
+                            <div className="md:col-span-2 space-y-4 border-t pt-4">
+                                {renderLotField("Full Address", "location_address")}
+                                {renderLotField("Pickup Conditions", "pickup_conditions")}
+                                
+                                <div className="mb-4">
+                                    <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Seller Notes</label>
+                                    {isLotEditing ? (
+                                        <textarea 
+                                            name="seller_notes" 
+                                            value={lotFormData.seller_notes || ''} 
+                                            onChange={handleLotChange} 
+                                            className="w-full p-2 border border-gray-300 rounded text-sm"
+                                            rows={3}
+                                        />
+                                    ) : (
+                                        <p className="text-sm text-navy bg-gray-50 p-2 rounded border border-gray-100">
+                                            {lotFormData.seller_notes || '-'}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Modal Footer (Only if editing) */}
+                    {isLotEditing && (
+                        <div className="p-4 border-t border-gray-200 bg-gray-50 flex justify-end gap-2 sticky bottom-0">
+                            <button onClick={handleSaveLot} disabled={lotSaving} className="px-6 py-2 bg-green-600 text-white font-bold rounded shadow hover:bg-green-700 flex items-center gap-2">
+                                <Save size={16} /> {lotSaving ? 'Saving...' : 'Save Lot Changes'}
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </div>
+        )}
+
       </div>
       <Footer />
     </div>
