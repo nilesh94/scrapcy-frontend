@@ -329,6 +329,15 @@ export const adminAPI = {
     const response = await api.get(`${AUCTION_BASE}/auctions/admin/stats/all`);
     return response.data;
   },
+
+  // Get list of sellers for dropdown (admin only)
+  getSellers: async (search = '') => {
+    // Assuming an endpoint exists to list users with role='seller'
+    // You might need to adjust the URL based on your specific User routes
+    const response = await api.get(`/users?role=seller&search=${search}`);
+    return response.data;
+  },
+  
 };
 
 export default {
