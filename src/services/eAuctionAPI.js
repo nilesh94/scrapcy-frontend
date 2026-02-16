@@ -187,6 +187,18 @@ export const lotAPI = {
     return response.data;
   },
 
+  // ---Get Single Lot Details ---
+  getLotDetails: async (lotId) => {
+    const response = await api.get(`${AUCTION_BASE}/lots/${lotId}`);
+    return response.data;
+  },
+
+  // --- Update Lot Details ---
+  updateLot: async (lotId, lotData) => {
+    const response = await api.put(`${AUCTION_BASE}/lots/${lotId}`, lotData);
+    return response.data;
+  },
+
   // Upload lot images
   uploadLotImages: async (lotId, files) => {
     const formData = new FormData();
