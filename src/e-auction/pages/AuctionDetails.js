@@ -13,6 +13,7 @@ const AuctionDetails = () => {
   const navigate = useNavigate();
   const location = useLocation();
   
+  // --- Main Auction State ---
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -28,6 +29,10 @@ const AuctionDetails = () => {
   const [isLotEditing, setIsLotEditing] = useState(false);
   const [lotFormData, setLotFormData] = useState({});
   const [lotSaving, setLotSaving] = useState(false);
+  
+  // New: Modal-specific feedback state
+  const [lotSuccessMsg, setLotSuccessMsg] = useState('');
+  const [lotError, setLotError] = useState('');
 
   // --- Helper: Permission Check Logic ---
   const checkCanEdit = (auctionObj, userObj) => {
@@ -134,14 +139,19 @@ const AuctionDetails = () => {
   // --- 3. Handlers (Lots) ---
   const openLotModal = (lot) => {
     setSelectedLot(lot);
-    setLotFormData(lot); // Initialize form data with current lot data
-    setIsLotEditing(false); // Default to view mode
+    setLotFormData(lot); 
+    setIsLotEditing(false);
+    // Clear previous modal messages
+    setLotSuccessMsg('');
+    setLotError('');
   };
 
   const closeLotModal = () => {
     setSelectedLot(null);
     setLotFormData({});
     setIsLotEditing(false);
+    setLotSuccessMsg('');
+    setLotError('');
   };
 
   const handleLotChange = (e) => {
@@ -151,6 +161,9 @@ const AuctionDetails = () => {
 
   const handleSaveLot = async () => {
     setLotSaving(true);
+    setLotError('');
+    setLotSuccessMsg('');
+
     try {
         // Prepare payload, converting numbers
         const payload = {
@@ -173,10 +186,14 @@ const AuctionDetails = () => {
         
         setSelectedLot(updatedLot); // Update modal view
         setIsLotEditing(false);
-        alert("Lot updated successfully!"); 
+        setLotSuccessMsg("Lot details updated successfully!");
+        
+        // Auto-clear success message after 3 seconds
+        setTimeout(() => setLotSuccessMsg(''), 3000);
+
     } catch (err) {
         console.error("Lot Update failed:", err);
-        alert("Failed to update lot: " + (err.response?.data?.detail || err.message));
+        setLotError(err.response?.data?.detail || "Failed to update lot details.");
     } finally {
         setLotSaving(false);
     }
@@ -308,6 +325,7 @@ const AuctionDetails = () => {
             
             {/* --- LEFT COL: AUCTION INFO --- */}
             <div className="md:col-span-2 space-y-6">
+                
                 {/* 1. Basic Info */}
                 <div className="bg-white p-6 rounded shadow border-l-4 border-orange">
                     <h3 className="text-sm font-black text-navy uppercase mb-4 flex items-center gap-2 border-b pb-2">
@@ -329,6 +347,7 @@ const AuctionDetails = () => {
                     <div className="grid md:grid-cols-2 gap-4">
                         {renderField("Start Time", "scheduled_start_time", "datetime-local", true)}
                         {renderField("End Time", "scheduled_end_time", "datetime-local", true)}
+                        
                         {isEditing && (
                             <div className="md:col-span-2 bg-blue-50 p-3 rounded text-xs text-blue-800">
                                 ℹ️ Note: Changing dates will update the schedule for all Lots that use default timings.
@@ -354,6 +373,7 @@ const AuctionDetails = () => {
 
             {/* --- RIGHT COL: SIDEBAR INFO --- */}
             <div className="space-y-6">
+                
                 {/* 1. Financials */}
                 <div className="bg-white p-6 rounded shadow border-t-4 border-green-600">
                     <h3 className="text-sm font-black text-navy uppercase mb-4 flex items-center gap-2">
@@ -488,7 +508,7 @@ const AuctionDetails = () => {
                         </div>
                         <div className="flex gap-2">
                             {isLotEditing ? (
-                                <button onClick={() => { setIsLotEditing(false); setLotFormData(selectedLot); }} className="px-3 py-1 text-xs font-bold text-gray-600 hover:text-red-600 border border-gray-300 rounded">
+                                <button onClick={() => { setIsLotEditing(false); setLotFormData(selectedLot); setLotError(''); setLotSuccessMsg(''); }} className="px-3 py-1 text-xs font-bold text-gray-600 hover:text-red-600 border border-gray-300 rounded">
                                     Cancel
                                 </button>
                             ) : (
@@ -503,6 +523,10 @@ const AuctionDetails = () => {
                             </button>
                         </div>
                     </div>
+
+                    {/* Feedback Messages inside Modal */}
+                    {lotSuccessMsg && <div className="mx-6 mt-4 p-3 bg-green-100 text-green-800 rounded font-bold text-sm flex items-center gap-2"><CheckCircle size={16}/> {lotSuccessMsg}</div>}
+                    {lotError && <div className="mx-6 mt-4 p-3 bg-red-100 text-red-800 rounded font-bold text-sm flex items-center gap-2"><AlertTriangle size={16}/> {lotError}</div>}
 
                     {/* Modal Body */}
                     <div className="p-6">
