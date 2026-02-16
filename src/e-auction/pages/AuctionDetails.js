@@ -103,7 +103,8 @@ const AuctionDetails = () => {
         terms_and_conditions: formData.terms_and_conditions,
         enable_extension: formData.enable_extension,
         extension_duration_minutes: Number(formData.extension_duration_minutes),
-        extension_trigger_window_minutes: Number(formData.extension_trigger_window_minutes)
+        extension_trigger_window_minutes: Number(formData.extension_trigger_window_minutes),
+        extension_min_total_bids: Number(formData.extension_min_total_bids) 
       };
 
       const updatedAuction = await auctionAPI.updateAuction(id, payload);
@@ -221,8 +222,10 @@ const AuctionDetails = () => {
         {error && <div className="mb-4 p-4 bg-red-100 text-red-800 rounded font-bold flex items-center gap-2"><AlertTriangle size={20}/> {error}</div>}
 
         <div className="grid md:grid-cols-3 gap-6">
+            
             {/* --- LEFT COL: AUCTION INFO --- */}
             <div className="md:col-span-2 space-y-6">
+                
                 {/* 1. Basic Info */}
                 <div className="bg-white p-6 rounded shadow border-l-4 border-orange">
                     <h3 className="text-sm font-black text-navy uppercase mb-4 flex items-center gap-2 border-b pb-2">
@@ -244,6 +247,7 @@ const AuctionDetails = () => {
                     <div className="grid md:grid-cols-2 gap-4">
                         {renderField("Start Time", "scheduled_start_time", "datetime-local", true)}
                         {renderField("End Time", "scheduled_end_time", "datetime-local", true)}
+                        
                         {isEditing && (
                             <div className="md:col-span-2 bg-blue-50 p-3 rounded text-xs text-blue-800">
                                 ℹ️ Note: Changing dates will update the schedule for all Lots that use default timings.
@@ -269,6 +273,7 @@ const AuctionDetails = () => {
 
             {/* --- RIGHT COL: SIDEBAR INFO --- */}
             <div className="space-y-6">
+                
                 {/* 1. Financials */}
                 <div className="bg-white p-6 rounded shadow border-t-4 border-green-600">
                     <h3 className="text-sm font-black text-navy uppercase mb-4 flex items-center gap-2">
@@ -296,13 +301,20 @@ const AuctionDetails = () => {
                                 <>
                                     {renderField("Trigger Window (min)", "extension_trigger_window_minutes", "number")}
                                     {renderField("Duration (min)", "extension_duration_minutes", "number")}
+                                    {renderField("Min Bids Required", "extension_min_total_bids", "number")}
                                 </>
                              )}
                         </div>
                     ) : (
                         <div className="text-sm text-gray-600">
                             {auction.enable_extension ? (
-                                <p>Auto-extension enabled. Extends by <b>{auction.extension_duration_minutes}m</b> if bid within last <b>{auction.extension_trigger_window_minutes}m</b>.</p>
+                                <p>
+                                    Auto-extension enabled. Extends by <b>{auction.extension_duration_minutes}m</b> if bid within last <b>{auction.extension_trigger_window_minutes}m</b>.
+                                    <br />
+                                    <span className="text-xs text-gray-500 mt-1 block">
+                                        (Minimum <b>{auction.extension_min_total_bids || 1}</b> bids required to trigger)
+                                    </span>
+                                </p>
                             ) : (
                                 <p className="text-gray-400 italic">Auto-extension disabled</p>
                             )}
