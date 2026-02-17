@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Search, User, Check } from 'lucide-react';
-import { adminAPI } from '../../services/eAuctionAPI'; // Import the API we just added
+import { Search, User, Check, Building2 } from 'lucide-react';
+import { adminAPI } from '../../services/eAuctionAPI'; 
 
 const SellerSelect = ({ currentUser, value, onChange, error }) => {
   const [sellers, setSellers] = useState([]);
@@ -25,9 +25,8 @@ const SellerSelect = ({ currentUser, value, onChange, error }) => {
         setLoading(true);
         try {
           // Fetch sellers matching search term
-          // Ensure your API returns an array of users
           const data = await adminAPI.getSellers(searchTerm);
-          setSellers(Array.isArray(data) ? data : data.users || []); // Handle response format
+          setSellers(Array.isArray(data) ? data : data.users || []); 
         } catch (err) {
           console.error("Failed to fetch sellers", err);
         } finally {
@@ -35,7 +34,6 @@ const SellerSelect = ({ currentUser, value, onChange, error }) => {
         }
       };
 
-      // Debounce search to avoid too many API calls
       const timeoutId = setTimeout(() => fetchSellers(), 500);
       return () => clearTimeout(timeoutId);
     }
@@ -101,14 +99,25 @@ const SellerSelect = ({ currentUser, value, onChange, error }) => {
                     key={seller.id}
                     onClick={() => {
                       onChange(seller.id);
-                      setSelectedSellerName(seller.full_name || seller.username);
-                      setSearchTerm(''); // Clear search logic, keep display name separate if needed or use search term
+                      // Format display name to include company if available
+                      const displayName = seller.company_name 
+                        ? `${seller.full_name || seller.username} (${seller.company_name})`
+                        : (seller.full_name || seller.username);
+                      setSelectedSellerName(displayName);
+                      setSearchTerm(''); 
                       setIsOpen(false);
                     }}
                     className={`p-2 hover:bg-orange hover:text-white cursor-pointer text-sm flex justify-between items-center ${value === seller.id ? 'bg-orange/10 text-orange font-bold' : 'text-gray-700'}`}
                   >
-                    <span>{seller.full_name || seller.username}</span>
-                    <span className="text-xs opacity-70">ID: {seller.id}</span>
+                    <div className="flex flex-col">
+                        <span className="font-medium">{seller.full_name || seller.username}</span>
+                        {seller.company_name && (
+                            <span className="text-[10px] opacity-80 flex items-center gap-1">
+                                <Building2 size={10} /> {seller.company_name}
+                            </span>
+                        )}
+                    </div>
+                    <span className="text-xs opacity-70 font-mono bg-gray-100 px-1 rounded text-gray-600">ID: {seller.id}</span>
                   </li>
                 ))}
               </ul>
