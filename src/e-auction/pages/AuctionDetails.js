@@ -534,6 +534,7 @@ const AuctionDetails = () => {
                             {/* Left Col */}
                             <div className="space-y-4">
                                 <h4 className="text-xs font-black uppercase text-orange border-b pb-1 mb-2">Material Info</h4>
+                                {renderLotField("Lot Number", "lot_number", "text")}
                                 {renderLotField("Item Name", "item_name", "text", true)}
                                 {renderLotField("Scrap Type", "scrap_type")}
                                 {renderLotField("Category", "category")}
