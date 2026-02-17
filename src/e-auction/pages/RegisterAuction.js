@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { 
@@ -8,6 +8,7 @@ import {
 import Header from '../../components/Header/Header';
 import Footer from '../../components/Footer/Footer';
 import { auctionAPI, lotAPI } from '../../services/eAuctionAPI';
+import SellerSelect from '../components/SellerSelect';
 
 const RegisterAuction = () => {
   const navigate = useNavigate();
@@ -15,9 +16,11 @@ const RegisterAuction = () => {
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [currentStep, setCurrentStep] = useState(1);
+  const [currentUser, setCurrentUser] = useState(null); 
 
   // AUCTION DATA - All database fields
   const [auctionData, setAuctionData] = useState({
+    seller_id: null,
     auction_title: '',
     auction_type: 'FORWARD',
     category: '',
@@ -68,6 +71,14 @@ const RegisterAuction = () => {
     seller_notes: '',
     images: []
   }]);
+
+  // --- EFFECT: Load Current User ---
+  useEffect(() => {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+        setCurrentUser(JSON.parse(userStr));
+    }
+  }, []);
 
   // --- HELPER: Dynamic Labeling based on Auction Type ---
   const getLabel = (field) => {
@@ -201,6 +212,7 @@ const RegisterAuction = () => {
         auction_doc_url: cleanStr(auctionData.auction_doc_url),
         
         // Optional Numbers
+        seller_id: cleanNum(auctionData.seller_id),
         emd_amount: cleanNum(auctionData.emd_amount),
         registration_fee: cleanNum(auctionData.registration_fee),
         
@@ -338,6 +350,15 @@ const RegisterAuction = () => {
                   </h3>
                   
                   <div className="grid md:grid-cols-2 gap-4">
+                    {/* --- SELLER SELECT --- */}
+                    <div className="md:col-span-2">
+                        <SellerSelect 
+                            currentUser={currentUser}
+                            value={auctionData.seller_id}
+                            onChange={(id) => setAuctionData(prev => ({ ...prev, seller_id: id }))}
+                        />
+                    </div>
+
                     <div className="md:col-span-2">
                       <label className="block text-xs font-bold uppercase text-navy mb-1">
                         Auction Title *
