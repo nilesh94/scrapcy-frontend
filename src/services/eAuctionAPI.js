@@ -66,13 +66,13 @@ export const auctionAPI = {
     return response.data;
   },
 
-  // --- NEW: Get Full Details for View/Edit Page (Restricted) ---
+  // --- Get Full Details for View/Edit Page (Restricted) ---
   getAuctionDetails: async (auctionId) => {
     const response = await api.get(`${AUCTION_BASE}/auctions/${auctionId}/manage`);
     return response.data;
   },
 
-  // --- NEW: Get Open Details for Public Website (Safe View) ---
+  // --- Get Open Details for Public Website (Safe View) ---
   getOpenAuctionDetails: async (auctionId) => {
     const response = await axios.get(`${AUCTION_BASE}/auctions/open/${auctionId}`);
     return response.data;
@@ -330,11 +330,9 @@ export const adminAPI = {
     return response.data;
   },
 
-  // Get list of sellers for dropdown (admin only)
+  // Get list of verified sellers for dropdown (admin only)
   getSellers: async (search = '') => {
-    // Assuming an endpoint exists to list users with role='seller'
-    // You might need to adjust the URL based on your specific User routes
-    const response = await api.get(`/users?role=seller&search=${search}`);
+    const response = await api.get(`${AUCTION_BASE}/admin/verified-sellers?q=${search}`);
     return response.data;
   },
   
