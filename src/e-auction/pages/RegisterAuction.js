@@ -17,6 +17,7 @@ const RegisterAuction = () => {
   const [errorMsg, setErrorMsg] = useState('');
   const [currentStep, setCurrentStep] = useState(1);
   const [currentUser, setCurrentUser] = useState(null); 
+  const [termsFile, setTermsFile] = useState(null);
 
   // AUCTION DATA - All database fields
   const [auctionData, setAuctionData] = useState({
@@ -125,6 +126,12 @@ const RegisterAuction = () => {
     setLots(updatedLots);
   };
 
+  const handleTermsFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      setTermsFile(e.target.files[0]);
+    }
+  };
+
   const addLot = () => {
     setLots([...lots, {
       item_name: '',
@@ -209,7 +216,9 @@ const RegisterAuction = () => {
         inspection_contact_person: cleanStr(auctionData.inspection_contact_person),
         inspection_contact_number: cleanStr(auctionData.inspection_contact_number),
         terms_and_conditions: cleanStr(auctionData.terms_and_conditions),
-        auction_doc_url: cleanStr(auctionData.auction_doc_url),
+        
+        // Logic to calculate/handle this path will be internal on submit
+        auction_doc_url: null,
         
         // Optional Numbers
         seller_id: cleanNum(auctionData.seller_id),
@@ -224,10 +233,10 @@ const RegisterAuction = () => {
         lots: lotsPayload
       };
 
-      console.log('Creating auction with payload:', fullPayload);
+      console.log('Creating auction with payload and terms file:', fullPayload, termsFile);
 
-      // 3. Create Auction
-      const auctionResponse = await auctionAPI.createAuction(fullPayload);
+      // 3. Create Auction (Passing file separately to let API handle multipart)
+      const auctionResponse = await auctionAPI.createAuction(fullPayload, termsFile);
       const auctionId = auctionResponse.id;
       const createdItems = auctionResponse.items || [];
 
@@ -250,8 +259,6 @@ const RegisterAuction = () => {
       window.scrollTo({ top: 0, behavior: 'smooth' });
 
       setSuccessMsg(`🎉 Auction created successfully! ID: ${auctionId}`);
-      
-      // alert(`Auction Created Successfully! ID: ${auctionId}`);
       
       setTimeout(() => {
         navigate('/e-auction/my-auctions');
@@ -692,17 +699,28 @@ const RegisterAuction = () => {
 
                     <div>
                       <label className="block text-xs font-bold uppercase text-navy mb-1">
-                        Document URL (Optional)
+                        Upload Terms & Conditions Document (Optional)
                       </label>
                       <input
-                        type="url"
-                        name="auction_doc_url"
-                        value={auctionData.auction_doc_url}
-                        onChange={handleAuctionChange}
-                        className="w-full p-3 border border-platinum rounded focus:border-orange outline-none"
-                        placeholder="https://example.com/auction-terms.pdf"
+                        type="file"
+                        accept=".pdf,.doc,.docx"
+                        onChange={handleTermsFileChange}
+                        className="w-full p-3 border border-platinum rounded focus:border-orange outline-none bg-white
+                          file:mr-4 file:py-1 file:px-4
+                          file:rounded-full file:border-0
+                          file:text-xs file:font-semibold
+                          file:bg-orange/10 file:text-orange
+                          hover:file:bg-orange/20 cursor-pointer"
                       />
-                      <p className="text-xs text-gray-600 mt-1">Link to detailed T&C document</p>
+                      {termsFile ? (
+                        <p className="text-xs text-green-600 mt-1 font-bold italic">
+                          Selected: {termsFile.name}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-gray-600 mt-1 italic">
+                          Selected document will be uploaded upon auction creation
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
