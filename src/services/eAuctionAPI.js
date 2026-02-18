@@ -27,8 +27,25 @@ api.interceptors.request.use(
  * Auction CRUD Operations
  */
 export const auctionAPI = {
-  // Create new auction
-  createAuction: async (auctionData) => {
+  // UPDATED: Create new auction with optional Terms File
+  createAuction: async (auctionData, termsFile = null) => {
+    // If a file is present, we must use FormData to send both JSON and File
+    if (termsFile) {
+      const formData = new FormData();
+      
+      // Append the auction data as a JSON string
+      formData.append('data', JSON.stringify(auctionData));
+      
+      // Append the raw document file
+      formData.append('terms_doc', termsFile);
+
+      const response = await api.post(`${AUCTION_BASE}/auctions`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      return response.data;
+    }
+
+    // Fallback to standard JSON if no file is provided
     const response = await api.post(`${AUCTION_BASE}/auctions`, auctionData);
     return response.data;
   },
