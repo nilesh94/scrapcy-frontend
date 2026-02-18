@@ -95,9 +95,22 @@ export const auctionAPI = {
     return response.data;
   },
 
-  // Update auction
-  updateAuction: async (auctionId, auctionData) => {
-    const response = await api.put(`${AUCTION_BASE}/auctions/${auctionId}`, auctionData);
+  // ABSOLUTELY REQUIRED UPDATE: Match the Multipart/Form-Data expected by Backend
+  updateAuction: async (auctionId, auctionData, termsFile = null) => {
+    // If a file is present, or if we want to support the backend's data: str = Form(...) requirement
+    const formData = new FormData();
+    
+    // Wrap the JSON data in the 'data' field as a string
+    formData.append('data', JSON.stringify(auctionData));
+    
+    // Add the file if it exists
+    if (termsFile) {
+        formData.append('terms_doc', termsFile);
+    }
+
+    const response = await api.put(`${AUCTION_BASE}/auctions/${auctionId}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    });
     return response.data;
   },
 
