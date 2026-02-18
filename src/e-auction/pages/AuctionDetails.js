@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react'; // Added useRef
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { 
   ArrowLeft, Edit, Save, X, CheckCircle, AlertTriangle, 
-  Calendar, DollarSign, MapPin, FileText, Package, Clock, Shield
+  Calendar, DollarSign, MapPin, FileText, Package, Clock, Shield, Upload, Download, Loader2 // Added missing icons
 } from 'lucide-react';
 import Header from '../../components/Header/Header';
 import Footer from '../../components/Footer/Footer';
@@ -12,6 +12,7 @@ const AuctionDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const fileInputRef = useRef(null); // Ref for document selection
   
   // --- Main Auction State ---
   const [loading, setLoading] = useState(true);
@@ -23,6 +24,7 @@ const AuctionDetails = () => {
   const [auction, setAuction] = useState(null);
   const [formData, setFormData] = useState({});
   const [currentUser, setCurrentUser] = useState(null); 
+  const [selectedFile, setSelectedFile] = useState(null); // Local file state for editing
 
   // --- LOT MODAL STATE ---
   const [selectedLot, setSelectedLot] = useState(null);
@@ -33,6 +35,14 @@ const AuctionDetails = () => {
   // New: Modal-specific feedback state
   const [lotSuccessMsg, setLotSuccessMsg] = useState('');
   const [lotError, setLotError] = useState('');
+
+  // --- Helper: Format Filename for Display ---
+  const formatFileName = (url) => {
+    if (!url) return null;
+    // Extract filename from the end of the URL and split by '___'
+    const parts = url.split('/').pop().split('___');
+    return parts[0];
+  };
 
   // --- Helper: Permission Check Logic ---
   const checkCanEdit = (auctionObj, userObj) => {
@@ -93,6 +103,13 @@ const AuctionDetails = () => {
     }));
   };
 
+  // --- NEW HANDLER: Update terms file state locally ---
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      setSelectedFile(e.target.files[0]);
+    }
+  };
+
   const handleSave = async () => {
     setSaving(true);
     setError('');
@@ -117,10 +134,12 @@ const AuctionDetails = () => {
         extension_min_total_bids: Number(formData.extension_min_total_bids) 
       };
 
-      const updatedAuction = await auctionAPI.updateAuction(id, payload);
+      // UPDATED: Pass the selectedFile to the updateAuction call
+      const updatedAuction = await auctionAPI.updateAuction(id, payload, selectedFile);
       setAuction(updatedAuction);
       setFormData(updatedAuction);
       setIsEditing(false);
+      setSelectedFile(null); // Clear local file selection
       setSuccessMsg("Auction updated successfully!");
       
       // If we were in /edit URL, navigation back to view URL helps UX, but staying is fine too.
@@ -299,11 +318,12 @@ const AuctionDetails = () => {
             <div className="flex items-center gap-3">
                 {isEditing ? (
                     <>
-                        <button onClick={() => { setIsEditing(false); setFormData(auction); }} className="px-4 py-2 text-gray-600 font-bold text-sm hover:text-red-600 flex items-center gap-1">
+                        <button onClick={() => { setIsEditing(false); setFormData(auction); setSelectedFile(null); }} className="px-4 py-2 text-gray-600 font-bold text-sm hover:text-red-600 flex items-center gap-1">
                             <X size={16} /> Cancel
                         </button>
-                        <button onClick={handleSave} disabled={saving} className="px-6 py-2 bg-green-600 text-white font-bold rounded shadow hover:bg-green-700 flex items-center gap-2">
-                            <Save size={16} /> {saving ? 'Saving...' : 'Save Changes'}
+                        <button onClick={handleSave} disabled={saving} className="px-6 py-2 bg-green-600 text-white font-bold rounded shadow hover:bg-green-700 flex items-center gap-2 disabled:opacity-50">
+                            {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} 
+                            {saving ? 'Saving...' : 'Save Changes'}
                         </button>
                     </>
                 ) : (
@@ -422,16 +442,63 @@ const AuctionDetails = () => {
                     )}
                 </div>
 
+                {/* --- ABSOLUTELY REQUIRED: Auction Document Section --- */}
+                <div className="bg-white p-6 rounded shadow border-t-4 border-orange">
+                    <h3 className="text-sm font-black text-navy uppercase mb-4 flex items-center gap-2">
+                        <Shield size={18} className="text-orange" /> Auction Documents
+                    </h3>
+                    
+                    {isEditing ? (
+                        <div className="space-y-4">
+                             <div>
+                                <label className="block text-[10px] font-bold uppercase text-gray-500 mb-2">T&C document (Optional)</label>
+                                <input 
+                                    type="file" 
+                                    accept=".pdf,.doc,.docx" 
+                                    onChange={handleFileChange}
+                                    className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-orange/10 file:text-orange hover:file:bg-orange/20 cursor-pointer"
+                                />
+                                {selectedFile && (
+                                    <p className="text-[10px] text-green-600 font-bold mt-1 italic">✓ Selected: {selectedFile.name}</p>
+                                )}
+                             </div>
+                             <div className="mt-4">
+                                <label className="block text-[10px] font-bold uppercase text-gray-500 mb-1">Current File</label>
+                                <div className="text-navy text-xs italic">
+                                    {auction.auction_doc_url ? formatFileName(auction.auction_doc_url) : 'No document attached'}
+                                </div>
+                             </div>
+                        </div>
+                    ) : (
+                        <div>
+                            {auction.auction_doc_url ? (
+                                <a 
+                                    href={auction.auction_doc_url} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer" 
+                                    className="flex items-center gap-2 text-sm font-bold text-orange hover:text-navy transition-colors bg-orange/5 p-3 rounded border border-orange/20"
+                                >
+                                    <FileText size={18} />
+                                    <span className="truncate">{formatFileName(auction.auction_doc_url)}</span>
+                                    <Download size={16} className="ml-auto" />
+                                </a>
+                            ) : (
+                                <p className="text-xs text-gray-400 italic">No document provided for this auction.</p>
+                            )}
+                        </div>
+                    )}
+                </div>
+
                 {/* 3. T&C */}
                 <div className="bg-white p-6 rounded shadow">
                     <h3 className="text-sm font-black text-navy uppercase mb-4 flex items-center gap-2">
-                        <Shield size={18} className="text-gray-500" /> Terms
+                        <FileText size={18} className="text-gray-500" /> T&C Text
                     </h3>
                     {isEditing ? (
                          <textarea 
                             name="terms_and_conditions" 
                             value={formData.terms_and_conditions || ''} 
-                            onChange={handleChange}
+                            onChange={handleChange} 
                             rows={5}
                             className="w-full p-2 border border-gray-300 rounded text-sm"
                          />
