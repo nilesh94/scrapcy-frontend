@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react'; // Added useRef
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { 
   ArrowLeft, Edit, Save, X, CheckCircle, AlertTriangle, 
-  Calendar, DollarSign, MapPin, FileText, Package, Clock, Shield, Upload, Download, Loader2 // Added missing icons
+  Calendar, DollarSign, MapPin, FileText, Package, Clock, Shield, Upload, Download, Loader2,
+  Trash2, Image as ImageIcon // Added Trash and Image icons
 } from 'lucide-react';
 import Header from '../../components/Header/Header';
 import Footer from '../../components/Footer/Footer';
@@ -13,7 +14,8 @@ const AuctionDetails = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const fileInputRef = useRef(null); // Ref for document selection
-  
+  const lotImageInputRef = useRef(null); // Ref for lot image selection
+
   // --- Main Auction State ---
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
@@ -32,6 +34,10 @@ const AuctionDetails = () => {
   const [lotFormData, setLotFormData] = useState({});
   const [lotSaving, setLotSaving] = useState(false);
   
+  // NEW: Lot Image Management State
+  const [newLotImages, setNewLotImages] = useState([]);
+  const [deleteImageIds, setDeleteImageIds] = useState([]);
+
   // New: Modal-specific feedback state
   const [lotSuccessMsg, setLotSuccessMsg] = useState('');
   const [lotError, setLotError] = useState('');
@@ -163,6 +169,9 @@ const AuctionDetails = () => {
     // Clear previous modal messages
     setLotSuccessMsg('');
     setLotError('');
+    // Reset image states
+    setNewLotImages([]);
+    setDeleteImageIds([]);
   };
 
   const closeLotModal = () => {
@@ -171,11 +180,33 @@ const AuctionDetails = () => {
     setIsLotEditing(false);
     setLotSuccessMsg('');
     setLotError('');
+    setNewLotImages([]);
+    setDeleteImageIds([]);
   };
 
   const handleLotChange = (e) => {
     const { name, value } = e.target;
     setLotFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  // NEW: Handler for new lot images
+  const handleNewLotImageChange = (e) => {
+    const files = Array.from(e.target.files);
+    const existingCount = (selectedLot.images?.length || 0) - deleteImageIds.length;
+    
+    if (existingCount + newLotImages.length + files.length > 5) {
+      alert("Maximum 5 images allowed per lot.");
+      return;
+    }
+    
+    setNewLotImages(prev => [...prev, ...files]);
+  };
+
+  // NEW: Handler to mark existing image for deletion
+  const toggleImageDelete = (imageId) => {
+    setDeleteImageIds(prev => 
+      prev.includes(imageId) ? prev.filter(id => id !== imageId) : [...prev, imageId]
+    );
   };
 
   const handleSaveLot = async () => {
@@ -184,7 +215,13 @@ const AuctionDetails = () => {
     setLotSuccessMsg('');
 
     try {
-        // Prepare payload, converting numbers
+        // Enforce at least one image remaining
+        const remainingCount = (selectedLot.images?.length || 0) - deleteImageIds.length + newLotImages.length;
+        if (remainingCount < 1) {
+            throw new Error("At least one image is required for the lot.");
+        }
+
+        // Prepare payload
         const payload = {
             ...lotFormData,
             quantity: Number(lotFormData.quantity),
@@ -192,12 +229,13 @@ const AuctionDetails = () => {
             reserve_price: Number(lotFormData.reserve_price),
             min_increment_amount: Number(lotFormData.min_increment_amount),
             buy_now_price: Number(lotFormData.buy_now_price),
-            condition_rating: Number(lotFormData.condition_rating)
+            condition_rating: Number(lotFormData.condition_rating),
+            delete_image_ids: deleteImageIds // Pass IDs to be removed
         };
 
-        // Call API (assuming updateLot exists in lotAPI based on previous context)
-        // If it doesn't, ensure you add it to eAuctionAPI.js
-        const updatedLot = await lotAPI.updateLot(selectedLot.id, payload);
+        // Call API - We need to pass lot_0_ prefix for the index 0 since we open one modal at a time
+        // Note: Backend expects files in lot_{index}_ format.
+        const updatedLot = await lotAPI.updateLot(selectedLot.id, payload, newLotImages);
 
         // Update local state list so table refreshes
         const updatedItems = auction.items.map(item => item.id === updatedLot.id ? updatedLot : item);
@@ -205,14 +243,15 @@ const AuctionDetails = () => {
         
         setSelectedLot(updatedLot); // Update modal view
         setIsLotEditing(false);
+        setNewLotImages([]);
+        setDeleteImageIds([]);
         setLotSuccessMsg("Lot details updated successfully!");
         
-        // Auto-clear success message after 3 seconds
         setTimeout(() => setLotSuccessMsg(''), 3000);
 
     } catch (err) {
         console.error("Lot Update failed:", err);
-        setLotError(err.response?.data?.detail || "Failed to update lot details.");
+        setLotError(err.message || err.response?.data?.detail || "Failed to update lot details.");
     } finally {
         setLotSaving(false);
     }
@@ -575,7 +614,7 @@ const AuctionDetails = () => {
                         </div>
                         <div className="flex gap-2">
                             {isLotEditing ? (
-                                <button onClick={() => { setIsLotEditing(false); setLotFormData(selectedLot); setLotError(''); setLotSuccessMsg(''); }} className="px-3 py-1 text-xs font-bold text-gray-600 hover:text-red-600 border border-gray-300 rounded">
+                                <button onClick={() => { setIsLotEditing(false); setLotFormData(selectedLot); setLotError(''); setLotSuccessMsg(''); setNewLotImages([]); setDeleteImageIds([]); }} className="px-3 py-1 text-xs font-bold text-gray-600 hover:text-red-600 border border-gray-300 rounded">
                                     Cancel
                                 </button>
                             ) : (
@@ -627,6 +666,67 @@ const AuctionDetails = () => {
                                 </div>
                             </div>
                             
+                            {/* NEW: Image Section */}
+                            <div className="md:col-span-2 space-y-4 border-t pt-4">
+                                <h4 className="text-xs font-black uppercase text-blue-600 border-b pb-1 mb-2 flex items-center gap-2">
+                                    <ImageIcon size={14}/> Lot Images
+                                </h4>
+                                
+                                <div className="grid grid-cols-3 md:grid-cols-5 gap-4">
+                                    {/* Existing Images */}
+                                    {selectedLot.images?.map((img) => (
+                                        <div key={img.id} className="relative group aspect-square bg-gray-100 rounded overflow-hidden border">
+                                            <img src={img.image_url} alt="Lot" className={`w-full h-full object-cover ${deleteImageIds.includes(img.id) ? 'opacity-30 grayscale' : ''}`} />
+                                            {isLotEditing && (
+                                                <button 
+                                                    onClick={() => toggleImageDelete(img.id)}
+                                                    className={`absolute top-1 right-1 p-1 rounded-full shadow-md transition-colors ${deleteImageIds.includes(img.id) ? 'bg-green-500 text-white' : 'bg-white text-red-500 hover:bg-red-50'}`}
+                                                >
+                                                    {deleteImageIds.includes(img.id) ? <CheckCircle size={14}/> : <Trash2 size={14}/>}
+                                                </button>
+                                            )}
+                                        </div>
+                                    ))}
+
+                                    {/* New Selected Images */}
+                                    {newLotImages.map((file, idx) => (
+                                        <div key={idx} className="relative aspect-square bg-orange/5 rounded overflow-hidden border border-orange/20">
+                                            <div className="w-full h-full flex flex-col items-center justify-center text-[10px] text-orange font-bold text-center p-1">
+                                                <ImageIcon size={16} className="mb-1"/>
+                                                <span className="truncate w-full px-1">{file.name}</span>
+                                                <span className="text-green-600">New Upload</span>
+                                            </div>
+                                            <button 
+                                                onClick={() => setNewLotImages(prev => prev.filter((_, i) => i !== idx))}
+                                                className="absolute top-1 right-1 bg-white text-red-500 p-1 rounded-full shadow-md hover:bg-red-50"
+                                            >
+                                                <X size={14}/>
+                                            </button>
+                                        </div>
+                                    ))}
+
+                                    {/* Upload Trigger */}
+                                    {isLotEditing && (selectedLot.images?.length || 0) - deleteImageIds.length + newLotImages.length < 5 && (
+                                        <button 
+                                            onClick={() => lotImageInputRef.current.click()}
+                                            className="aspect-square border-2 border-dashed border-gray-300 rounded flex flex-col items-center justify-center text-gray-400 hover:text-orange hover:border-orange transition-all"
+                                        >
+                                            <Upload size={20}/>
+                                            <span className="text-[10px] font-bold mt-1 uppercase">Add Image</span>
+                                        </button>
+                                    )}
+                                </div>
+                                <input 
+                                    type="file" 
+                                    ref={lotImageInputRef} 
+                                    onChange={handleNewLotImageChange} 
+                                    accept="image/*" 
+                                    multiple 
+                                    className="hidden" 
+                                />
+                                <p className="text-[10px] text-gray-400 italic">Max 5 images allowed. Each must be under 3MB.</p>
+                            </div>
+
                             {/* Full Width */}
                             <div className="md:col-span-2 space-y-4 border-t pt-4">
                                 {renderLotField("Full Address", "location_address")}
