@@ -121,8 +121,19 @@ const RegisterAuction = () => {
   };
 
   const handleLotFileChange = (index, files) => {
+    // --- ABSOLUTELY REQUIRED: Size Validation (Max 3MB per file) ---
+    const MAX_SIZE = 5 * 1024 * 1024;
+    const selectedFiles = Array.from(files);
+    
+    for (let file of selectedFiles) {
+      if (file.size > MAX_SIZE) {
+        alert(`Image "${file.name}" exceeds the 3MB limit. Please select a smaller file.`);
+        return; // Reject the entire selection for this lot if one is too large
+      }
+    }
+
     const updatedLots = [...lots];
-    updatedLots[index].images = Array.from(files);
+    updatedLots[index].images = selectedFiles;
     setLots(updatedLots);
   };
 
@@ -1059,7 +1070,7 @@ const RegisterAuction = () => {
                       <div className="md:col-span-2">
                         <label className="block text-xs font-bold uppercase text-navy mb-2 flex items-center gap-2">
                           <Upload size={16} className="text-orange" />
-                          Upload Images (Max 5, Min 1 Required)
+                          Upload Images (Min/Max 1/5, Max 5MB each)
                         </label>
                         <input
                           type="file"
