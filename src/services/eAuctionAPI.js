@@ -28,25 +28,24 @@ api.interceptors.request.use(
  */
 export const auctionAPI = {
   // UPDATED: Create new auction with optional Terms File
-  createAuction: async (auctionData, termsFile = null) => {
-    // If a file is present, we must use FormData to send both JSON and File
+  createAuction: async (auctionData, termsFile = null, allLotImages = []) => {
+    const formData = new FormData();
+    
+    // Always use FormData for consistency when images are involved
+    formData.append('data', JSON.stringify(auctionData));
+    
     if (termsFile) {
-      const formData = new FormData();
-      
-      // Append the auction data as a JSON string
-      formData.append('data', JSON.stringify(auctionData));
-      
-      // Append the raw document file
       formData.append('terms_doc', termsFile);
-
-      const response = await api.post(`${AUCTION_BASE}/auctions`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      return response.data;
     }
 
-    // Fallback to standard JSON if no file is provided
-    const response = await api.post(`${AUCTION_BASE}/auctions`, auctionData);
+    // Integrated creation: all images from all lots are flattened into one list
+    allLotImages.forEach((file) => {
+      formData.append('lot_images', file);
+    });
+
+    const response = await api.post(`${AUCTION_BASE}/auctions`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
     return response.data;
   },
 
@@ -198,7 +197,6 @@ export const auctionAPI = {
     );
     return response.data;
   },
-  // --- NEW ADMIN METHODS END ---
 };
 
 /**
@@ -223,9 +221,20 @@ export const lotAPI = {
     return response.data;
   },
 
-  // --- Update Lot Details ---
-  updateLot: async (lotId, lotData) => {
-    const response = await api.put(`${AUCTION_BASE}/lots/${lotId}`, lotData);
+  // --- UPDATED: Update Lot Details with Multipart Support ---
+  updateLot: async (lotId, lotData, files = []) => {
+    const formData = new FormData();
+    formData.append('lot_data', JSON.stringify(lotData));
+    
+    // Add images if any
+    files.forEach((file, index) => {
+      // Index is 0 because we are updating a single specific lot
+      formData.append('lot_images', file, `lot_0_file_${index}_${file.name}`);
+    });
+
+    const response = await api.put(`${AUCTION_BASE}/lots/${lotId}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
     return response.data;
   },
 
