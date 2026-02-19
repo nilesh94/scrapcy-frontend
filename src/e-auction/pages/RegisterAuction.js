@@ -176,6 +176,13 @@ const RegisterAuction = () => {
     setErrorMsg('');
 
     try {
+      // --- Enforce at least one image per lot ---
+      for (let i = 0; i < lots.length; i++) {
+        if (!lots[i].images || lots[i].images.length === 0) {
+          throw new Error(`Lot #${i + 1} ("${lots[i].item_name || 'Unnamed Lot'}") requires at least one image.`);
+        }
+      }
+
       // 1. Prepare Lots Payload (Clean empty fields to NULL)
       const lotsPayload = lots.map(({ images, ...lotData }) => ({
         ...lotData,
@@ -244,31 +251,25 @@ const RegisterAuction = () => {
         lots: lotsPayload
       };
 
-      console.log('Creating auction with payload and terms file:', fullPayload, termsFile);
+      // --- Flatten all lot images with unique keys for integrated upload ---
+      const allLotImages = [];
+      lots.forEach((lot, lotIdx) => {
+        lot.images.forEach((file, fileIdx) => {
+          // Key format: lot_{index}_file_{index} - used by backend to map to correct lot
+          const renamedFile = new File([file], `lot_${lotIdx}_file_${fileIdx}_${file.name}`, { type: file.type });
+          allLotImages.push(renamedFile);
+        });
+      });
 
-      // 3. Create Auction (Passing file separately to let API handle multipart)
-      const auctionResponse = await auctionAPI.createAuction(fullPayload, termsFile);
+      console.log('Creating auction with payload, terms file, and lot images:', fullPayload, termsFile, allLotImages);
+
+      // 3. Create Auction (Passing JSON data, terms file, and lot images together)
+      const auctionResponse = await auctionAPI.createAuction(fullPayload, termsFile, allLotImages);
       const auctionId = auctionResponse.id;
-      const createdItems = auctionResponse.items || [];
 
       console.log('✅ Auction created with ID:', auctionId);
 
-      // 4. Upload Images
-      for (let i = 0; i < lots.length; i++) {
-        const localLot = lots[i];
-        const createdLot = createdItems[i]; 
-
-        if (createdLot && createdLot.id && localLot.images && localLot.images.length > 0) {
-          try {
-            await lotAPI.uploadLotImages(createdLot.id, localLot.images);
-          } catch (uploadError) {
-            console.error(`Failed to upload images for lot ${i + 1}:`, uploadError);
-          }
-        }
-      }
-
       window.scrollTo({ top: 0, behavior: 'smooth' });
-
       setSuccessMsg(`🎉 Auction created successfully! ID: ${auctionId}`);
       
       setTimeout(() => {
