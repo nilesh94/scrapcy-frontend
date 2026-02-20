@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Hammer, ArrowRight, Building2, User, Unlock, LayoutDashboard, MessageSquare, X 
+  Hammer, ArrowRight, Building2, User, Unlock, LayoutDashboard, MessageSquare, X, Calendar, Clock, Package, MapPin
 } from 'lucide-react';
 import PriceCard from '../components/PriceCard';
 import Header from '../components/Header/Header'; 
 import Footer from '../components/Footer/Footer'; 
+import AuctionScrollCard from '../e-auction/components/AuctionScrollCard';
 
 // --- COMPACT MOCK DATA ---
 const MARKET_DATA = [
@@ -15,6 +16,11 @@ const MARKET_DATA = [
   { id: 201, category: "Non Ferrous", material: "Copper", form: "Wire Scrap", grade: "Millberry", location: "Delhi", price: 785000, unit: "MT", change: 5000, contact: "Delhi Metal Exch" },
   { id: 202, category: "Non Ferrous", material: "Aluminium", form: "Extrusion", grade: "6063", location: "Mumbai", price: 212000, unit: "MT", change: -1000, contact: "Gujarat Alloys" },
   { id: 203, category: "Non Ferrous", material: "Brass", form: "Honey", grade: "IS-319", location: "Jamnagar", price: 490000, unit: "MT", change: 0, contact: "Jamnagar Brass" },
+];
+
+const MOCK_AUCTIONS = [
+  { id: 3048, title: "Structural Steel Scrap", status: "LIVE", date: "26 Feb 2026", time: "04:00 PM", quantity: "500 MT", location: "Patna, Bihar", items: [{ name: "Heavy Melting Steel", qty: "500 MT", img: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1000" }] },
+  { id: 3049, title: "Aluminium Extrusion 6063", status: "UPCOMING", date: "02 Mar 2026", time: "11:00 AM", quantity: "50 MT", location: "Mumbai, MH", items: [{ name: "6063 Scrap", qty: "50 MT", img: "https://images.unsplash.com/photo-1605557626697-2e87166d88f9?q=80&w=1000" }] }
 ];
 
 // --- CONTACT MODAL COMPONENT ---
@@ -97,6 +103,7 @@ const Home = () => {
   const [user, setUser] = useState(null); 
   const [userRole, setUserRole] = useState('guest'); 
   const [isContactOpen, setIsContactOpen] = useState(false); // Contact Modal State
+  const [selectedAuction, setSelectedAuction] = useState(null); // Auction Modal State
 
   // 1. Check Login Status on Load
   useEffect(() => {
@@ -134,6 +141,35 @@ const Home = () => {
 
       {/* CONTACT MODAL */}
       <ContactModal isOpen={isContactOpen} onClose={() => setIsContactOpen(false)} />
+
+      {/* AUCTION DETAIL MODAL */}
+      {selectedAuction && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-navy/90 backdrop-blur-md p-4">
+          <div className="bg-white w-full max-w-2xl rounded-2xl overflow-hidden shadow-2xl relative">
+            <button onClick={() => setSelectedAuction(null)} className="absolute top-4 right-4 text-navy hover:text-orange z-10 bg-white rounded-full p-1">
+              <X size={24} />
+            </button>
+            <div className="md:flex">
+              <div className="md:w-1/2 h-64 md:h-auto bg-platinum">
+                <img src={selectedAuction.items[0]?.img} className="w-full h-full object-cover" alt="Lot" />
+              </div>
+              <div className="md:w-1/2 p-8">
+                <span className="text-orange font-black text-xs uppercase tracking-widest">{selectedAuction.status}</span>
+                <h2 className="text-3xl font-black text-navy uppercase mb-4 leading-none">{selectedAuction.title}</h2>
+                <div className="space-y-3 mb-8">
+                   <p className="text-steel font-bold flex items-center gap-2">Auction ID: <span className="text-navy">{selectedAuction.id}</span></p>
+                   <p className="text-steel font-bold flex items-center gap-2">Date: <span className="text-navy">{selectedAuction.date}</span></p>
+                   <p className="text-steel font-bold flex items-center gap-2">Time: <span className="text-navy">{selectedAuction.time}</span></p>
+                   <p className="text-steel font-bold flex items-center gap-2">Location: <span className="text-navy">{selectedAuction.location}</span></p>
+                </div>
+                <button onClick={() => navigate('/login')} className="w-full bg-navy text-white py-4 font-black uppercase tracking-widest hover:bg-orange transition-colors">
+                  Login to Participate
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <main className="flex-grow">
         
@@ -180,6 +216,32 @@ const Home = () => {
           </div>
           <div className="rounded-lg shadow-2xl overflow-hidden bg-steel/10 p-2 border border-platinum-dark">
             <img src="https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?q=90&w=2400" alt="Scrap Yard" className="rounded grayscale hover:grayscale-0 transition-all duration-700 w-full h-full object-cover"/>
+          </div>
+        </section>
+
+        {/* --- LIVE & UPCOMING AUCTIONS SCROLL --- */}
+        <section className="bg-white py-12 border-b-4 border-platinum overflow-hidden">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="flex justify-between items-end mb-8">
+              <div>
+                <h2 className="text-3xl font-black uppercase italic tracking-tighter text-navy flex items-center gap-3">
+                  <Hammer size={28} className="text-orange" /> Live & Upcoming Auctions
+                </h2>
+                <p className="text-steel font-medium font-semibold">Verified industrial scrap lots</p>
+              </div>
+              <button 
+                onClick={() => navigate('/auctions-all')} 
+                className="flex items-center gap-2 text-navy font-black uppercase hover:text-orange transition-colors border-b-2 border-navy pb-1"
+              >
+                View All <ArrowRight size={18} />
+              </button>
+            </div>
+
+            <div className="flex gap-6 overflow-x-auto pb-6 scrollbar-hide px-2">
+              {MOCK_AUCTIONS.map((auc) => (
+                <AuctionScrollCard key={auc.id} auction={auc} onClick={setSelectedAuction} />
+              ))}
+            </div>
           </div>
         </section>
 
