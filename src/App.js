@@ -17,6 +17,7 @@ import PriceTracker from './components/PriceTracker/PriceTracker';
 import AdminListingDetail from './pages/AdminListingDetail';
 import AdminMarketPrice from './pages/AdminMarketPrice';
 import EAuctionLander from './pages/EAuctionLander';
+import AllAuctions from './pages/AllAuctions'; // NEW: Added for public auction listing
 
 // --- E-AUCTION PAGES ---
 import RegisterAuction from './e-auction/pages/RegisterAuction';
@@ -45,6 +46,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/tracker" element={<PriceTracker />} />
         <Route path="/about" element={<About />} />
+        <Route path="/auctions-all" element={<AllAuctions />} /> {/* NEW: Route for public auction directory */}
 
         {/* Protected Dashboard Route (Main Switcher) */}
         <Route path="/dashboard" element={<Dashboard />} />
