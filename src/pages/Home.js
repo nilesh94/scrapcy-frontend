@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Hammer, ArrowRight, Building2, User, Unlock, LayoutDashboard, MessageSquare, X, Calendar, Clock, Package, MapPin
 } from 'lucide-react';
+import axios from 'axios';
 import PriceCard from '../components/PriceCard';
 import Header from '../components/Header/Header'; 
 import Footer from '../components/Footer/Footer'; 
@@ -104,6 +105,7 @@ const Home = () => {
   const [userRole, setUserRole] = useState('guest'); 
   const [isContactOpen, setIsContactOpen] = useState(false); // Contact Modal State
   const [selectedAuction, setSelectedAuction] = useState(null); // Auction Modal State
+  const [auctionData, setAuctionData] = useState([]); // Real API Data
 
   // 1. Check Login Status on Load
   useEffect(() => {
@@ -116,7 +118,36 @@ const Home = () => {
     }
   }, []);
 
-  // 2. Calculate Averages
+  // 2. Fetch Real Auction Data from Open API
+  useEffect(() => {
+    const fetchAuctions = async () => {
+      try {
+        const response = await axios.get('https://scrapcy-backend-new-1.onrender.com/api/v1/e-auction/auctions/listing');
+        if (response.data.auctions && response.data.auctions.length > 0) {
+          // Format API data to match Component expectations
+          const formatted = response.data.auctions.map(auc => ({
+            id: auc.id,
+            title: auc.auction_title,
+            status: auc.status,
+            date: new Date(auc.scheduled_start_time).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+            time: new Date(auc.scheduled_start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            location: auc.region,
+            quantity: auc.quantity || "TBD",
+            items: auc.items || []
+          }));
+          setAuctionData(formatted);
+        } else {
+          setAuctionData(MOCK_AUCTIONS);
+        }
+      } catch (error) {
+        console.error("Error fetching auctions:", error);
+        setAuctionData(MOCK_AUCTIONS);
+      }
+    };
+    fetchAuctions();
+  }, []);
+
+  // 3. Calculate Averages
   const materialAverages = useMemo(() => {
     const sums = {}; const counts = {};
     MARKET_DATA.forEach(item => {
@@ -151,7 +182,7 @@ const Home = () => {
             </button>
             <div className="md:flex">
               <div className="md:w-1/2 h-64 md:h-auto bg-platinum">
-                <img src={selectedAuction.items[0]?.img} className="w-full h-full object-cover" alt="Lot" />
+                <img src={selectedAuction.items[0]?.image_url || selectedAuction.items[0]?.img || "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1000"} className="w-full h-full object-cover" alt="Lot" />
               </div>
               <div className="md:w-1/2 p-8">
                 <span className="text-orange font-black text-xs uppercase tracking-widest">{selectedAuction.status}</span>
@@ -238,7 +269,7 @@ const Home = () => {
             </div>
 
             <div className="flex gap-6 overflow-x-auto pb-6 scrollbar-hide px-2">
-              {MOCK_AUCTIONS.map((auc) => (
+              {auctionData.map((auc) => (
                 <AuctionScrollCard key={auc.id} auction={auc} onClick={setSelectedAuction} />
               ))}
             </div>
