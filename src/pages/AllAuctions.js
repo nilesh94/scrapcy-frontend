@@ -4,7 +4,7 @@ import axios from 'axios';
 import Header from '../components/Header/Header';
 import Footer from '../components/Footer/Footer';
 import AuctionScrollCard from '../e-auction/components/AuctionScrollCard';
-import { Hammer, Filter, XCircle } from 'lucide-react';
+import { Hammer, Filter, RotateCcw } from 'lucide-react';
 
 const AllAuctions = () => {
   const navigate = useNavigate();
@@ -18,7 +18,7 @@ const AllAuctions = () => {
   const [materialFilter, setMaterialFilter] = useState('ALL');
   const [regionFilter, setRegionFilter] = useState('ALL');
 
-  // MOCK_AUCTIONS as fallback
+  // MOCK_AUCTIONS fallback
   const MOCK_AUCTIONS = [
      { id: 3048, title: "Structural Steel Scrap", status: "LIVE", date: "26 Feb 2026", time: "04:00 PM", quantity: "500 MT", location: "Patna, Bihar", category: "Steel" },
      { id: 3049, title: "Aluminium Extrusion 6063", status: "UPCOMING", date: "02 Mar 2026", time: "11:00 AM", quantity: "50 MT", location: "Mumbai, MH", category: "Aluminium" },
@@ -38,7 +38,7 @@ const AllAuctions = () => {
             date: new Date(auc.scheduled_start_time).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
             time: new Date(auc.scheduled_start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             location: auc.region,
-            category: auc.category, // Used for filtering
+            category: auc.category,
             quantity: auc.quantity || "TBD",
             items: auc.items || []
           }));
@@ -68,77 +68,67 @@ const AllAuctions = () => {
     return matchStatus && matchMaterial && matchRegion;
   });
 
-  const clearFilters = () => {
-    setStatusFilter('ALL');
-    setMaterialFilter('ALL');
-    setRegionFilter('ALL');
-  };
-
   return (
     <div className="min-h-screen bg-platinum flex flex-col">
       <Header />
       <main className="flex-grow max-w-7xl mx-auto px-4 py-12 w-full">
-        <div className="mb-12">
-          <h1 className="text-5xl font-black text-navy uppercase mb-2 italic tracking-tighter">Auction Directory</h1>
-          <p className="text-steel font-bold">Discover and participate in premium industrial scrap auctions</p>
-        </div>
+        <h1 className="text-5xl font-black text-navy uppercase mb-8 italic tracking-tighter">Auction Directory</h1>
         
-        {/* --- ADVANCED FILTER BAR --- */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-platinum mb-10">
-          <div className="flex items-center gap-2 mb-4 text-navy font-black uppercase text-sm tracking-widest">
-            <Filter size={18} className="text-orange" /> Filter Results
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            {/* Status Filter */}
-            <div>
-              <label className="block text-[10px] font-black text-steel uppercase mb-2">Status</label>
-              <select 
-                value={statusFilter} 
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full p-3 bg-platinum/30 border border-platinum rounded font-bold text-navy outline-none focus:border-orange"
-              >
-                {['ALL', 'LIVE', 'UPCOMING', 'CLOSED'].map(f => <option key={f} value={f}>{f}</option>)}
-              </select>
-            </div>
-
-            {/* Material Filter */}
-            <div>
-              <label className="block text-[10px] font-black text-steel uppercase mb-2">Material</label>
-              <select 
-                value={materialFilter} 
-                onChange={(e) => setMaterialFilter(e.target.value)}
-                className="w-full p-3 bg-platinum/30 border border-platinum rounded font-bold text-navy outline-none focus:border-orange"
-              >
-                {categories.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-            </div>
-
-            {/* Region Filter */}
-            <div>
-              <label className="block text-[10px] font-black text-steel uppercase mb-2">Region</label>
-              <select 
-                value={regionFilter} 
-                onChange={(e) => setRegionFilter(e.target.value)}
-                className="w-full p-3 bg-platinum/30 border border-platinum rounded font-bold text-navy outline-none focus:border-orange"
-              >
-                {regions.map(r => <option key={r} value={r}>{r}</option>)}
-              </select>
-            </div>
-
-            {/* Reset Button */}
-            <div className="flex items-end">
-              <button 
-                onClick={clearFilters}
-                className="w-full p-3 flex items-center justify-center gap-2 text-steel font-black uppercase text-xs hover:text-orange transition-colors"
-              >
-                <XCircle size={16} /> Reset Filters
-              </button>
-            </div>
-          </div>
+        {/* 1. ORIGINAL STATUS FILTERS */}
+        <div className="flex gap-4 mb-6 overflow-x-auto pb-2 scrollbar-hide">
+          {['ALL', 'LIVE', 'UPCOMING', 'CLOSED'].map(f => (
+            <button 
+              key={f}
+              onClick={() => setStatusFilter(f)}
+              className={`px-8 py-3 rounded-full font-black text-xs uppercase tracking-widest transition-all ${
+                statusFilter === f ? 'bg-orange text-white shadow-lg' : 'bg-white text-navy border border-platinum'
+              }`}
+            >
+              {f}
+            </button>
+          ))}
         </div>
 
-        {/* --- RESULTS GRID --- */}
+        {/* 2. NEW ADDITIONAL FILTERS (BELOW STATUS) */}
+        <div className="flex flex-wrap items-center gap-6 mb-10 p-4 bg-white/50 rounded-2xl border border-platinum">
+          <div className="flex items-center gap-2 text-navy font-black uppercase text-[10px] tracking-widest">
+            <Filter size={14} className="text-orange" /> Refine By:
+          </div>
+
+          {/* Material Select */}
+          <div className="flex flex-col min-w-[150px]">
+            <span className="text-[9px] font-black text-steel uppercase mb-1 ml-1">Material</span>
+            <select 
+              value={materialFilter} 
+              onChange={(e) => setMaterialFilter(e.target.value)}
+              className="p-2 bg-white border border-platinum rounded font-bold text-xs text-navy outline-none focus:border-orange cursor-pointer"
+            >
+              {categories.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+
+          {/* Region Select */}
+          <div className="flex flex-col min-w-[150px]">
+            <span className="text-[9px] font-black text-steel uppercase mb-1 ml-1">Region</span>
+            <select 
+              value={regionFilter} 
+              onChange={(e) => setRegionFilter(e.target.value)}
+              className="p-2 bg-white border border-platinum rounded font-bold text-xs text-navy outline-none focus:border-orange cursor-pointer"
+            >
+              {regions.map(r => <option key={r} value={r}>{r}</option>)}
+            </select>
+          </div>
+
+          {/* Reset Action */}
+          <button 
+            onClick={() => { setMaterialFilter('ALL'); setRegionFilter('ALL'); setStatusFilter('ALL'); }}
+            className="mt-4 md:mt-0 flex items-center gap-1 text-[10px] font-black text-steel hover:text-orange transition-colors uppercase tracking-widest"
+          >
+            <RotateCcw size={12} /> Reset
+          </button>
+        </div>
+
+        {/* --- RESULTS --- */}
         {filteredAuctions.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredAuctions.map(auc => (
@@ -150,21 +140,14 @@ const AllAuctions = () => {
             ))}
           </div>
         ) : (
-          /* --- EMPTY STATE --- */
           <div className="flex flex-col items-center justify-center py-24 text-center bg-white rounded-3xl border-4 border-dashed border-platinum">
             <div className="bg-platinum/30 p-6 rounded-full mb-6">
               <Hammer size={64} className="text-steel/50" />
             </div>
-            <h2 className="text-3xl font-black text-navy uppercase mb-2">No Matching Auctions</h2>
+            <h2 className="text-3xl font-black text-navy uppercase mb-2">No Matches Found</h2>
             <p className="text-steel font-medium max-w-md">
-              We couldn't find any auctions matching your current filter criteria. Try resetting your filters.
+              We couldn't find any auctions matching those specific filters. Please try a different combination.
             </p>
-            <button 
-              onClick={clearFilters}
-              className="mt-8 px-8 py-3 bg-navy text-white font-black uppercase tracking-widest hover:bg-orange transition-colors rounded-lg"
-            >
-              Clear All Filters
-            </button>
           </div>
         )}
       </main>
