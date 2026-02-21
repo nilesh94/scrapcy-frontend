@@ -18,22 +18,18 @@ const AllAuctions = () => {
   const [materialFilter, setMaterialFilter] = useState('ALL');
   const [regionFilter, setRegionFilter] = useState('ALL');
 
-  // MOCK_AUCTIONS fallback
-  const MOCK_AUCTIONS = [
-     { id: 3048, title: "Structural Steel Scrap", status: "LIVE", date: "26 Feb 2026", time: "04:00 PM", quantity: "500 MT", location: "Patna, Bihar", category: "Steel" },
-     { id: 3049, title: "Aluminium Extrusion 6063", status: "UPCOMING", date: "02 Mar 2026", time: "11:00 AM", quantity: "50 MT", location: "Mumbai, MH", category: "Aluminium" },
-     { id: 3040, title: "Copper Wire Millberry", status: "CLOSED", date: "15 Feb 2026", time: "10:00 AM", quantity: "10 MT", location: "Delhi", category: "Copper" }
-  ];
-
   useEffect(() => {
     const fetchAuctions = async () => {
       setIsLoading(true);
       try {
+        // Fetching directly from your Oracle-backed API
         const response = await axios.get('https://scrapcy-backend-new-1.onrender.com/api/v1/e-auction/auctions/listing');
-        if (response.data.auctions && response.data.auctions.length > 0) {
+        
+        if (response.data.auctions) {
           const formatted = response.data.auctions.map(auc => ({
             id: auc.id,
             title: auc.auction_title,
+            // UI Status mapping: SCHEDULED (DB) -> UPCOMING (UI)
             status: auc.status === 'SCHEDULED' ? 'UPCOMING' : auc.status,
             date: new Date(auc.scheduled_start_time).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
             time: new Date(auc.scheduled_start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -43,12 +39,9 @@ const AllAuctions = () => {
             items: auc.items || []
           }));
           setAuctions(formatted);
-        } else {
-          setAuctions(MOCK_AUCTIONS);
         }
       } catch (error) {
-        console.error("Error fetching auctions:", error);
-        setAuctions(MOCK_AUCTIONS);
+        console.error("Error fetching live auction data:", error);
       } finally {
         setIsLoading(false);
       }
@@ -57,6 +50,7 @@ const AllAuctions = () => {
   }, []);
 
   // --- DYNAMIC FILTER OPTIONS ---
+  // These options are generated in real-time based on the data currently in your DB
   const categories = useMemo(() => ['ALL', ...new Set(auctions.map(a => a.category))].filter(Boolean), [auctions]);
   const regions = useMemo(() => ['ALL', ...new Set(auctions.map(a => a.location))].filter(Boolean), [auctions]);
 
@@ -129,7 +123,11 @@ const AllAuctions = () => {
         </div>
 
         {/* --- RESULTS --- */}
-        {filteredAuctions.length > 0 ? (
+        {isLoading ? (
+          <div className="flex justify-center py-24">
+             <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-orange"></div>
+          </div>
+        ) : filteredAuctions.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredAuctions.map(auc => (
                <AuctionScrollCard 
@@ -146,7 +144,7 @@ const AllAuctions = () => {
             </div>
             <h2 className="text-3xl font-black text-navy uppercase mb-2">No Matches Found</h2>
             <p className="text-steel font-medium max-w-md">
-              We couldn't find any auctions matching those specific filters. Please try a different combination.
+              The database returned no auctions matching your criteria. Please check back later or update your filters.
             </p>
           </div>
         )}
