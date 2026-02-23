@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { LayoutGrid, Search, TrendingUp, Clock, Gavel, Filter } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header/Header';
 import Footer from '../components/Footer/Footer';
 
 const BidderDashboard = () => {
   const [user, setUser] = useState({ first_name: 'Bidder' });
+  const navigate = useNavigate();
 
   useEffect(() => {
       const storedUser = localStorage.getItem('user');
@@ -110,8 +112,11 @@ const BidderDashboard = () => {
                                     <p className="text-[10px] font-bold text-orange uppercase flex items-center gap-1 justify-end">
                                         <Clock size={10} /> Ends in 2h
                                     </p>
-                                    <button className="mt-2 bg-navy text-white px-4 py-2 text-xs font-black uppercase tracking-widest hover:bg-orange transition rounded">
-                                        Bid Now
+                                    <button 
+                                        onClick={() => navigate(`/auction/${item}/participation`)}
+                                        className="mt-2 bg-navy text-white px-4 py-2 text-xs font-black uppercase tracking-widest hover:bg-orange transition rounded"
+                                    >
+                                        View Auction
                                     </button>
                                 </div>
                             </div>
