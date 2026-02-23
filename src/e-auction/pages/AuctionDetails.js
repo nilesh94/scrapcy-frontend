@@ -28,6 +28,9 @@ const AuctionDetails = () => {
   const [currentUser, setCurrentUser] = useState(null); 
   const [selectedFile, setSelectedFile] = useState(null); // Local file state for editing
 
+  // NEW: Workflow state
+  const [actionLoading, setActionLoading] = useState(false);
+
   // --- LOT MODAL STATE ---
   const [selectedLot, setSelectedLot] = useState(null);
   const [isLotEditing, setIsLotEditing] = useState(false);
@@ -57,8 +60,9 @@ const AuctionDetails = () => {
     if (userObj.role === 'admin') return true;
     // Seller: Can edit ONLY if NOT approved yet
     if (userObj.role === 'seller' && auctionObj.created_by === userObj.id) {
-       const lockedStatuses = ['L1_APPROVED', 'L2_APPROVED', 'LIVE', 'CLOSED'];
-       return !lockedStatuses.includes(auctionObj.approval_status);
+       [cite_start]// v3.0: Only DRAFT or REJECTED auctions can be edited [cite: 157]
+       const editableStatuses = ['DRAFT', 'REJECTED'];
+       return editableStatuses.includes(auctionObj.approval_status);
     }
     return false;
   };
@@ -158,6 +162,26 @@ const AuctionDetails = () => {
       setError(err.response?.data?.detail || "Failed to update auction");
     } finally {
       setSaving(false);
+    }
+  };
+
+  [cite_start]// NEW: Unified Workflow Action Handler [cite: 357-369]
+  const handleWorkflowAction = async (action, comments = "") => {
+    setActionLoading(true);
+    setError('');
+    setSuccessMsg('');
+    try {
+      await auctionAPI.performApprovalAction(id, { action, comments });
+      setSuccessMsg(`Action ${action} successful!`);
+      // Refresh all data to reflect new status & logs
+      const updatedData = await auctionAPI.getAuctionDetails(id);
+      setAuction(updatedData);
+      setFormData(updatedData);
+    } catch (err) {
+      console.error("Workflow action failed:", err);
+      setError(err.response?.data?.detail || "Action failed");
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -312,18 +336,107 @@ const AuctionDetails = () => {
 
   const getStatusBadge = (status) => {
     const colors = {
+      [cite_start]// v3.0 Combined Statuses [cite: 190-197, 259-266]
       DRAFT: 'bg-gray-200 text-gray-800',
-      PENDING: 'bg-yellow-100 text-yellow-800',
-      L1_APPROVED: 'bg-blue-100 text-blue-800',
-      L2_APPROVED: 'bg-green-100 text-green-800',
+      PENDING_APPROVAL: 'bg-yellow-100 text-yellow-800',
+      PENDING_L1: 'bg-yellow-100 text-yellow-800',
+      PENDING_L2: 'bg-blue-100 text-blue-800',
+      PENDING_ADMIN: 'bg-purple-100 text-purple-800',
+      APPROVED: 'bg-green-100 text-green-800',
+      READY_TO_PUBLISH: 'bg-green-100 text-green-800 font-black',
+      PUBLISHED: 'bg-green-600 text-white',
+      SCHEDULED: 'bg-indigo-600 text-white',
       REJECTED: 'bg-red-100 text-red-800',
       LIVE: 'bg-green-600 text-white animate-pulse',
       CLOSED: 'bg-red-800 text-white',
+      CANCELLED: 'bg-gray-800 text-white',
     };
     return (
         <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${colors[status] || 'bg-gray-100'}`}>
-            {status?.replace('_', ' ')}
+            {status?.replace(/_/g, ' ')}
         </span>
+    );
+  };
+
+  [cite_start]// --- NEW COMPONENT: Workflow Control Bar [cite: 447] ---
+  const renderWorkflowBar = () => {
+    if (!auction || !currentUser) return null;
+    const { approval_status, status: operationalStatus } = auction;
+    
+    return (
+        <div className="bg-navy text-white p-6 rounded shadow-lg border-l-8 border-orange mb-8 transition-all">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+                <div className="flex items-center gap-4">
+                    <div className="p-3 bg-orange/10 rounded-full">
+                        <Shield size={24} className="text-orange" />
+                    </div>
+                    <div>
+                        <h3 className="text-sm font-black uppercase tracking-widest text-orange">Workflow Engine v3.0</h3>
+                        <div className="flex items-center gap-3 mt-1">
+                            <p className="text-[10px] font-bold text-gray-400 uppercase">Operational: {getStatusBadge(operationalStatus)}</p>
+                            <span className="text-gray-600">|</span>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase">Approval: {getStatusBadge(approval_status)}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex flex-wrap gap-3">
+                    {actionLoading ? (
+                        <div className="flex items-center gap-2 text-orange font-bold text-sm">
+                            <Loader2 size={20} className="animate-spin" /> Processing Transaction...
+                        </div>
+                    ) : (
+                        <>
+                            [cite_start]{/* SELLER: Submit Draft or Resubmit after rejection [cite: 205, 223] */}
+                            {(approval_status === 'DRAFT' || approval_status === 'REJECTED') && (currentUser.role === 'seller' || currentUser.role === 'admin') && (
+                                <button onClick={() => handleWorkflowAction(approval_status === 'REJECTED' ? 'RESUBMIT' : 'SUBMIT')} 
+                                        className="px-6 py-2 bg-orange text-navy font-black rounded hover:bg-white transition-all shadow-lg text-xs">
+                                    {approval_status === 'REJECTED' ? 'RESUBMIT FOR REVIEW' : 'SUBMIT TO MGR L1'}
+                                </button>
+                            )}
+
+                            [cite_start]{/* MGR_L1 Actions [cite: 206, 407] */}
+                            {approval_status === 'PENDING_L1' && currentUser.role === 'mgr_l1' && (
+                                <>
+                                    <button onClick={() => handleWorkflowAction('REJECT', 'L1 Rejection')} className="px-4 py-2 bg-red-600 hover:bg-red-700 font-bold rounded text-xs">REJECT</button>
+                                    <button onClick={() => handleWorkflowAction('APPROVE_L1')} className="px-4 py-2 bg-green-600 hover:bg-green-700 font-bold rounded text-xs">APPROVE TO L2</button>
+                                </>
+                            )}
+
+                            [cite_start]{/* MGR_L2 Actions [cite: 207, 407] */}
+                            {approval_status === 'PENDING_L2' && currentUser.role === 'mgr_l2' && (
+                                <>
+                                    <button onClick={() => handleWorkflowAction('REJECT', 'L2 Rejection')} className="px-4 py-2 bg-red-600 hover:bg-red-700 font-bold rounded text-xs">REJECT</button>
+                                    <button onClick={() => handleWorkflowAction('APPROVE_L2')} className="px-4 py-2 bg-green-600 hover:bg-green-700 font-bold rounded text-xs">APPROVE TO ADMIN</button>
+                                </>
+                            )}
+
+                            [cite_start]{/* ADMIN Actions [cite: 208, 211, 407] */}
+                            {currentUser.role === 'admin' && (
+                                <>
+                                    {approval_status === 'PENDING_ADMIN' && (
+                                        <div className="flex gap-3">
+                                            <button onClick={() => handleWorkflowAction('REJECT', 'Admin Rejection')} className="px-4 py-2 bg-red-600 hover:bg-red-700 font-bold rounded text-xs">REJECT</button>
+                                            <button onClick={() => handleWorkflowAction('APPROVE_ADMIN')} className="px-4 py-2 bg-purple-600 hover:bg-purple-700 font-bold rounded text-xs">ADMIN SIGN-OFF</button>
+                                        </div>
+                                    )}
+                                    {approval_status === 'READY_TO_PUBLISH' && (
+                                        <button onClick={() => handleWorkflowAction('PUBLISH')} className="px-6 py-2 bg-green-500 text-navy font-black rounded hover:bg-white transition-all shadow-lg text-xs">
+                                            PUBLISH & ALLOCATE OCI RESOURCES
+                                        </button>
+                                    )}
+                                </>
+                            )}
+
+                            [cite_start]{/* Universal Cancel [cite: 225] */}
+                            {approval_status !== 'PUBLISHED' && approval_status !== 'CANCELLED' && (currentUser.role === 'admin' || (currentUser.role === 'seller' && auction.created_by === currentUser.id)) && (
+                                <button onClick={() => handleWorkflowAction('CANCEL', 'Withdrawn by user')} className="px-4 py-2 border border-gray-600 text-gray-400 hover:text-white hover:border-white font-bold rounded text-xs">CANCEL</button>
+                            )}
+                        </>
+                    )}
+                </div>
+            </div>
+        </div>
     );
   };
 
@@ -379,6 +492,9 @@ const AuctionDetails = () => {
       <div className="flex-grow max-w-7xl mx-auto px-4 py-8 w-full">
         {successMsg && <div className="mb-4 p-4 bg-green-100 text-green-800 rounded font-bold flex items-center gap-2"><CheckCircle size={20}/> {successMsg}</div>}
         {error && <div className="mb-4 p-4 bg-red-100 text-red-800 rounded font-bold flex items-center gap-2"><AlertTriangle size={20}/> {error}</div>}
+
+        {/* --- v3.0 Workflow Controller --- */}
+        {renderWorkflowBar()}
 
         <div className="grid md:grid-cols-3 gap-6">
             
