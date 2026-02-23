@@ -6,6 +6,9 @@ const BiddingLotCard = ({ lot, auctionId }) => {
   const [isWinning, setIsWinning] = useState(false);
   const [ws, setWs] = useState(null);
   const [bidAmount, setBidAmount] = useState("");
+  // Added state for dynamic end time to support auto-extension
+  const [lotEndTime, setLotEndTime] = useState(lot.lot_end_time);
+  const [timeLeft, setTimeLeft] = useState("");
 
   useEffect(() => {
     // Connect to specific Lot WebSocket
@@ -17,15 +20,42 @@ const BiddingLotCard = ({ lot, auctionId }) => {
       if (data.event_type === 'BID_PLACED' || data.event_type === 'INITIAL_STATE') {
         setCurrentPrice(data.highest_bid || data.current_price);
         setIsWinning(data.is_winning);
+        // Update end time if extended by backend
+        if (data.lot_end_time) {
+            setLotEndTime(data.lot_end_time);
+        }
       }
       if (data.event_type === 'AUCTION_CLOSED') {
         // Handle closure UI
+        setTimeLeft("CLOSED");
       }
     };
 
     setWs(socket);
     return () => socket.close();
   }, [lot.id]);
+
+  //Real-time countdown timer logic
+  useEffect(() => {
+    if (!lotEndTime || timeLeft === "CLOSED") return;
+
+    const timer = setInterval(() => {
+      const now = new Date().getTime();
+      const end = new Date(lotEndTime).getTime();
+      const diff = end - now;
+
+      if (diff <= 0) {
+        setTimeLeft("CLOSED");
+        clearInterval(timer);
+      } else {
+        const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const secs = Math.floor((diff % (1000 * 60)) / 1000);
+        setTimeLeft(`${mins}:${secs < 10 ? '0' : ''}${secs}`);
+      }
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [lotEndTime, timeLeft]);
 
   const handlePlaceBid = () => {
     const payload = {
@@ -41,8 +71,8 @@ const BiddingLotCard = ({ lot, auctionId }) => {
     <div className={`bg-white rounded-lg shadow-2xl overflow-hidden border-t-8 ${isWinning ? 'border-green-500' : 'border-orange'}`}>
       <div className="p-4 bg-gray-50 border-b flex justify-between items-center">
         <span className="font-black text-navy uppercase text-sm">Lot #{lot.lot_number}</span>
-        <div className="flex items-center gap-1 text-red-600 font-bold text-xs animate-pulse">
-            <Clock size={14} /> LIVE
+        <div className={`flex items-center gap-1 font-bold text-xs ${timeLeft === "CLOSED" ? 'text-gray-500' : 'text-red-600 animate-pulse'}`}>
+            <Clock size={14} /> {timeLeft || "LOADING..."}
         </div>
       </div>
       
@@ -60,17 +90,19 @@ const BiddingLotCard = ({ lot, auctionId }) => {
                   type="number" 
                   value={bidAmount}
                   onChange={(e) => setBidAmount(e.target.value)}
-                  placeholder={`Min: ₹${(currentPrice + lot.min_increment_amount).toLocaleString()}`}
+                  placeholder={`Min: ₹${(currentPrice + (lot.min_increment_amount || 0)).toLocaleString()}`}
                   className="flex-grow p-3 border-2 border-gray-200 rounded font-bold outline-none focus:border-navy"
+                  disabled={timeLeft === "CLOSED"}
                 />
                 <button 
                   onClick={handlePlaceBid}
-                  className="bg-navy text-white px-6 py-3 rounded font-black hover:bg-orange transition-colors flex items-center gap-2"
+                  disabled={timeLeft === "CLOSED"}
+                  className={`px-6 py-3 rounded font-black flex items-center gap-2 transition-colors ${timeLeft === "CLOSED" ? 'bg-gray-400 text-white cursor-not-allowed' : 'bg-navy text-white hover:bg-orange'}`}
                 >
                     <Gavel size={18} /> BID
                 </button>
             </div>
-            {isWinning && (
+            {isWinning && timeLeft !== "CLOSED" && (
                 <div className="bg-green-100 text-green-700 p-2 rounded text-center text-xs font-black uppercase tracking-widest">
                     ✓ You are the lead bidder
                 </div>
