@@ -60,7 +60,7 @@ const AuctionDetails = () => {
     if (userObj.role === 'admin') return true;
     // Seller: Can edit ONLY if NOT approved yet
     if (userObj.role === 'seller' && auctionObj.created_by === userObj.id) {
-       [cite_start]// v3.0: Only DRAFT or REJECTED auctions can be edited [cite: 157]
+       // v3.0: Only DRAFT or REJECTED auctions can be edited
        const editableStatuses = ['DRAFT', 'REJECTED'];
        return editableStatuses.includes(auctionObj.approval_status);
     }
@@ -152,9 +152,6 @@ const AuctionDetails = () => {
       setSelectedFile(null); // Clear local file selection
       setSuccessMsg("Auction updated successfully!");
       
-      // If we were in /edit URL, navigation back to view URL helps UX, but staying is fine too.
-      // navigate(`/e-auction/auction/${id}/manage`); 
-
       setTimeout(() => setSuccessMsg(''), 3000);
       
     } catch (err) {
@@ -165,7 +162,7 @@ const AuctionDetails = () => {
     }
   };
 
-  [cite_start]// NEW: Unified Workflow Action Handler [cite: 357-369]
+  // NEW: Unified Workflow Action Handler
   const handleWorkflowAction = async (action, comments = "") => {
     setActionLoading(true);
     setError('');
@@ -336,7 +333,7 @@ const AuctionDetails = () => {
 
   const getStatusBadge = (status) => {
     const colors = {
-      [cite_start]// v3.0 Combined Statuses [cite: 190-197, 259-266]
+      // v3.0 Combined Statuses
       DRAFT: 'bg-gray-200 text-gray-800',
       PENDING_APPROVAL: 'bg-yellow-100 text-yellow-800',
       PENDING_L1: 'bg-yellow-100 text-yellow-800',
@@ -358,7 +355,7 @@ const AuctionDetails = () => {
     );
   };
 
-  [cite_start]// --- NEW COMPONENT: Workflow Control Bar [cite: 447] ---
+  // --- NEW COMPONENT: Workflow Control Bar ---
   const renderWorkflowBar = () => {
     if (!auction || !currentUser) return null;
     const { approval_status, status: operationalStatus } = auction;
@@ -387,7 +384,7 @@ const AuctionDetails = () => {
                         </div>
                     ) : (
                         <>
-                            [cite_start]{/* SELLER: Submit Draft or Resubmit after rejection [cite: 205, 223] */}
+                            {/* SELLER: Submit Draft or Resubmit after rejection */}
                             {(approval_status === 'DRAFT' || approval_status === 'REJECTED') && (currentUser.role === 'seller' || currentUser.role === 'admin') && (
                                 <button onClick={() => handleWorkflowAction(approval_status === 'REJECTED' ? 'RESUBMIT' : 'SUBMIT')} 
                                         className="px-6 py-2 bg-orange text-navy font-black rounded hover:bg-white transition-all shadow-lg text-xs">
@@ -395,7 +392,7 @@ const AuctionDetails = () => {
                                 </button>
                             )}
 
-                            [cite_start]{/* MGR_L1 Actions [cite: 206, 407] */}
+                            {/* MGR_L1 Actions */}
                             {approval_status === 'PENDING_L1' && currentUser.role === 'mgr_l1' && (
                                 <>
                                     <button onClick={() => handleWorkflowAction('REJECT', 'L1 Rejection')} className="px-4 py-2 bg-red-600 hover:bg-red-700 font-bold rounded text-xs">REJECT</button>
@@ -403,7 +400,7 @@ const AuctionDetails = () => {
                                 </>
                             )}
 
-                            [cite_start]{/* MGR_L2 Actions [cite: 207, 407] */}
+                            {/* MGR_L2 Actions */}
                             {approval_status === 'PENDING_L2' && currentUser.role === 'mgr_l2' && (
                                 <>
                                     <button onClick={() => handleWorkflowAction('REJECT', 'L2 Rejection')} className="px-4 py-2 bg-red-600 hover:bg-red-700 font-bold rounded text-xs">REJECT</button>
@@ -411,7 +408,7 @@ const AuctionDetails = () => {
                                 </>
                             )}
 
-                            [cite_start]{/* ADMIN Actions [cite: 208, 211, 407] */}
+                            {/* ADMIN Actions */}
                             {currentUser.role === 'admin' && (
                                 <>
                                     {approval_status === 'PENDING_ADMIN' && (
@@ -428,7 +425,7 @@ const AuctionDetails = () => {
                                 </>
                             )}
 
-                            [cite_start]{/* Universal Cancel [cite: 225] */}
+                            {/* Universal Cancel */}
                             {approval_status !== 'PUBLISHED' && approval_status !== 'CANCELLED' && (currentUser.role === 'admin' || (currentUser.role === 'seller' && auction.created_by === currentUser.id)) && (
                                 <button onClick={() => handleWorkflowAction('CANCEL', 'Withdrawn by user')} className="px-4 py-2 border border-gray-600 text-gray-400 hover:text-white hover:border-white font-bold rounded text-xs">CANCEL</button>
                             )}
