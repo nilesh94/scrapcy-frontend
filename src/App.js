@@ -18,11 +18,13 @@ import AdminListingDetail from './pages/AdminListingDetail';
 import AdminMarketPrice from './pages/AdminMarketPrice';
 import EAuctionLander from './pages/EAuctionLander';
 import AllAuctions from './pages/AllAuctions'; // NEW: Added for public auction listing
+import BuyerAuctionDashboard from './pages/BuyerAuctionDashboard';
 
 // --- E-AUCTION PAGES ---
 import RegisterAuction from './e-auction/pages/RegisterAuction';
 import MyAuctions from './e-auction/pages/MyAuctions';
 import AuctionDetails from './e-auction/pages/AuctionDetails';
+import LiveBiddingRoom from './e-auction/pages/LiveBiddingRoom';
 
 // --- ADMIN PAGES ---
 import AdminDashboard from './pages/AdminDashboard';
@@ -71,6 +73,10 @@ function App() {
         
         <Route path="/e-auction/auction/:id" element={<AuctionDetails />} /> 
         <Route path="/e-auction/edit/:id" element={<AuctionDetails />} />
+
+        {/* BUYER/BIDDER SPECIFIC E-AUCTION ROUTES */}
+        <Route path="/e-auction/auction/:auctionId/participation" element={<BuyerAuctionDashboard />} /> {/* <--- REQUIRED ADDITION */}
+        <Route path="/e-auction/live/:auctionId" element={<LiveBiddingRoom />} /> {/* <--- REQUIRED ADDITION */}
 
         <Route path="/e-auction/admin/dashboard" element={<AdminAuctionDashboard />} />
         <Route path="/e-auction/admin/manage" element={<ManageAuctions />} />
