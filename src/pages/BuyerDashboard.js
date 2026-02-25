@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Upload, Save, FileText, MapPin, 
   Search, Filter, Grid, List, ShieldCheck, ExternalLink, ChevronDown, 
   Package, MessageCircle, ChevronLeft, ChevronRight, PlusCircle, 
-  CheckCircle, XCircle, Trash2, Clock 
+  CheckCircle, XCircle, Trash2, Clock, Gavel
 } from 'lucide-react';
 import Header from '../components/Header/Header';
 import Footer from '../components/Footer/Footer';
@@ -94,6 +94,7 @@ const BuyerDashboard = () => {
   // Data States
   const [listings, setListings] = useState([]);
   const [myRequirements, setMyRequirements] = useState([]); 
+  const [auctions, setAuctions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [reqLoading, setReqLoading] = useState(false);
   const [error, setError] = useState('');
@@ -137,6 +138,8 @@ const BuyerDashboard = () => {
             fetchListings();
         } else if (activeTab === 'requirements') {
             fetchMyRequirements();
+        } else if (activeTab === 'auctions') { 
+            fetchAuctions();
         }
     }
   }, [activeTab, isAuthenticated]);
@@ -214,6 +217,22 @@ const BuyerDashboard = () => {
         setMyRequirements([]);
     } finally {
         setReqLoading(false);
+    }
+  };
+
+  const fetchAuctions = async () => {
+    setLoading(true);
+    try {
+        const token = localStorage.getItem('token');
+        const response = await axios.get('https://scrapcy-backend-new-1.onrender.com/api/v1/e-auction/auctions/listing', {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        setAuctions(response.data.items || []);
+    } catch (err) {
+        console.error("Error fetching auctions:", err);
+        setAuctions([]);
+    } finally {
+        setLoading(false);
     }
   };
 
@@ -313,17 +332,15 @@ const BuyerDashboard = () => {
       <div className="bg-white border-b border-platinum shadow-sm sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex space-x-8 overflow-x-auto no-scrollbar">
-            {['marketplace', 'requirements', 'saved', 'orders'].map(tab => (
+            {['marketplace', 'auctions', 'requirements', 'saved', 'orders'].map(tab => (
                 <button 
                     key={tab}
                     onClick={() => {
-                        // --- UPDATED: Click-to-Refresh Logic ---
                         if (activeTab === tab) {
-                            // If clicking the current tab, force a refresh
                             if (tab === 'marketplace') fetchListings();
                             if (tab === 'requirements') fetchMyRequirements();
+                            if (tab === 'auctions') fetchAuctions();
                         } else {
-                            // Otherwise switch tab (useEffect will handle fetch)
                             setActiveTab(tab);
                         }
                     }} 
@@ -331,10 +348,11 @@ const BuyerDashboard = () => {
                     ${activeTab === tab ? 'border-orange text-navy' : 'border-transparent text-steel hover:text-navy'}`}
                 >
                     {tab === 'marketplace' && <LayoutDashboard size={18} />}
+                    {tab === 'auctions' && <Gavel size={18} />}
                     {tab === 'requirements' && <Upload size={18} />}
                     {tab === 'saved' && <Save size={18} />}
                     {tab === 'orders' && <FileText size={18} />}
-                    {tab === 'marketplace' ? 'Marketplace' : tab === 'requirements' ? 'Post Requirement' : tab === 'orders' ? 'My Orders' : 'Saved'}
+                    {tab === 'marketplace' ? 'Marketplace' : tab === 'auctions' ? 'Auctions' : tab === 'requirements' ? 'Post Requirement' : tab === 'orders' ? 'My Orders' : 'Saved'}
                 </button>
             ))}
           </div>
@@ -436,6 +454,66 @@ const BuyerDashboard = () => {
                           </tbody>
                       </table>
                     </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ================= AUCTIONS TAB ================= */}
+          {activeTab === 'auctions' && (
+            <div className="space-y-6 animate-fadeIn">
+              <div className="bg-navy p-6 rounded-lg shadow-lg text-white flex justify-between items-center">
+                <div>
+                  <h2 className="text-2xl font-black uppercase tracking-tighter">Live & Scheduled Auctions</h2>
+                  <p className="text-gray-400 text-sm">Participate in high-speed simultaneous bidding events.</p>
+                </div>
+                <Gavel size={40} className="text-orange opacity-50" />
+              </div>
+
+              {loading ? (
+                <div className="text-center py-20 bg-white rounded shadow">Loading Auctions...</div>
+              ) : auctions.length === 0 ? (
+                <div className="bg-white p-20 rounded-lg shadow text-center border border-platinum">
+                    <Clock size={48} className="text-gray-300 mx-auto mb-4"/>
+                    <h3 className="text-xl font-bold text-navy">No active auctions at the moment.</h3>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {auctions.map(auction => (
+                    <div key={auction.id} className="bg-white rounded-xl shadow border border-platinum overflow-hidden flex flex-col">
+                      <div className="p-6 border-b border-platinum bg-platinum/10">
+                        <div className="flex justify-between items-start mb-2">
+                           <span className="text-[10px] font-black text-steel uppercase tracking-widest">Auction ID: #{auction.id}</span>
+                           <span className={`px-2 py-1 rounded text-[10px] font-black uppercase ${auction.status === 'LIVE' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
+                             {auction.status}
+                           </span>
+                        </div>
+                        <h3 className="text-xl font-black text-navy uppercase leading-tight">{auction.auction_title}</h3>
+                      </div>
+                      <div className="p-6 grid grid-cols-2 gap-4 flex-grow">
+                         <div>
+                            <p className="text-[10px] text-steel font-bold uppercase">EMD Amount</p>
+                            <p className="text-lg font-black text-navy">₹{auction.emd_amount?.toLocaleString()}</p>
+                         </div>
+                         <div className="text-right">
+                            <p className="text-[10px] text-steel font-bold uppercase">Total Lots</p>
+                            <p className="text-lg font-bold text-navy">{auction.total_lots || 0}</p>
+                         </div>
+                         <div className="col-span-2 pt-4 border-t border-platinum">
+                            <p className="text-[10px] text-steel font-bold uppercase mb-1">Scheduled Start</p>
+                            <p className="text-sm font-bold text-navy flex items-center gap-2"><Clock size={14} className="text-orange" /> {new Date(auction.scheduled_start_time).toLocaleString()}</p>
+                         </div>
+                      </div>
+                      <div className="p-4 bg-platinum/20">
+                         <button 
+                           onClick={() => navigate(`/e-auction/auction/${auction.id}/participation`)}
+                           className="w-full bg-navy text-white py-3 rounded font-black uppercase text-xs tracking-widest hover:bg-orange transition-all"
+                         >
+                           View Auction & Participation
+                         </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
