@@ -499,7 +499,7 @@ const BuyerDashboard = () => {
                          </div>
                          <div className="text-right">
                             <p className="text-[10px] text-steel font-bold uppercase">Total Lots</p>
-                            <p className="text-lg font-bold text-navy">{auction.total_lots || 0}</p>
+                            <p className="text-lg font-bold text-navy">{auction.total_lots || (auction.items ? auction.items.length : 0)}</p>
                          </div>
                          <div className="col-span-2 pt-4 border-t border-platinum">
                             <p className="text-[10px] text-steel font-bold uppercase mb-1">Scheduled Start</p>
