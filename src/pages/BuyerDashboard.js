@@ -509,13 +509,27 @@ const BuyerDashboard = () => {
                             </p>
                          </div>
                       </div>
-                      <div className="p-4 bg-platinum/20">
-                         <button 
-                           onClick={() => navigate(`/e-auction/auction/${auction.id}/participation`)}
-                           className="w-full bg-navy text-white py-3 rounded font-black uppercase text-xs tracking-widest hover:bg-orange transition-all"
-                         >
-                           View Auction & Participation
-                         </button>
+                      <div className="p-4 bg-platinum/20 grid grid-cols-2 gap-3">
+                        {/* Button 1: View Details (Always Active) */}
+                        <button 
+                          onClick={() => navigate(`/e-auction/auction/${auction.id}/participation`)}
+                          className="w-full border-2 border-navy text-navy py-3 rounded font-black uppercase text-xs tracking-widest hover:bg-navy hover:text-white transition-all"
+                        >
+                          View Details
+                        </button>
+
+                        {/* Button 2: Enter Auction (Enabled only if LIVE and EMD is Paid) */}
+                        <button 
+                          disabled={auction.status !== 'LIVE' || !auction.emd_paid}
+                          onClick={() => navigate(`/api/v1/e-auction/live/${auction.id}`)}
+                          className={`w-full py-3 rounded font-black uppercase text-xs tracking-widest transition-all ${
+                            auction.status === 'LIVE' && auction.emd_paid
+                              ? 'bg-orange text-white hover:bg-navy shadow-lg'
+                              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          }`}
+                        >
+                          {auction.status === 'LIVE' ? 'Enter Auction' : 'Locked'}
+                        </button>
                       </div>
                     </div>
                   ))}
