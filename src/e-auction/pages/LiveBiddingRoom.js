@@ -13,9 +13,17 @@ const LiveBiddingRoom = () => {
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        const data = await auctionAPI.getAuctionDetails(auctionId);
-        setAuction(data);
-        setLots(data.items || []); // Simultaneous display of all items
+        // Verify payment status and auction state before allowing entry
+        const summary = await auctionAPI.getParticipationSummary(auctionId);
+        
+        if (summary.participation?.payment_status !== 'SUCCESS' || summary.auction?.status !== 'LIVE') {
+           alert("Access Denied: You must complete EMD payment and the auction must be LIVE to enter.");
+           window.location.href = `/e-auction/auction/${auctionId}/participation`;
+           return;
+        }
+
+        setAuction(summary.auction);
+        setLots(summary.auction.items || []); 
       } catch (err) {
         console.error("Failed to load live auction", err);
       } finally {
@@ -25,7 +33,7 @@ const LiveBiddingRoom = () => {
     fetchInitialData();
   }, [auctionId]);
 
-  if (loading) return <div className="p-10 text-center font-black">INITIALIZING BIDDING ENGINE...</div>;
+  if (loading) return <div className="p-10 text-center font-black text-white bg-navy min-h-screen">INITIALIZING BIDDING ENGINE...</div>;
 
   return (
     <div className="min-h-screen bg-navy p-4 md:p-8">
