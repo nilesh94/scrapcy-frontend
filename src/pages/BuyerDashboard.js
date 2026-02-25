@@ -227,7 +227,8 @@ const BuyerDashboard = () => {
         const response = await axios.get('https://scrapcy-backend-new-1.onrender.com/api/v1/e-auction/auctions/listing', {
             headers: { Authorization: `Bearer ${token}` }
         });
-        setAuctions(response.data.items || []);
+        // Correctly accessing the "auctions" array from the API response
+        setAuctions(response.data.auctions || []);
     } catch (err) {
         console.error("Error fetching auctions:", err);
         setAuctions([]);
@@ -488,12 +489,13 @@ const BuyerDashboard = () => {
                              {auction.status}
                            </span>
                         </div>
+                        {/* Corrected mapping to use auction_title and scheduled_start_time from API */}
                         <h3 className="text-xl font-black text-navy uppercase leading-tight">{auction.auction_title}</h3>
                       </div>
                       <div className="p-6 grid grid-cols-2 gap-4 flex-grow">
                          <div>
                             <p className="text-[10px] text-steel font-bold uppercase">EMD Amount</p>
-                            <p className="text-lg font-black text-navy">₹{auction.emd_amount?.toLocaleString()}</p>
+                            <p className="text-lg font-black text-navy">₹{parseFloat(auction.emd_amount || 0).toLocaleString()}</p>
                          </div>
                          <div className="text-right">
                             <p className="text-[10px] text-steel font-bold uppercase">Total Lots</p>
@@ -501,7 +503,10 @@ const BuyerDashboard = () => {
                          </div>
                          <div className="col-span-2 pt-4 border-t border-platinum">
                             <p className="text-[10px] text-steel font-bold uppercase mb-1">Scheduled Start</p>
-                            <p className="text-sm font-bold text-navy flex items-center gap-2"><Clock size={14} className="text-orange" /> {new Date(auction.scheduled_start_time).toLocaleString()}</p>
+                            <p className="text-sm font-bold text-navy flex items-center gap-2">
+                                <Clock size={14} className="text-orange" /> 
+                                {auction.scheduled_start_time ? new Date(auction.scheduled_start_time).toLocaleString() : 'N/A'}
+                            </p>
                          </div>
                       </div>
                       <div className="p-4 bg-platinum/20">
