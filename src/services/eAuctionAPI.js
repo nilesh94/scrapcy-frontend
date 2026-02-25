@@ -197,6 +197,17 @@ export const auctionAPI = {
     );
     return response.data;
   },
+
+  // --- Participation & Workflow ---
+  getParticipationSummary: async (auctionId) => {
+    const response = await api.get(`${AUCTION_BASE}/auctions/${auctionId}/participation-summary`);
+    return response.data;
+  },
+
+  performApprovalAction: async (auctionId, actionData) => {
+    const response = await api.post(`${AUCTION_BASE}/auctions/${auctionId}/approval-action`, actionData);
+    return response.data;
+  },
 };
 
 /**
