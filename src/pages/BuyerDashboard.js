@@ -485,7 +485,7 @@ const BuyerDashboard = () => {
                       <div className="p-6 border-b border-platinum bg-platinum/10">
                         <div className="flex justify-between items-start mb-2">
                            <span className="text-[10px] font-black text-steel uppercase tracking-widest">Auction ID: #{auction.id}</span>
-                           <span className={`px-2 py-1 rounded text-[10px] font-black uppercase ${auction.status === 'LIVE' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
+                           <span className={`px-2 py-1 rounded text-[10px] font-black uppercase ${auction.status === 'LIVE' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-600'}`}>
                              {auction.status}
                            </span>
                         </div>
@@ -518,17 +518,25 @@ const BuyerDashboard = () => {
                           View Details
                         </button>
 
-                        {/* Button 2: Enter Auction (Enabled only if LIVE and EMD is Paid) */}
+                        {/* Button 2: Enter Auction / Pay EMD (Conditional) */}
                         <button 
-                          disabled={auction.status !== 'LIVE' || !auction.emd_paid}
-                          onClick={() => navigate(`/api/v1/e-auction/live/${auction.id}`)}
+                          disabled={auction.emd_paid && auction.status !== 'LIVE'}
+                          onClick={() => {
+                            if (!auction.emd_paid) {
+                                navigate(`/e-auction/auction/${auction.id}/participation`);
+                            } else {
+                                navigate(`/api/v1/e-auction/live/${auction.id}`);
+                            }
+                          }}
                           className={`w-full py-3 rounded font-black uppercase text-xs tracking-widest transition-all ${
-                            auction.status === 'LIVE' && auction.emd_paid
-                              ? 'bg-orange text-white hover:bg-navy shadow-lg'
-                              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            !auction.emd_paid 
+                              ? 'bg-orange text-white hover:bg-navy shadow-lg' 
+                              : auction.status === 'LIVE'
+                                ? 'bg-orange text-white hover:bg-navy shadow-lg'
+                                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                           }`}
                         >
-                          {auction.status === 'LIVE' ? 'Enter Auction' : 'Locked'}
+                          {!auction.emd_paid ? 'Pay EMD' : (auction.status === 'LIVE' ? 'Enter Auction' : 'Locked')}
                         </button>
                       </div>
                     </div>
