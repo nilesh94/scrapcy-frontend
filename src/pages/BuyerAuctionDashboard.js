@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ShieldCheck, Lock, PlayCircle, Clock, FileText } from 'lucide-react';
-import { auctionAPI } from '../../services/eAuctionAPI';
+import { auctionAPI } from '../services/eAuctionAPI';
 import BiddingLotCard from '../e-auction/components/BiddingLotCard';
 
 const BuyerAuctionDashboard = () => {
