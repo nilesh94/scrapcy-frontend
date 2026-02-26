@@ -523,7 +523,7 @@ const BuyerDashboard = () => {
               disabled={auction.emd_paid && auction.status !== 'LIVE'}
               onClick={() => {
                 if (!auction.emd_paid) {
-                  navigate(`/e-auction/auction/${auction.id}/participation`);
+                  navigate(`/e-auction/auction/${auction.id}/emd-payment`);
                 } else {
                   navigate(`/e-auction/live/${auction.id}`);
                 }
