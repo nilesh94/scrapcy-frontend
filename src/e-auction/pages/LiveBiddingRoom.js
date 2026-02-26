@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Gavel, Clock, Users, Shield, AlertCircle } from 'lucide-react';
-import { auctionAPI } from '../../services/eAuctionAPI';
+import { auctionAPI } from '../../../services/eAuctionAPI';
 import BiddingLotCard from '../components/BiddingLotCard';
 
 const LiveBiddingRoom = () => {
