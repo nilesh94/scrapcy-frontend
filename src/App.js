@@ -36,6 +36,8 @@ import AuditTrail from './e-auction/pages/AuditTrail';
 
 import TermsConditions from './pages/TermsConditions';
 
+import EMDPaymentInstructions from './pages/EMDPaymentInstructions';
+
 function App() {
   return (
     <Router>
@@ -83,6 +85,8 @@ function App() {
         <Route path="/e-auction/admin/audit/:auctionId" element={<AuditTrail />} />
 
         <Route path="/terms-and-conditions" element={<TermsConditions />} />
+
+        <Route path="/e-auction/auction/:auctionId/emd-payment" element={<EMDPaymentInstructions />} />
       </Routes>
     </Router>
   );
