@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react'; // Added useRef
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { 
-  ArrowLeft, Edit, Save, X, CheckCircle, AlertTriangle, 
-  Calendar, DollarSign, MapPin, FileText, Package, Clock, Shield, Upload, Download, Loader2,
-  Trash2, Image as ImageIcon // Added Trash and Image icons
+ ArrowLeft, Edit, Save, X, CheckCircle, AlertTriangle, 
+ Calendar, DollarSign, MapPin, FileText, Package, Clock, Shield, Upload, Download, Loader2,
+ Trash2, Image as ImageIcon // Added Trash and Image icons
 } from 'lucide-react';
 import Header from '../../components/Header/Header';
 import Footer from '../../components/Footer/Footer';
@@ -56,11 +56,13 @@ const AuctionDetails = () => {
   // --- Helper: Permission Check Logic ---
   const checkCanEdit = (auctionObj, userObj) => {
     if (!userObj || !auctionObj) return false;
+    // v4.0: Strictly block non-management roles from any edit visibility
+    if (userObj.role === 'guest' || userObj.role === 'buyer') return false;
     // Admin: Can edit anything
     if (userObj.role === 'admin') return true;
-    // Seller: Can edit ONLY if NOT approved yet
+    // Seller: Can edit ONLY if it belongs to them and NOT approved yet
     if (userObj.role === 'seller' && auctionObj.created_by === userObj.id) {
-       // v3.0: Only DRAFT or REJECTED auctions can be edited
+       // Only DRAFT or REJECTED auctions can be edited
        const editableStatuses = ['DRAFT', 'REJECTED'];
        return editableStatuses.includes(auctionObj.approval_status);
     }
@@ -76,8 +78,17 @@ const AuctionDetails = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        // Use the 'manage' endpoint for full details including restricted fields
-        const data = await auctionAPI.getAuctionDetails(id); 
+        
+        // Use 'open' endpoint for public viewing by buyers/guests
+        let data;
+        const isPublicPath = !location.pathname.includes('/manage') && !location.pathname.includes('/edit');
+        
+        if (isPublicPath && (user.role === 'guest' || user.role === 'buyer')) {
+            data = await auctionAPI.getOpenAuctionDetails(id);
+        } else {
+            data = await auctionAPI.getAuctionDetails(id); 
+        }
+        
         setAuction(data);
         setFormData(data);
 
@@ -121,6 +132,12 @@ const AuctionDetails = () => {
   };
 
   const handleSave = async () => {
+    // SECURITY GUARD: Verify permissions before initiating API call
+    if (!checkCanEdit(auction, currentUser)) {
+      setError("Unauthorized update attempt blocked.");
+      return;
+    }
+
     setSaving(true);
     setError('');
     setSuccessMsg('');
@@ -231,6 +248,12 @@ const AuctionDetails = () => {
   };
 
   const handleSaveLot = async () => {
+    // SECURITY GUARD: Verify permissions before initiating Lot update
+    if (!checkCanEdit(auction, currentUser)) {
+      setLotError("Unauthorized update attempt blocked.");
+      return;
+    }
+
     setLotSaving(true);
     setLotError('');
     setLotSuccessMsg('');
@@ -358,6 +381,17 @@ const AuctionDetails = () => {
   // --- NEW COMPONENT: Workflow Control Bar ---
   const renderWorkflowBar = () => {
     if (!auction || !currentUser) return null;
+    
+    // v4.0: Strictly hide workflow controls for guest/buyer or non-authorized sellers
+    const isPublicUser = currentUser.role === 'guest' || currentUser.role === 'buyer';
+    const isOwner = auction.created_by === currentUser.id;
+    const isAdmin = currentUser.role === 'admin';
+    const isL1 = currentUser.role === 'mgr_l1';
+    const isL2 = currentUser.role === 'mgr_l2';
+
+    if (isPublicUser) return null; // Hide completely for public view
+    if (!isAdmin && !isOwner && !isL1 && !isL2) return null; // Security gate for bar visibility
+
     const { approval_status, status: operationalStatus } = auction;
     
     return (
@@ -385,7 +419,7 @@ const AuctionDetails = () => {
                     ) : (
                         <>
                             {/* SELLER: Submit Draft or Resubmit after rejection */}
-                            {(approval_status === 'DRAFT' || approval_status === 'REJECTED') && (currentUser.role === 'seller' || currentUser.role === 'admin') && (
+                            {(approval_status === 'DRAFT' || approval_status === 'REJECTED') && (currentUser.role === 'seller' || currentUser.role === 'admin') && isOwner && (
                                 <button onClick={() => handleWorkflowAction(approval_status === 'REJECTED' ? 'RESUBMIT' : 'SUBMIT')} 
                                         className="px-6 py-2 bg-orange text-navy font-black rounded hover:bg-white transition-all shadow-lg text-xs">
                                     {approval_status === 'REJECTED' ? 'RESUBMIT FOR REVIEW' : 'SUBMIT TO MGR L1'}
@@ -426,7 +460,7 @@ const AuctionDetails = () => {
                             )}
 
                             {/* Universal Cancel */}
-                            {approval_status !== 'PUBLISHED' && approval_status !== 'CANCELLED' && (currentUser.role === 'admin' || (currentUser.role === 'seller' && auction.created_by === currentUser.id)) && (
+                            {approval_status !== 'PUBLISHED' && approval_status !== 'CANCELLED' && (currentUser.role === 'admin' || (currentUser.role === 'seller' && isOwner)) && (
                                 <button onClick={() => handleWorkflowAction('CANCEL', 'Withdrawn by user')} className="px-4 py-2 border border-gray-600 text-gray-400 hover:text-white hover:border-white font-bold rounded text-xs">CANCEL</button>
                             )}
                         </>
