@@ -512,7 +512,7 @@ const BuyerDashboard = () => {
            <div className="p-4 bg-platinum/20 grid grid-cols-2 gap-3">
             {/* Button 1: View Details (Always Active) */}
             <button 
-              onClick={() => navigate(`/e-auction/auction/${auction.id}/participation`)}
+              onClick={() => navigate(`/e-auction/auction/${auction.id}`)}
               className="w-full border-2 border-navy text-navy py-3 rounded font-black uppercase text-xs tracking-widest hover:bg-navy hover:text-white transition-all"
             >
               View Details
