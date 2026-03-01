@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react'; // Added useRef
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { 
-  ArrowLeft, Edit, Save, X, CheckCircle, AlertTriangle, 
-  Calendar, DollarSign, MapPin, FileText, Package, Clock, Shield, Upload, Download, Loader2,
-  Trash2, Image as ImageIcon // Added Trash and Image icons
+ ArrowLeft, Edit, Save, X, CheckCircle, AlertTriangle, 
+ Calendar, DollarSign, MapPin, FileText, Package, Clock, Shield, Upload, Download, Loader2,
+ Trash2, Image as ImageIcon // Added Trash and Image icons
 } from 'lucide-react';
 import Header from '../../components/Header/Header';
 import Footer from '../../components/Footer/Footer';
@@ -57,11 +57,13 @@ const AuctionDetails = () => {
   const checkCanEdit = (auctionObj, userObj) => {
     if (!userObj || !auctionObj) return false;
     // v4.0: Strictly block non-management roles from any edit visibility
-    if (userObj.role === 'guest' || userObj.role === 'buyer') return false;
+    const role = userObj.role?.toLowerCase();
+    if (role === 'guest' || role === 'buyer') return false;
+
     // Admin: Can edit anything
-    if (userObj.role === 'admin') return true;
+    if (role === 'admin') return true;
     // Seller: Can edit ONLY if it belongs to them and NOT approved yet
-    if (userObj.role === 'seller' && auctionObj.created_by === userObj.id) {
+    if (role === 'seller' && auctionObj.created_by === userObj.id) {
        // Only DRAFT or REJECTED auctions can be edited
        const editableStatuses = ['DRAFT', 'REJECTED'];
        return editableStatuses.includes(auctionObj.approval_status);
@@ -71,8 +73,9 @@ const AuctionDetails = () => {
 
   // --- 1. Fetch Data ---
   useEffect(() => {
-    // Mock user retrieval - replace with your actual Auth Context/Storage
-    const user = JSON.parse(localStorage.getItem('user')) || { role: 'guest' };
+    // Normalized role handling for case sensitivity
+    const rawUser = JSON.parse(localStorage.getItem('user'));
+    const user = rawUser ? { ...rawUser, role: rawUser.role?.toLowerCase() } : { role: 'guest' };
     setCurrentUser(user);
 
     const fetchData = async () => {
@@ -81,9 +84,15 @@ const AuctionDetails = () => {
         setError('');
         
         let data;
-        // SURGICAL UPDATE: Force 'Open' API for buyers and guests to avoid 403 errors
-        const isBuyerOrGuest = user.role === 'guest' || user.role === 'buyer';
+        // Use 'open' endpoint for public viewing by buyers/guests
         const isManagePath = location.pathname.includes('/manage') || location.pathname.includes('/edit');
+        const isBuyerOrGuest = user.role === 'guest' || user.role === 'buyer';
+
+        // SECURITY: Prevent unauthorized access to management routes
+        if (isManagePath && isBuyerOrGuest) {
+            navigate(`/e-auction/auction/${id}`);
+            return;
+        }
         
         if (isBuyerOrGuest && !isManagePath) {
             data = await auctionAPI.getOpenAuctionDetails(id);
@@ -114,7 +123,7 @@ const AuctionDetails = () => {
     };
 
     fetchData();
-  }, [id, location.pathname]);
+  }, [id, location.pathname, navigate]);
 
   // --- 2. Handlers (Auction) ---
   const handleChange = (e) => {
@@ -384,11 +393,11 @@ const AuctionDetails = () => {
     if (!auction || !currentUser) return null;
     
     // v4.0: Strictly hide workflow controls for guest/buyer or non-authorized sellers
-    const isPublicUser = currentUser.role === 'guest' || currentUser.role === 'buyer';
+    const isPublicUser = currentUser.role?.toLowerCase() === 'guest' || currentUser.role?.toLowerCase() === 'buyer';
     const isOwner = auction.created_by === currentUser.id;
-    const isAdmin = currentUser.role === 'admin';
-    const isL1 = currentUser.role === 'mgr_l1';
-    const isL2 = currentUser.role === 'mgr_l2';
+    const isAdmin = currentUser.role?.toLowerCase() === 'admin';
+    const isL1 = currentUser.role?.toLowerCase() === 'mgr_l1';
+    const isL2 = currentUser.role?.toLowerCase() === 'mgr_l2';
 
     if (isPublicUser) return null; // Hide completely for public view
     if (!isAdmin && !isOwner && !isL1 && !isL2) return null; // Security gate for bar visibility
@@ -420,7 +429,7 @@ const AuctionDetails = () => {
                     ) : (
                         <>
                             {/* SELLER: Submit Draft or Resubmit after rejection */}
-                            {(approval_status === 'DRAFT' || approval_status === 'REJECTED') && (currentUser.role === 'seller' || currentUser.role === 'admin') && isOwner && (
+                            {(approval_status === 'DRAFT' || approval_status === 'REJECTED') && (currentUser.role?.toLowerCase() === 'seller' || isAdmin) && isOwner && (
                                 <button onClick={() => handleWorkflowAction(approval_status === 'REJECTED' ? 'RESUBMIT' : 'SUBMIT')} 
                                         className="px-6 py-2 bg-orange text-navy font-black rounded hover:bg-white transition-all shadow-lg text-xs">
                                     {approval_status === 'REJECTED' ? 'RESUBMIT FOR REVIEW' : 'SUBMIT TO MGR L1'}
@@ -428,7 +437,7 @@ const AuctionDetails = () => {
                             )}
 
                             {/* MGR_L1 Actions */}
-                            {approval_status === 'PENDING_L1' && currentUser.role === 'mgr_l1' && (
+                            {approval_status === 'PENDING_L1' && currentUser.role?.toLowerCase() === 'mgr_l1' && (
                                 <>
                                     <button onClick={() => handleWorkflowAction('REJECT', 'L1 Rejection')} className="px-4 py-2 bg-red-600 hover:bg-red-700 font-bold rounded text-xs">REJECT</button>
                                     <button onClick={() => handleWorkflowAction('APPROVE_L1')} className="px-4 py-2 bg-green-600 hover:bg-green-700 font-bold rounded text-xs">APPROVE TO L2</button>
@@ -436,7 +445,7 @@ const AuctionDetails = () => {
                             )}
 
                             {/* MGR_L2 Actions */}
-                            {approval_status === 'PENDING_L2' && currentUser.role === 'mgr_l2' && (
+                            {approval_status === 'PENDING_L2' && currentUser.role?.toLowerCase() === 'mgr_l2' && (
                                 <>
                                     <button onClick={() => handleWorkflowAction('REJECT', 'L2 Rejection')} className="px-4 py-2 bg-red-600 hover:bg-red-700 font-bold rounded text-xs">REJECT</button>
                                     <button onClick={() => handleWorkflowAction('APPROVE_L2')} className="px-4 py-2 bg-green-600 hover:bg-green-700 font-bold rounded text-xs">APPROVE TO ADMIN</button>
@@ -444,7 +453,7 @@ const AuctionDetails = () => {
                             )}
 
                             {/* ADMIN Actions */}
-                            {currentUser.role === 'admin' && (
+                            {isAdmin && (
                                 <>
                                     {approval_status === 'PENDING_ADMIN' && (
                                         <div className="flex gap-3">
@@ -461,7 +470,7 @@ const AuctionDetails = () => {
                             )}
 
                             {/* Universal Cancel */}
-                            {approval_status !== 'PUBLISHED' && approval_status !== 'CANCELLED' && (currentUser.role === 'admin' || (currentUser.role === 'seller' && isOwner)) && (
+                            {approval_status !== 'PUBLISHED' && approval_status !== 'CANCELLED' && (isAdmin || (currentUser.role?.toLowerCase() === 'seller' && isOwner)) && (
                                 <button onClick={() => handleWorkflowAction('CANCEL', 'Withdrawn by user')} className="px-4 py-2 border border-gray-600 text-gray-400 hover:text-white hover:border-white font-bold rounded text-xs">CANCEL</button>
                             )}
                         </>
@@ -472,7 +481,7 @@ const AuctionDetails = () => {
     );
   };
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-platinum text-navy font-black uppercase animate-pulse">Initializing Portal...</div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-platinum">Loading...</div>;
   if (error && !auction) return <div className="min-h-screen flex items-center justify-center bg-platinum text-red-600 font-bold">{error}</div>;
 
   return (
@@ -732,7 +741,7 @@ const AuctionDetails = () => {
                                             className="text-blue-600 font-bold text-xs hover:underline uppercase"
                                         >
                                             {/* v4.0: Button text changes to View only for non-management roles */}
-                                            {currentUser?.role === 'guest' || currentUser?.role === 'buyer' ? 'View Details' : 'View / Edit'}
+                                            {currentUser?.role?.toLowerCase() === 'guest' || currentUser?.role?.toLowerCase() === 'buyer' ? 'View Details' : 'View / Edit'}
                                         </button>
                                     </td>
                                 </tr>
@@ -768,6 +777,7 @@ const AuctionDetails = () => {
                                     Cancel
                                 </button>
                             ) : (
+                                // Management logic applied here too
                                 checkCanEdit(auction, currentUser) && (
                                     <button onClick={() => setIsLotEditing(true)} className="px-3 py-1 text-xs font-bold bg-navy text-white rounded hover:bg-orange transition-colors">
                                         <Edit size={14} className="inline mr-1"/> Edit Lot
@@ -816,7 +826,7 @@ const AuctionDetails = () => {
                                 </div>
                             </div>
                             
-                            {/* NEW: Image Section */}
+                            {/* Image Section */}
                             <div className="md:col-span-2 space-y-4 border-t pt-4">
                                 <h4 className="text-xs font-black uppercase text-blue-600 border-b pb-1 mb-2 flex items-center gap-2">
                                     <ImageIcon size={14}/> Lot Images
