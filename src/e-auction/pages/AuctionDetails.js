@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react'; // Added useRef
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { 
- ArrowLeft, Edit, Save, X, CheckCircle, AlertTriangle, 
- Calendar, DollarSign, MapPin, FileText, Package, Clock, Shield, Upload, Download, Loader2,
- Trash2, Image as ImageIcon // Added Trash and Image icons
+  ArrowLeft, Edit, Save, X, CheckCircle, AlertTriangle, 
+  Calendar, DollarSign, MapPin, FileText, Package, Clock, Shield, Upload, Download, Loader2,
+  Trash2, Image as ImageIcon // Added Trash and Image icons
 } from 'lucide-react';
 import Header from '../../components/Header/Header';
 import Footer from '../../components/Footer/Footer';
@@ -78,12 +78,14 @@ const AuctionDetails = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
+        setError('');
         
-        // Use 'open' endpoint for public viewing by buyers/guests
         let data;
-        const isPublicPath = !location.pathname.includes('/manage') && !location.pathname.includes('/edit');
+        // SURGICAL UPDATE: Force 'Open' API for buyers and guests to avoid 403 errors
+        const isBuyerOrGuest = user.role === 'guest' || user.role === 'buyer';
+        const isManagePath = location.pathname.includes('/manage') || location.pathname.includes('/edit');
         
-        if (isPublicPath && (user.role === 'guest' || user.role === 'buyer')) {
+        if (isBuyerOrGuest && !isManagePath) {
             data = await auctionAPI.getOpenAuctionDetails(id);
         } else {
             data = await auctionAPI.getAuctionDetails(id); 
@@ -93,20 +95,19 @@ const AuctionDetails = () => {
         setFormData(data);
 
         // --- AUTO-EDIT LOGIC ---
-        // If URL has '/edit', try to enable edit mode immediately
         if (location.pathname.includes('/edit')) {
             if (checkCanEdit(data, user)) {
                 setIsEditing(true);
             } else {
-                // If validation fails (e.g. trying to edit a LIVE auction via URL)
-                // We silently fallback to View mode, or could show a warning
                 console.warn("Edit not allowed for this auction status.");
             }
         }
 
       } catch (err) {
         console.error("Failed to fetch auction:", err);
-        setError("Could not load auction details. You may not have permission.");
+        setError(err.response?.status === 403 
+          ? "Access Denied: You do not have permission to manage this auction." 
+          : "Could not load auction details.");
       } finally {
         setLoading(false);
       }
@@ -471,7 +472,7 @@ const AuctionDetails = () => {
     );
   };
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-platinum">Loading...</div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-platinum text-navy font-black uppercase animate-pulse">Initializing Portal...</div>;
   if (error && !auction) return <div className="min-h-screen flex items-center justify-center bg-platinum text-red-600 font-bold">{error}</div>;
 
   return (
@@ -482,7 +483,7 @@ const AuctionDetails = () => {
       <div className="bg-white shadow-md border-b border-gray-200 sticky top-0 z-20">
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
             <div className="flex items-center gap-4">
-                <button onClick={() => navigate('/e-auction/my-auctions')} className="text-gray-500 hover:text-navy">
+                <button onClick={() => navigate(-1)} className="text-gray-500 hover:text-navy">
                     <ArrowLeft size={20} />
                 </button>
                 <div>
@@ -510,6 +511,7 @@ const AuctionDetails = () => {
                         </button>
                     </>
                 ) : (
+                    // v4.0: Buttons only visible for authorized management users
                     checkCanEdit(auction, currentUser) && (
                         <button onClick={() => setIsEditing(true)} className="px-6 py-2 bg-navy text-white font-bold rounded shadow hover:bg-orange transition-all flex items-center gap-2">
                             <Edit size={16} /> Edit Auction
@@ -729,7 +731,8 @@ const AuctionDetails = () => {
                                             onClick={() => openLotModal(lot)}
                                             className="text-blue-600 font-bold text-xs hover:underline uppercase"
                                         >
-                                            View / Edit
+                                            {/* v4.0: Button text changes to View only for non-management roles */}
+                                            {currentUser?.role === 'guest' || currentUser?.role === 'buyer' ? 'View Details' : 'View / Edit'}
                                         </button>
                                     </td>
                                 </tr>
