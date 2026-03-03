@@ -96,7 +96,6 @@ export const auctionAPI = {
 
   // ABSOLUTELY REQUIRED UPDATE: Match the Multipart/Form-Data expected by Backend
   updateAuction: async (auctionId, auctionData, termsFile = null) => {
-    // If a file is present, or if we want to support the backend's data: str = Form(...) requirement
     const formData = new FormData();
     
     // Wrap the JSON data in the 'data' field as a string
@@ -139,6 +138,11 @@ export const auctionAPI = {
   getAuctionStats: async () => {
     const response = await api.get(`${AUCTION_BASE}/auctions/stats/overview`);
     return response.data;
+  },
+
+  // Proxy call to biddingAPI to support BiddingLotCard.js unified call
+  placeBid: async (payload) => {
+    return await biddingAPI.placeBid(payload);
   },
 
   // --- NEW ADMIN METHODS START ---
@@ -269,10 +273,10 @@ export const lotAPI = {
  * Bidding Operations
  */
 export const biddingAPI = {
-  // Place bid
-  placeBid: async (lotId, bidAmount) => {
-    const response = await api.post(`${AUCTION_BASE}/bidding/lots/${lotId}/bid`, {
-      bid_amount: bidAmount
+  // Place bid - FIXED: Accept payload object to match component call
+  placeBid: async (payload) => {
+    const response = await api.post(`${AUCTION_BASE}/bidding/lots/${payload.lot_id}/bid`, {
+      bid_amount: payload.bid_amount
     });
     return response.data;
   },
