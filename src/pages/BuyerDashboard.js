@@ -437,24 +437,24 @@ const BuyerDashboard = () => {
         </div>
        ) : (
         <div className="bg-white rounded-lg shadow-lg border border-platinum overflow-hidden">
-          <div className="overflow-x-auto">
-           <table className="w-full text-left border-collapse">
-             <thead className="bg-navy text-white text-xs uppercase font-bold tracking-wider">
-              <tr><th className="p-4">Material</th><th className="p-4">Details</th><th className="p-4">Qty & Price</th><th className="p-4">Location</th><th className="p-4 text-right">Actions</th></tr>
-             </thead>
-             <tbody className="divide-y divide-platinum text-sm text-navy">
-              {filteredListings.map(item => (
-                <tr key={item.id} className="hover:bg-platinum/20 transition-colors">
-                  <td className="p-4 w-16"><div className="h-12 w-12 bg-gray-200 rounded overflow-hidden border border-platinum"><img src={item.images[0]} alt="" className="h-full w-full object-cover"/></div></td>
-                  <td className="p-4"><p className="font-bold text-navy">{item.material}</p><p className="text-xs text-orange font-semibold">{item.form} - {item.grade}</p><p className="text-[10px] text-steel mt-1 flex items-center gap-1"><ShieldCheck size={10} className="text-green-500"/> {maskString(item.sellerName)}</p></td>
-                  <td className="p-4"><p className="font-bold">{item.qty} {item.unit}</p><p className="text-xs text-steel">₹{item.price.toLocaleString()} / {item.unit}</p></td>
-                  <td className="p-4"><div className="flex items-center gap-1 text-xs font-medium"><MapPin size={12} className="text-steel"/> {item.location}</div></td>
-                  <td className="p-4 text-right"><div className="flex justify-end gap-2"><button onClick={() => handleViewDetails(item.id)} className="text-navy font-bold text-xs hover:underline">View</button><button onClick={() => handleRFQ(item.id)} className="bg-orange text-white px-3 py-1 rounded text-xs font-bold hover:bg-navy">RFQ</button></div></td>
-                </tr>
-              ))}
-             </tbody>
-           </table>
-          </div>
+         <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead className="bg-navy text-white text-xs uppercase font-bold tracking-wider">
+             <tr><th className="p-4">Material</th><th className="p-4">Details</th><th className="p-4">Qty & Price</th><th className="p-4">Location</th><th className="p-4 text-right">Actions</th></tr>
+            </thead>
+            <tbody className="divide-y divide-platinum text-sm text-navy">
+             {filteredListings.map(item => (
+               <tr key={item.id} className="hover:bg-platinum/20 transition-colors">
+                 <td className="p-4 w-16"><div className="h-12 w-12 bg-gray-200 rounded overflow-hidden border border-platinum"><img src={item.images[0]} alt="" className="h-full w-full object-cover"/></div></td>
+                 <td className="p-4"><p className="font-bold text-navy">{item.material}</p><p className="text-xs text-orange font-semibold">{item.form} - {item.grade}</p><p className="text-[10px] text-steel mt-1 flex items-center gap-1"><ShieldCheck size={10} className="text-green-500"/> {maskString(item.sellerName)}</p></td>
+                 <td className="p-4"><p className="font-bold">{item.qty} {item.unit}</p><p className="text-xs text-steel">₹{item.price.toLocaleString()} / {item.unit}</p></td>
+                 <td className="p-4"><div className="flex items-center gap-1 text-xs font-medium"><MapPin size={12} className="text-steel"/> {item.location}</div></td>
+                 <td className="p-4 text-right"><div className="flex justify-end gap-2"><button onClick={() => handleViewDetails(item.id)} className="text-navy font-bold text-xs hover:underline">View</button><button onClick={() => handleRFQ(item.id)} className="bg-orange text-white px-3 py-1 rounded text-xs font-bold hover:bg-navy">RFQ</button></div></td>
+               </tr>
+             ))}
+            </tbody>
+          </table>
+         </div>
         </div>
        )}
       </div>
@@ -520,7 +520,7 @@ const BuyerDashboard = () => {
 
             {/* Button 2: Enter Auction / Pay EMD (Conditional) */}
             <button 
-              disabled={auction.emd_paid && auction.status !== 'LIVE'}
+              disabled={auction.emd_paid && auction.status !== 'LIVE' && auction.status !== 'SCHEDULED'}
               onClick={() => {
                 if (!auction.emd_paid) {
                   navigate(`/e-auction/auction/${auction.id}/emd-payment`);
@@ -532,11 +532,11 @@ const BuyerDashboard = () => {
                 !auction.emd_paid 
                   ? 'bg-orange text-white hover:bg-navy shadow-lg' 
                   : auction.status === 'LIVE'
-                    ? 'bg-orange text-white hover:bg-navy shadow-lg'
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    ? 'bg-green-600 text-white hover:bg-navy shadow-lg animate-pulse'
+                    : 'bg-navy text-white hover:bg-orange shadow-lg'
               }`}
             >
-              {!auction.emd_paid ? 'Pay EMD' : (auction.status === 'LIVE' ? 'Enter Auction' : 'Locked')}
+              {!auction.emd_paid ? 'Pay EMD' : (auction.status === 'LIVE' ? 'Enter Auction' : 'Registration Done')}
             </button>
            </div>
           </div>
@@ -550,16 +550,16 @@ const BuyerDashboard = () => {
      {activeTab === 'requirements' && (
        <div className="space-y-6 animate-fadeIn">
         <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow border border-platinum">
-          <div>
-            <h2 className="text-xl font-black text-navy uppercase tracking-tighter">My Open Requirements</h2>
-            <p className="text-steel text-xs font-medium">Manage your active RFQs visible to sellers.</p>
-          </div>
-          <button 
-            onClick={() => setIsPostModalOpen(true)}
-            className="bg-navy text-white px-6 py-3 rounded-lg font-bold uppercase text-sm tracking-widest shadow hover:bg-orange transition-all flex items-center gap-2"
-          >
-            <PlusCircle size={18} /> Post New
-          </button>
+         <div>
+           <h2 className="text-xl font-black text-navy uppercase tracking-tighter">My Open Requirements</h2>
+           <p className="text-steel text-xs font-medium">Manage your active RFQs visible to sellers.</p>
+         </div>
+         <button 
+           onClick={() => setIsPostModalOpen(true)}
+           className="bg-navy text-white px-6 py-3 rounded-lg font-bold uppercase text-sm tracking-widest shadow hover:bg-orange transition-all flex items-center gap-2"
+         >
+           <PlusCircle size={18} /> Post New
+         </button>
         </div>
 
         {reqLoading ? (
