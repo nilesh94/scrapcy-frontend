@@ -10,14 +10,17 @@ const LiveBiddingRoom = () => {
   const [lots, setLots] = useState([]);
   const [loading, setLoading] = useState(true);
   const [serverTime, setServerTime] = useState(new Date());
+  const [timeOffset, setTimeOffset] = useState(0);
 
   // --- REAL-TIME CLOCK SYNC ---
   useEffect(() => {
     const timer = setInterval(() => {
-      setServerTime(new Date());
+      // Standardize to UTC-based virtual time using calculated offset
+      const now = new Date();
+      setServerTime(new Date(now.getTime() + timeOffset));
     }, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [timeOffset]);
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -29,6 +32,13 @@ const LiveBiddingRoom = () => {
            alert("Access Denied: You must complete EMD payment and the auction must be LIVE to enter.");
            window.location.href = `/e-auction/auction/${auctionId}/participation`;
            return;
+        }
+
+        // --- CLOCK DRIFT CALCULATION ---
+        if (summary.auction?.server_time) {
+          const backendTime = new Date(summary.auction.server_time).getTime();
+          const localTime = new Date().getTime();
+          setTimeOffset(backendTime - localTime);
         }
 
         setAuction(summary.auction);
@@ -88,7 +98,7 @@ const LiveBiddingRoom = () => {
               <div className="text-right">
                 <span className="text-[9px] text-slate-500 font-black uppercase block leading-none mb-1">Current Server Time</span>
                 <span className="text-orange font-mono font-black text-2xl tracking-tighter">
-                  {serverTime.toLocaleTimeString('en-GB', { hour12: false })}
+                  {serverTime.toLocaleTimeString('en-GB', { hour12: false, timeZone: 'UTC' })}
                 </span>
               </div>
               <Clock className="text-orange/50 w-5 h-5" />
