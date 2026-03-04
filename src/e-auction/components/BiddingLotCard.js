@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Gavel, Clock, TrendingUp, Shield, Trophy } from 'lucide-react';
 import { auctionAPI } from '../../services/eAuctionAPI';
 
-const BiddingLotCard = ({ lot, auctionId }) => {
+const BiddingLotCard = ({ lot, auctionId, serverTime }) => {
   const [currentPrice, setCurrentPrice] = useState(lot.highest_bid_amount || lot.starting_bid_amount);
   const [isWinning, setIsWinning] = useState(false);
   const [ws, setWs] = useState(null);
@@ -54,7 +54,8 @@ const BiddingLotCard = ({ lot, auctionId }) => {
     if (!lotEndTime || timeLeft === "CLOSED") return;
 
     const timer = setInterval(() => {
-      const now = new Date().getTime();
+      // SaaS Standard: Calculate diff using server-synchronized time
+      const now = serverTime.getTime();
       const end = new Date(lotEndTime).getTime();
       const diff = end - now;
 
@@ -72,7 +73,7 @@ const BiddingLotCard = ({ lot, auctionId }) => {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [lotEndTime, timeLeft]);
+  }, [lotEndTime, timeLeft, serverTime]);
 
   // --- REAL-TIME BIDDING HANDLER ---
   const handlePlaceBid = async () => {
@@ -87,7 +88,9 @@ const BiddingLotCard = ({ lot, auctionId }) => {
     try {
       const payload = {
         lot_id: lot.id,
-        bid_amount: amount
+        bid_amount: amount,
+        // SaaS Standard: Pass the synchronized timestamp to the API
+        client_timestamp: serverTime.toISOString()
       };
       
       // API call triggers the backend broadcast logic
