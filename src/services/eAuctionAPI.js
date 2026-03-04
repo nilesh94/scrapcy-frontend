@@ -7,6 +7,8 @@ import axios from 'axios';
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 const AUCTION_BASE = `${API_URL}/api/v1/e-auction`;
 
+# 
+
 // Create axios instance with interceptor for JWT
 const api = axios.create({
   baseURL: API_URL,
@@ -273,10 +275,11 @@ export const lotAPI = {
  * Bidding Operations
  */
 export const biddingAPI = {
-  // Place bid - FIXED: Accept payload object to match component call
+  // Place bid - FIXED: Use server-synchronized timestamp to prevent 500 drift errors
   placeBid: async (payload) => {
     const response = await api.post(`${AUCTION_BASE}/bidding/lots/${payload.lot_id}/bid`, {
-      bid_amount: payload.bid_amount
+      bid_amount: payload.bid_amount,
+      client_timestamp: payload.client_timestamp || new Date().toISOString()
     });
     return response.data;
   },
