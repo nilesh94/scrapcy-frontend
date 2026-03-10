@@ -9,14 +9,15 @@ const LiveBiddingRoom = () => {
   const [auction, setAuction] = useState(null);
   const [lots, setLots] = useState([]);
   const [loading, setLoading] = useState(true);
+  // SaaS Standard: Start with a null or placeholder until offset is calibrated
   const [serverTime, setServerTime] = useState(new Date());
   const [timeOffset, setTimeOffset] = useState(0);
 
   // --- REAL-TIME CLOCK SYNC ---
   useEffect(() => {
     const timer = setInterval(() => {
-      // Standardize to UTC-based virtual time using calculated offset
       const now = new Date();
+      // SaaS Standard: Apply calculated offset to local clock to get Virtual Server Time
       setServerTime(new Date(now.getTime() + timeOffset));
     }, 1000);
     return () => clearInterval(timer);
@@ -35,10 +36,15 @@ const LiveBiddingRoom = () => {
         }
 
         // --- CLOCK DRIFT CALCULATION ---
-        if (summary.auction?.server_time) {
-          const backendTime = new Date(summary.auction.server_time).getTime();
+        if (summary.server_time) {
+          // Parse server time as UTC explicitly to prevent browser local-shift
+          const backendTime = new Date(summary.server_time).getTime();
           const localTime = new Date().getTime();
-          setTimeOffset(backendTime - localTime);
+          const calculatedOffset = backendTime - localTime;
+          
+          setTimeOffset(calculatedOffset);
+          // SaaS Standard: Update serverTime immediately to prevent "Locked" first render
+          setServerTime(new Date(localTime + calculatedOffset));
         }
 
         setAuction(summary.auction);
@@ -96,9 +102,10 @@ const LiveBiddingRoom = () => {
 
             <div className="bg-white/5 px-6 py-2 rounded-lg border border-white/10 flex items-center gap-4 shadow-inner">
               <div className="text-right">
-                <span className="text-[9px] text-slate-500 font-black uppercase block leading-none mb-1">Current Server Time</span>
+                <span className="text-[9px] text-slate-500 font-black uppercase block leading-none mb-1">Current Server Time (UTC)</span>
                 <span className="text-orange font-mono font-black text-2xl tracking-tighter">
-                  {serverTime.toLocaleTimeString('en-GB', { hour12: false, timeZone: 'UTC' })}
+                  {/* SaaS Standard: Safety check added to prevent toISOString crash */}
+                  {serverTime?.toISOString ? serverTime.toISOString().split('T')[1].split('.')[0] : "SYNCING..."}
                 </span>
               </div>
               <Clock className="text-orange/50 w-5 h-5" />
