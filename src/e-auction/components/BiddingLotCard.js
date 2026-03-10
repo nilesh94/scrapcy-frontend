@@ -51,7 +51,8 @@ const BiddingLotCard = ({ lot, auctionId, serverTime }) => {
   }, [lot.id]);
 
   useEffect(() => {
-    if (!lotEndTime || timeLeft === "CLOSED") return;
+    // SaaS Standard: Added safety check for serverTime to prevent .getTime() crash
+    if (!lotEndTime || timeLeft === "CLOSED" || !serverTime || !serverTime.getTime) return;
 
     const timer = setInterval(() => {
       // SaaS Standard: Calculate diff using server-synchronized time
@@ -79,6 +80,12 @@ const BiddingLotCard = ({ lot, auctionId, serverTime }) => {
   const handlePlaceBid = async () => {
     const amount = parseFloat(bidAmount);
     const minRequired = currentPrice + (lot.min_increment_amount || 0);
+
+    // SaaS Standard: Safety check for serverTime initialization before placing bid
+    if (!serverTime || !serverTime.toISOString) {
+      alert("Synchronizing with server... please try again in a moment.");
+      return;
+    }
 
     if (!bidAmount || amount < minRequired) {
       alert(`Minimum bid required: ₹${minRequired.toLocaleString()}`);
