@@ -22,15 +22,18 @@ const BiddingLotCard = ({ lot, auctionId, serverTime }) => {
     if (!userString) return;
     
     const user = JSON.parse(userString);
+    // Safety check: Don't connect if user is not properly loaded
+    if (!user || !user.id) return;
+
     const ws_scheme = window.location.protocol === "https:" ? "wss" : "ws";
     const host = "scrapcy-backend-new-1.onrender.com";
-    // Standardized WebSocket endpoint mapping
-    const socket = new WebSocket(`${ws_scheme}://${host}/api/v1/e-auction/ws/lots/${lot.id}/live?user_id=${user.id}`);
+    
+    // SURGICAL FIX: URL now matches backend route precisely
+    const socket = new WebSocket(`${ws_scheme}://${host}/api/v1/e-auction/bidding/ws/lots/${lot.id}`);
 
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
       if (data.event_type === 'BID_PLACED' || data.event_type === 'INITIAL_STATE') {
-        // Backend now returns 'current_highest_bid' in broadcast
         const rawPrice = data.current_highest_bid || data.highest_bid || data.current_price;
         const newPrice = Number(rawPrice);
         
@@ -131,7 +134,6 @@ const BiddingLotCard = ({ lot, auctionId, serverTime }) => {
 
   return (
     <div className={`bg-[#111827] rounded-xl shadow-2xl overflow-hidden border border-white/5 transition-all duration-500 ${isWinning && timeLeft !== "CLOSED" ? 'ring-2 ring-green-500 shadow-[0_0_30px_rgba(34,197,94,0.2)]' : ''}`}>
-      
       <div className={`p-4 border-b border-white/5 flex justify-between items-center ${isCritical ? 'bg-red-950/30 animate-pulse' : 'bg-white/5'}`}>
         <div className="flex items-center gap-2">
           <span className="font-black text-white text-xs tracking-widest uppercase">Lot #{lot.lot_number}</span>
