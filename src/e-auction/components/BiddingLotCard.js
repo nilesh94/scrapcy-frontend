@@ -3,7 +3,8 @@ import { Gavel, Clock, TrendingUp, Shield, Trophy } from 'lucide-react';
 import { auctionAPI } from '../../services/eAuctionAPI';
 
 const BiddingLotCard = ({ lot, auctionId, serverTime }) => {
-  const [currentPrice, setCurrentPrice] = useState(lot.highest_bid_amount || lot.starting_bid_amount);
+  // SaaS Standard: Ensure state values are initialized as numbers to prevent concatenation
+  const [currentPrice, setCurrentPrice] = useState(Number(lot.highest_bid_amount || lot.starting_bid_amount));
   const [isWinning, setIsWinning] = useState(false);
   const [ws, setWs] = useState(null);
   const [bidAmount, setBidAmount] = useState("");
@@ -11,8 +12,8 @@ const BiddingLotCard = ({ lot, auctionId, serverTime }) => {
   const [timeLeft, setTimeLeft] = useState("");
   const [isCritical, setIsCritical] = useState(false);
   const [priceFlash, setPriceFlash] = useState(false);
-  // SaaS Standard: Keep track of the current increment for UI calculation
-  const [minIncrement, setMinIncrement] = useState(lot.min_increment_amount || 0);
+  // SaaS Standard: Keep track of the current increment for UI calculation as a Number
+  const [minIncrement, setMinIncrement] = useState(Number(lot.min_increment_amount || 0));
   
   const prevPriceRef = useRef(currentPrice);
 
@@ -30,7 +31,8 @@ const BiddingLotCard = ({ lot, auctionId, serverTime }) => {
       const data = JSON.parse(event.data);
       if (data.event_type === 'BID_PLACED' || data.event_type === 'INITIAL_STATE') {
         // Backend now returns 'current_highest_bid' in broadcast
-        const newPrice = data.current_highest_bid || data.highest_bid || data.current_price;
+        const rawPrice = data.current_highest_bid || data.highest_bid || data.current_price;
+        const newPrice = Number(rawPrice);
         
         if (newPrice !== prevPriceRef.current) {
           setPriceFlash(true);
@@ -42,7 +44,7 @@ const BiddingLotCard = ({ lot, auctionId, serverTime }) => {
         
         // Update leading status if user ID matches winner in broadcast
         if (data.bidder_user_id) {
-            setIsWinning(data.bidder_user_id === user.id);
+            setIsWinning(Number(data.bidder_user_id) === Number(user.id));
         } else {
             setIsWinning(data.is_winning);
         }
@@ -89,8 +91,8 @@ const BiddingLotCard = ({ lot, auctionId, serverTime }) => {
   // --- REAL-TIME BIDDING HANDLER ---
   const handlePlaceBid = async () => {
     const amount = parseFloat(bidAmount);
-    // UI Calculation: Highest Bid + Increment
-    const minRequired = currentPrice + minIncrement;
+    // UI Calculation: Highest Bid + Increment (Casting to Number to avoid string concatenation)
+    const minRequired = Number(currentPrice) + Number(minIncrement);
 
     // SaaS Standard: Safety check for serverTime initialization before placing bid
     if (!serverTime || !serverTime.toISOString) {
@@ -115,7 +117,7 @@ const BiddingLotCard = ({ lot, auctionId, serverTime }) => {
       
       // Update local state immediately with new increment if provided in response
       if (response.data && response.data.min_increment_amount) {
-          setMinIncrement(response.data.min_increment_amount);
+          setMinIncrement(Number(response.data.min_increment_amount));
       }
       
       setBidAmount("");
@@ -152,7 +154,7 @@ const BiddingLotCard = ({ lot, auctionId, serverTime }) => {
               {timeLeft === "CLOSED" ? "FINAL SOLD PRICE" : isWinning ? "YOU ARE LEADING" : "CURRENT HIGHEST BID"}
             </span>
             <span className={`text-4xl font-black text-white tracking-tighter transition-opacity ${priceFlash ? 'opacity-50' : 'opacity-100'}`}>
-              ₹{currentPrice.toLocaleString()}
+              ₹{Number(currentPrice).toLocaleString()}
             </span>
         </div>
 
@@ -164,8 +166,8 @@ const BiddingLotCard = ({ lot, auctionId, serverTime }) => {
                       type="number" 
                       value={bidAmount}
                       onChange={(e) => setBidAmount(e.target.value)}
-                      // UI uses Increment to show min required value
-                      placeholder={`Min: ${(currentPrice + minIncrement).toLocaleString()}`}
+                      // UI uses Increment to show min required value (Explicitly casting both to Number)
+                      placeholder={`Min: ${(Number(currentPrice) + Number(minIncrement)).toLocaleString()}`}
                       className="w-full pl-7 p-3.5 bg-white/5 border border-white/10 rounded-lg text-white font-black outline-none focus:border-orange focus:ring-1 focus:ring-orange transition-all"
                       disabled={timeLeft === "CLOSED"}
                     />
