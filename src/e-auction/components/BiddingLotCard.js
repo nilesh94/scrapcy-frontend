@@ -11,6 +11,8 @@ const BiddingLotCard = ({ lot, auctionId, serverTime }) => {
   const [timeLeft, setTimeLeft] = useState("");
   const [isCritical, setIsCritical] = useState(false);
   const [priceFlash, setPriceFlash] = useState(false);
+  // SaaS Standard: Keep track of the current increment for UI calculation
+  const [minIncrement, setMinIncrement] = useState(lot.min_increment_amount || 0);
   
   const prevPriceRef = useRef(currentPrice);
 
@@ -21,12 +23,14 @@ const BiddingLotCard = ({ lot, auctionId, serverTime }) => {
     const user = JSON.parse(userString);
     const ws_scheme = window.location.protocol === "https:" ? "wss" : "ws";
     const host = "scrapcy-backend-new-1.onrender.com";
+    // Standardized WebSocket endpoint mapping
     const socket = new WebSocket(`${ws_scheme}://${host}/api/v1/e-auction/ws/lots/${lot.id}/live?user_id=${user.id}`);
 
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
       if (data.event_type === 'BID_PLACED' || data.event_type === 'INITIAL_STATE') {
-        const newPrice = data.highest_bid || data.current_price;
+        // Backend now returns 'current_highest_bid' in broadcast
+        const newPrice = data.current_highest_bid || data.highest_bid || data.current_price;
         
         if (newPrice !== prevPriceRef.current) {
           setPriceFlash(true);
@@ -35,7 +39,13 @@ const BiddingLotCard = ({ lot, auctionId, serverTime }) => {
         
         setCurrentPrice(newPrice);
         prevPriceRef.current = newPrice;
-        setIsWinning(data.is_winning);
+        
+        // Update leading status if user ID matches winner in broadcast
+        if (data.bidder_user_id) {
+            setIsWinning(data.bidder_user_id === user.id);
+        } else {
+            setIsWinning(data.is_winning);
+        }
         
         if (data.lot_end_time) {
             setLotEndTime(data.lot_end_time);
@@ -79,7 +89,8 @@ const BiddingLotCard = ({ lot, auctionId, serverTime }) => {
   // --- REAL-TIME BIDDING HANDLER ---
   const handlePlaceBid = async () => {
     const amount = parseFloat(bidAmount);
-    const minRequired = currentPrice + (lot.min_increment_amount || 0);
+    // UI Calculation: Highest Bid + Increment
+    const minRequired = currentPrice + minIncrement;
 
     // SaaS Standard: Safety check for serverTime initialization before placing bid
     if (!serverTime || !serverTime.toISOString) {
@@ -100,12 +111,17 @@ const BiddingLotCard = ({ lot, auctionId, serverTime }) => {
         client_timestamp: serverTime.toISOString()
       };
       
-      // API call triggers the backend broadcast logic
-      await auctionAPI.placeBid(payload);
+      const response = await auctionAPI.placeBid(payload);
+      
+      // Update local state immediately with new increment if provided in response
+      if (response.data && response.data.min_increment_amount) {
+          setMinIncrement(response.data.min_increment_amount);
+      }
+      
       setBidAmount("");
     } catch (err) {
       console.error("Bidding failed:", err);
-      alert(err.response?.data?.detail || "Failed to place bid. Your bid might be lower than the current highest.");
+      alert(err.response?.data?.detail || "Failed to place bid.");
     }
   };
 
@@ -148,7 +164,8 @@ const BiddingLotCard = ({ lot, auctionId, serverTime }) => {
                       type="number" 
                       value={bidAmount}
                       onChange={(e) => setBidAmount(e.target.value)}
-                      placeholder={`Min: ${(currentPrice + (lot.min_increment_amount || 0)).toLocaleString()}`}
+                      // UI uses Increment to show min required value
+                      placeholder={`Min: ${(currentPrice + minIncrement).toLocaleString()}`}
                       className="w-full pl-7 p-3.5 bg-white/5 border border-white/10 rounded-lg text-white font-black outline-none focus:border-orange focus:ring-1 focus:ring-orange transition-all"
                       disabled={timeLeft === "CLOSED"}
                     />
