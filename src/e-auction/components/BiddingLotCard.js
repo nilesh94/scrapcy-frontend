@@ -14,6 +14,7 @@ const BiddingLotCard = ({ lot, auctionId, serverTime }) => {
   const [priceFlash, setPriceFlash] = useState(false);
   // SaaS Standard: Keep track of the current increment for UI calculation as a Number
   const [minIncrement, setMinIncrement] = useState(Number(lot.min_increment_amount || 0));
+  const [lastUserBid, setLastUserBid] = useState(null);
   
   const prevPriceRef = useRef(currentPrice);
 
@@ -25,6 +26,7 @@ const BiddingLotCard = ({ lot, auctionId, serverTime }) => {
     // Safety check: Don't connect if user is not properly loaded
     if (!user || !user.id) return;
 
+    const userId = Number(user.id);
     const ws_scheme = window.location.protocol === "https:" ? "wss" : "ws";
     const host = "scrapcy-backend-new-1.onrender.com";
     
@@ -46,10 +48,20 @@ const BiddingLotCard = ({ lot, auctionId, serverTime }) => {
         prevPriceRef.current = newPrice;
         
         // Update leading status if user ID matches winner in broadcast
-        if (data.bidder_user_id) {
-            setIsWinning(Number(data.bidder_user_id) === Number(user.id));
+        const winningUserId = data.bidder_user_id ?? data.winning_user_id;
+        if (winningUserId) {
+          const isUserWinning = Number(winningUserId) === userId;
+          setIsWinning(isUserWinning);
+
+          // Track the last bid amount placed by this user (from broadcast)
+          if (isUserWinning && rawPrice !== undefined && rawPrice !== null) {
+            const winnerBid = Number(rawPrice);
+            if (!Number.isNaN(winnerBid)) {
+              setLastUserBid(winnerBid);
+            }
+          }
         } else {
-            setIsWinning(data.is_winning);
+          setIsWinning(data.is_winning);
         }
         
         if (data.lot_end_time) {
@@ -117,6 +129,9 @@ const BiddingLotCard = ({ lot, auctionId, serverTime }) => {
       };
       
       const response = await auctionAPI.placeBid(payload);
+
+      // Optimistically remember this user's last successful bid for this lot
+      setLastUserBid(amount);
       
       // Update local state immediately with new increment if provided in response
       if (response.data && response.data.min_increment_amount) {
@@ -203,6 +218,14 @@ const BiddingLotCard = ({ lot, auctionId, serverTime }) => {
                 </div>
             )}
         </div>
+        
+        {timeLeft !== "CLOSED" && (
+          <div className="mt-3 text-center text-[10px] font-black uppercase tracking-widest text-slate-400">
+            {lastUserBid
+              ? <>Your last bid: <span className="text-white">₹{Number(lastUserBid).toLocaleString()}</span></>
+              : "You have not placed a bid yet."}
+          </div>
+        )}
       </div>
     </div>
   );
