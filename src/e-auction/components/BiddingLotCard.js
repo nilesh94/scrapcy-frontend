@@ -24,6 +24,11 @@ const BiddingLotCard = ({ lot, auctionId, serverTime }) => {
   const [lastUserBid, setLastUserBid] = useState(initialLastBid);
   
   const prevPriceRef = useRef(currentPrice);
+  const lastUserBidRef = useRef(initialLastBid);
+
+  useEffect(() => {
+    lastUserBidRef.current = lastUserBid;
+  }, [lastUserBid]);
 
   useEffect(() => {
     const userString = localStorage.getItem('user');
@@ -43,7 +48,12 @@ const BiddingLotCard = ({ lot, auctionId, serverTime }) => {
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
       if (data.event_type === 'BID_PLACED' || data.event_type === 'INITIAL_STATE') {
-        const rawPrice = data.current_highest_bid || data.highest_bid || data.current_price;
+        const rawPrice =
+          data.current_highest_bid ??
+          data.highest_bid ??
+          data.current_price ??
+          data.current_bid ??
+          data.bid_amount;
         const newPrice = Number(rawPrice);
         
         if (newPrice !== prevPriceRef.current) {
@@ -56,7 +66,7 @@ const BiddingLotCard = ({ lot, auctionId, serverTime }) => {
         
         // Update leading status if user ID matches winner in broadcast
         const winningUserId = data.bidder_user_id ?? data.winning_user_id;
-        if (winningUserId) {
+        if (winningUserId !== undefined && winningUserId !== null) {
           const isUserWinning = Number(winningUserId) === userId;
           setIsWinning(isUserWinning);
 
@@ -68,7 +78,12 @@ const BiddingLotCard = ({ lot, auctionId, serverTime }) => {
             }
           }
         } else {
-          setIsWinning(data.is_winning);
+          // Fallback: derive winning state from amounts if backend doesn't send winner id
+          if (!Number.isNaN(newPrice) && lastUserBidRef.current != null) {
+            setIsWinning(Number(lastUserBidRef.current) === newPrice);
+          } else if (typeof data.is_winning === 'boolean') {
+            setIsWinning(data.is_winning);
+          }
         }
         
         if (data.lot_end_time) {
@@ -227,10 +242,17 @@ const BiddingLotCard = ({ lot, auctionId, serverTime }) => {
         </div>
         
         {timeLeft !== "CLOSED" && (
-          <div className="mt-3 text-center text-[10px] font-black uppercase tracking-widest text-slate-400">
-            {lastUserBid
-              ? <>Your last bid: <span className="text-white">₹{Number(lastUserBid).toLocaleString()}</span></>
-              : "You have not placed a bid yet."}
+          <div className="mt-3 text-center text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center justify-center gap-2">
+            {lastUserBid ? (
+              <>
+                {isWinning && <Trophy size={12} className="text-yellow-400" />}
+                <span>Your last bid:</span>
+                <span className="text-white">₹{Number(lastUserBid).toLocaleString()}</span>
+                {isWinning && <span className="text-green-400">(Winning)</span>}
+              </>
+            ) : (
+              "You have not placed a bid yet."
+            )}
           </div>
         )}
       </div>
