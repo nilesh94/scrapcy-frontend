@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Gavel, Clock, TrendingUp, Shield, Trophy } from 'lucide-react';
-import { auctionAPI } from '../../services/eAuctionAPI';
+import { auctionAPI, getLotBiddingWebSocketUrl } from '../../services/eAuctionAPI';
 
 const BiddingLotCard = ({ lot, auctionId, serverTime }) => {
   // SaaS Standard: Ensure state values are initialized as numbers to prevent concatenation
@@ -40,16 +40,8 @@ const BiddingLotCard = ({ lot, auctionId, serverTime }) => {
 
     const userId = Number(user.id);
 
-    // Configurable WebSocket base:
-    // - Prefer REACT_APP_WS_URL if provided (e.g. wss://scrapcy-backend-new-1.onrender.com)
-    // - Fallback to same host as current page with ws/wss scheme
-    const envWsBase = process.env.REACT_APP_WS_URL;
-    const defaultWsBase = `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}`;
-    const wsBase = envWsBase || defaultWsBase;
-
-    // Backend‑approved lot bidding endpoint:
-    // /api/v1/e-auction/ws/lots/{lotId}/bids?user_id={userId}
-    const socketUrl = `${wsBase}/api/v1/e-auction/ws/lots/${lot.id}/bids?user_id=${userId}`;
+    // Centralized WebSocket URL builder (kept in eAuctionAPI service)
+    const socketUrl = getLotBiddingWebSocketUrl(lot.id, userId);
     const socket = new WebSocket(socketUrl);
 
     // Initialize winning state from lot data if backend provided it

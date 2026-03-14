@@ -6,6 +6,16 @@ import axios from 'axios';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 const AUCTION_BASE = `${API_URL}/api/v1/e-auction`;
+// Centralized WebSocket base for all real-time auction traffic
+// Prefer REACT_APP_WS_URL, otherwise derive from API_URL (http->ws, https->wss)
+const WS_BASE = (process.env.REACT_APP_WS_URL || API_URL).replace(/^http/, 'ws');
+
+/**
+ * Build WebSocket URL for live lot bidding.
+ * Backend contract: /api/v1/e-auction/ws/lots/{lotId}/bids?user_id={userId}
+ */
+export const getLotBiddingWebSocketUrl = (lotId, userId) =>
+  `${WS_BASE}/api/v1/e-auction/ws/lots/${lotId}/bids?user_id=${userId}`;
 
 // Create axios instance with interceptor for JWT
 const api = axios.create({
