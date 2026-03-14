@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Gavel, Clock, TrendingUp, Shield, Trophy } from 'lucide-react';
 import { auctionAPI, getLotBiddingWebSocketUrl } from '../../services/eAuctionAPI';
 
-const BiddingLotCard = ({ lot, auctionId, serverTime }) => {
+const BiddingLotCard = ({ lot, auctionId, serverTime, currentUserId }) => {
   // SaaS Standard: Ensure state values are initialized as numbers to prevent concatenation
   const [currentPrice, setCurrentPrice] = useState(Number(lot.highest_bid_amount || lot.starting_bid_amount));
   const [isWinning, setIsWinning] = useState(false);
@@ -31,18 +31,32 @@ const BiddingLotCard = ({ lot, auctionId, serverTime }) => {
   }, [lastUserBid]);
 
   useEffect(() => {
-    const userString = localStorage.getItem('user');
-    if (!userString) return;
-    
-    const user = JSON.parse(userString);
-    // Safety check: Don't connect if user is not properly loaded
-    if (!user || !user.id) return;
+    // Prefer user id from LiveBiddingRoom summary; fallback to localStorage
+    let effectiveUserId = currentUserId ? Number(currentUserId) : null;
+    if (!effectiveUserId) {
+      const userString = localStorage.getItem('user');
+      if (!userString) {
+        console.warn("BiddingLotCard: missing current user id for lot", lot.id);
+        return;
+      }
+      try {
+        const user = JSON.parse(userString);
+        if (!user || !user.id) {
+          console.warn("BiddingLotCard: invalid user object in localStorage for lot", lot.id);
+          return;
+        }
+        effectiveUserId = Number(user.id);
+      } catch (e) {
+        console.warn("BiddingLotCard: failed to parse localStorage user", e);
+        return;
+      }
+    }
 
-    const userId = Number(user.id);
+    const userId = effectiveUserId;
 
     // Centralized WebSocket URL builder (kept in eAuctionAPI service)
     const socketUrl = getLotBiddingWebSocketUrl(lot.id, userId);
-    console.debug("Bidding WS connecting", { lotId: lot.id, socketUrl });
+    console.debug("Bidding WS connecting", { lotId: lot.id, socketUrl, userId });
     const socket = new WebSocket(socketUrl);
 
     socket.onopen = () => {

@@ -11,6 +11,7 @@ const LiveBiddingRoom = () => {
   const [loading, setLoading] = useState(true);
   const [serverTime, setServerTime] = useState(new Date());
   const [timeOffset, setTimeOffset] = useState(0);
+  const [currentUserId, setCurrentUserId] = useState(null);
 
   // --- REAL-TIME CLOCK SYNC ---
   useEffect(() => {
@@ -44,6 +45,16 @@ const LiveBiddingRoom = () => {
 
         setAuction(summary.auction);
         setLots(summary.auction.items || []); 
+
+        // Derive the current participant/user id from summary (backend contract)
+        const derivedUserId =
+          summary.participation?.user_id ??
+          summary.participation?.buyer_id ??
+          summary.user?.id ??
+          summary.current_user_id;
+        if (derivedUserId) {
+          setCurrentUserId(Number(derivedUserId));
+        }
       } catch (err) {
         console.error("Failed to load live auction", err);
       } finally {
@@ -112,8 +123,9 @@ const LiveBiddingRoom = () => {
           {lots.map((lot) => (
             <BiddingLotCard 
               key={lot.id} 
-              lot={lot} 
-              auctionId={auctionId} 
+              lot={lot}
+              auctionId={auctionId}
+              currentUserId={currentUserId}
               serverTime={serverTime}
             />
           ))}
