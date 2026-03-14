@@ -39,11 +39,18 @@ const BiddingLotCard = ({ lot, auctionId, serverTime }) => {
     if (!user || !user.id) return;
 
     const userId = Number(user.id);
-    const ws_scheme = window.location.protocol === "https:" ? "wss" : "ws";
-    const host = "scrapcy-backend-new-1.onrender.com";
-    
-    // SURGICAL FIX: URL now matches backend route precisely
-    const socket = new WebSocket(`${ws_scheme}://${host}/api/v1/e-auction/bidding/ws/lots/${lot.id}`);
+
+    // Configurable WebSocket base:
+    // - Prefer REACT_APP_WS_URL if provided (e.g. wss://scrapcy-backend-new-1.onrender.com)
+    // - Fallback to same host as current page with ws/wss scheme
+    const envWsBase = process.env.REACT_APP_WS_URL;
+    const defaultWsBase = `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}`;
+    const wsBase = envWsBase || defaultWsBase;
+
+    // Backend‑approved lot bidding endpoint:
+    // /api/v1/e-auction/ws/lots/{lotId}/bids?user_id={userId}
+    const socketUrl = `${wsBase}/api/v1/e-auction/ws/lots/${lot.id}/bids?user_id=${userId}`;
+    const socket = new WebSocket(socketUrl);
 
     // Initialize winning state from lot data if backend provided it
     const initialWinningUserId =
