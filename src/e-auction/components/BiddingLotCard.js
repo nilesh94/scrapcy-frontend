@@ -45,51 +45,72 @@ const BiddingLotCard = ({ lot, auctionId, serverTime }) => {
     // SURGICAL FIX: URL now matches backend route precisely
     const socket = new WebSocket(`${ws_scheme}://${host}/api/v1/e-auction/bidding/ws/lots/${lot.id}`);
 
+    // Initialize winning state from lot data if backend provided it
+    const initialWinningUserId =
+      lot.winning_user_id ??
+      lot.highest_bidder_user_id ??
+      lot.bidder_user_id ??
+      lot.current_winner_user_id;
+    if (initialWinningUserId !== undefined && initialWinningUserId !== null) {
+      setIsWinning(Number(initialWinningUserId) === userId);
+    } else if (
+      initialLastBid != null &&
+      Number(initialLastBid) === Number(lot.highest_bid_amount || lot.starting_bid_amount)
+    ) {
+      setIsWinning(true);
+    }
+
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
-      if (data.event_type === 'BID_PLACED' || data.event_type === 'INITIAL_STATE') {
-        const rawPrice =
-          data.current_highest_bid ??
-          data.highest_bid ??
-          data.current_price ??
-          data.current_bid ??
-          data.bid_amount;
-        const newPrice = Number(rawPrice);
-        
+      console.debug("Bidding WS message", { lotId: lot.id, data });
+
+      // Handle price / winner updates for any event type
+      const rawPrice =
+        data.current_highest_bid ??
+        data.highest_bid ??
+        data.current_price ??
+        data.current_bid ??
+        data.bid_amount;
+      const newPrice = Number(rawPrice);
+
+      if (!Number.isNaN(newPrice)) {
         if (newPrice !== prevPriceRef.current) {
           setPriceFlash(true);
           setTimeout(() => setPriceFlash(false), 1000);
         }
-        
+
         setCurrentPrice(newPrice);
         prevPriceRef.current = newPrice;
-        
-        // Update leading status if user ID matches winner in broadcast
-        const winningUserId = data.bidder_user_id ?? data.winning_user_id;
-        if (winningUserId !== undefined && winningUserId !== null) {
-          const isUserWinning = Number(winningUserId) === userId;
-          setIsWinning(isUserWinning);
-
-          // Track the last bid amount placed by this user (from broadcast)
-          if (isUserWinning && rawPrice !== undefined && rawPrice !== null) {
-            const winnerBid = Number(rawPrice);
-            if (!Number.isNaN(winnerBid)) {
-              setLastUserBid(winnerBid);
-            }
-          }
-        } else {
-          // Fallback: derive winning state from amounts if backend doesn't send winner id
-          if (!Number.isNaN(newPrice) && lastUserBidRef.current != null) {
-            setIsWinning(Number(lastUserBidRef.current) === newPrice);
-          } else if (typeof data.is_winning === 'boolean') {
-            setIsWinning(data.is_winning);
-          }
-        }
-        
-        if (data.lot_end_time) {
-            setLotEndTime(data.lot_end_time);
-        }
       }
+
+      // Update leading status if user ID matches winner in broadcast
+      const winningUserId =
+        data.bidder_user_id ??
+        data.winning_user_id ??
+        data.highest_bidder_user_id ??
+        data.current_winner_user_id;
+      if (winningUserId !== undefined && winningUserId !== null) {
+        const isUserWinning = Number(winningUserId) === userId;
+        setIsWinning(isUserWinning);
+
+        // Track the last bid amount placed by this user (from broadcast)
+        if (isUserWinning && rawPrice !== undefined && rawPrice !== null) {
+          const winnerBid = Number(rawPrice);
+          if (!Number.isNaN(winnerBid)) {
+            setLastUserBid(winnerBid);
+          }
+        }
+      } else if (!Number.isNaN(newPrice) && lastUserBidRef.current != null) {
+        // Fallback: derive winning state from amounts if backend doesn't send winner id
+        setIsWinning(Number(lastUserBidRef.current) === newPrice);
+      } else if (typeof data.is_winning === "boolean") {
+        setIsWinning(data.is_winning);
+      }
+
+      if (data.lot_end_time) {
+        setLotEndTime(data.lot_end_time);
+      }
+
       if (data.event_type === 'AUCTION_CLOSED') {
         setTimeLeft("CLOSED");
       }
