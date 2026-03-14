@@ -42,7 +42,20 @@ const BiddingLotCard = ({ lot, auctionId, serverTime }) => {
 
     // Centralized WebSocket URL builder (kept in eAuctionAPI service)
     const socketUrl = getLotBiddingWebSocketUrl(lot.id, userId);
+    console.debug("Bidding WS connecting", { lotId: lot.id, socketUrl });
     const socket = new WebSocket(socketUrl);
+
+    socket.onopen = () => {
+      console.debug("Bidding WS open", { lotId: lot.id });
+    };
+
+    socket.onerror = (err) => {
+      console.error("Bidding WS error", { lotId: lot.id, err });
+    };
+
+    socket.onclose = (evt) => {
+      console.debug("Bidding WS closed", { lotId: lot.id, code: evt.code, reason: evt.reason });
+    };
 
     // Initialize winning state from lot data if backend provided it
     const initialWinningUserId =
