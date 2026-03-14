@@ -14,7 +14,14 @@ const BiddingLotCard = ({ lot, auctionId, serverTime }) => {
   const [priceFlash, setPriceFlash] = useState(false);
   // SaaS Standard: Keep track of the current increment for UI calculation as a Number
   const [minIncrement, setMinIncrement] = useState(Number(lot.min_increment_amount || 0));
-  const [lastUserBid, setLastUserBid] = useState(null);
+  // Initialize lastUserBid from server-provided value when available
+  const initialLastBid =
+    lot.last_user_bid_amount != null
+      ? Number(lot.last_user_bid_amount)
+      : lot.user_last_bid_amount != null
+        ? Number(lot.user_last_bid_amount)
+        : null;
+  const [lastUserBid, setLastUserBid] = useState(initialLastBid);
   
   const prevPriceRef = useRef(currentPrice);
 
