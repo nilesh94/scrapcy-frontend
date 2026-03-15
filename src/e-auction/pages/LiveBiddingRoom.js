@@ -1,17 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import { Gavel, Clock, Users, Shield, AlertCircle, Zap } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Gavel, Clock, Users, Shield, AlertCircle, Zap, LogOut } from 'lucide-react';
 import { auctionAPI } from '../../services/eAuctionAPI';
 import BiddingLotCard from '../components/BiddingLotCard';
 
 const LiveBiddingRoom = () => {
   const { auctionId } = useParams();
+  const navigate = useNavigate();
   const [auction, setAuction] = useState(null);
   const [lots, setLots] = useState([]);
   const [loading, setLoading] = useState(true);
   const [serverTime, setServerTime] = useState(new Date());
   const [timeOffset, setTimeOffset] = useState(0);
   const [currentUserId, setCurrentUserId] = useState(null);
+
+  // --- EXIT ROOM HANDLER ---
+  const handleExitRoom = () => {
+    if (window.confirm("Are you sure you want to exit the live bidding room? All active connections will be closed.")) {
+      // Navigating away will trigger unmount in all BiddingLotCard components,
+      // which already have cleanup logic to close their respective WebSockets.
+      navigate(`/dashboard`);
+    }
+  };
 
   // --- REAL-TIME CLOCK SYNC ---
   useEffect(() => {
@@ -115,6 +125,17 @@ const LiveBiddingRoom = () => {
               </div>
               <Clock className="text-orange/50 w-5 h-5" />
             </div>
+
+            <button 
+              onClick={handleExitRoom}
+              className="group flex items-center gap-3 bg-red-600/10 hover:bg-red-600 border border-red-600/20 hover:border-red-600 px-6 py-2.5 rounded-lg transition-all duration-300"
+            >
+              <div className="text-right hidden sm:block">
+                <span className="text-[9px] text-red-500 group-hover:text-white font-black uppercase block leading-none mb-1">Safety First</span>
+                <span className="text-red-500 group-hover:text-white font-black text-xs uppercase tracking-widest">Exit Room</span>
+              </div>
+              <LogOut className="text-red-500 group-hover:text-white w-5 h-5" />
+            </button>
           </div>
         </div>
       </div>

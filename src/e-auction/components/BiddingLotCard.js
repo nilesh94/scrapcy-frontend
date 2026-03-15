@@ -139,6 +139,16 @@ const BiddingLotCard = ({ lot, auctionId, serverTime, currentUserId }) => {
     };
 
     const handleWsMessage = (data) => {
+      // SaaS Standard: Validate that the incoming message belongs to THIS lot
+      // This prevents cross-lot data contamination in multi-lot views
+      const messageLotId = data.lot_id ?? data.item_id;
+      if (messageLotId && Number(messageLotId) !== Number(lot.id)) {
+        console.debug(`Bidding WS: Ignoring message for lot ${messageLotId} (current lot: ${lot.id})`);
+        return;
+      }
+
+      console.debug(`Bidding WS: Processing update for lot ${lot.id}`, data);
+
       // Handle price / winner updates for any event type
       const rawPrice =
         data.current_highest_bid ??
@@ -194,7 +204,10 @@ const BiddingLotCard = ({ lot, auctionId, serverTime, currentUserId }) => {
     connectWS();
 
     return () => {
-      if (socket) socket.close();
+      if (socket) {
+        console.debug(`Bidding WS: Cleaning up connection for lot ${lot.id}`);
+        socket.close();
+      }
       if (heartbeatInterval) clearInterval(heartbeatInterval);
     };
   }, [lot.id]);
