@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Gavel, Clock, TrendingUp, Shield, Trophy, MapPin, Package, Info, ChevronDown, ChevronUp } from 'lucide-react';
+import { Gavel, Clock, TrendingUp, Shield, Trophy, MapPin, Package, Info, ChevronDown, ChevronUp, FileText, Calendar } from 'lucide-react';
 import { auctionAPI, getLotBiddingWebSocketUrl } from '../../services/eAuctionAPI';
 
-const BiddingLotCard = ({ lot, auctionId, serverTime, currentUserId }) => {
+const BiddingLotCard = ({ lot, auctionId, serverTime, currentUserId, auctionData }) => {
   // SaaS Standard: Ensure state values are initialized as numbers to prevent concatenation
   const [currentPrice, setCurrentPrice] = useState(Number(lot.highest_bid_amount || lot.starting_bid_amount));
   const [isWinning, setIsWinning] = useState(false);
@@ -13,6 +13,7 @@ const BiddingLotCard = ({ lot, auctionId, serverTime, currentUserId }) => {
   const [isCritical, setIsCritical] = useState(false);
   const [priceFlash, setPriceFlash] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
+  const [showAuctionInfo, setShowAuctionInfo] = useState(false);
   // SaaS Standard: Keep track of the current increment for UI calculation as a Number
   const [minIncrement, setMinIncrement] = useState(Number(lot.min_increment_amount || 0));
   // Initialize lastUserBid from server-provided value when available
@@ -315,14 +316,53 @@ const BiddingLotCard = ({ lot, auctionId, serverTime, currentUserId }) => {
       
       <div className="p-5">
         <div className="flex justify-between items-start gap-4 mb-4">
-          <h3 className="text-white font-bold text-lg leading-tight tracking-tight">{lot.item_name}</h3>
-          <button 
-            onClick={() => setShowDetails(!showDetails)}
-            className="text-slate-500 hover:text-white transition-colors"
-          >
-            {showDetails ? <ChevronUp size={20} /> : <Info size={20} />}
-          </button>
+          <div className="flex-1 min-w-0">
+             <h3 className="text-white font-bold text-lg leading-tight tracking-tight truncate">{lot.item_name}</h3>
+             {auctionData?.auction_title && (
+               <p className="text-[10px] text-slate-500 font-bold uppercase truncate mt-0.5">{auctionData.auction_title}</p>
+             )}
+          </div>
+          <div className="flex gap-2">
+            <button 
+              onClick={() => setShowAuctionInfo(!showAuctionInfo)}
+              className={`p-1.5 rounded transition-colors ${showAuctionInfo ? 'bg-orange/20 text-orange' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
+              title="Auction Information"
+            >
+              <FileText size={18} />
+            </button>
+            <button 
+              onClick={() => setShowDetails(!showDetails)}
+              className={`p-1.5 rounded transition-colors ${showDetails ? 'bg-orange/20 text-orange' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
+              title="Lot Specifications"
+            >
+              <Info size={18} />
+            </button>
+          </div>
         </div>
+
+        {/* --- INDUSTRY STANDARD: AUCTION CONTEXT OVERLAY --- */}
+        {showAuctionInfo && (
+          <div className="bg-orange/5 rounded-lg p-3 mb-4 border border-orange/10 animate-in slide-in-from-right-2 duration-300">
+             <div className="space-y-2 text-[10px]">
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-500 uppercase font-black">Auction ID:</span>
+                  <span className="text-orange font-black">#{auctionId}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-500 uppercase font-black">Type:</span>
+                  <span className="text-slate-300 font-bold uppercase">{auctionData?.auction_type || 'Forward'}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-500 uppercase font-black">Region:</span>
+                  <span className="text-slate-300 font-bold uppercase">{auctionData?.region || 'Global'}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-500 uppercase font-black">EMD Requirement:</span>
+                  <span className="text-green-500 font-bold uppercase">Verified & Paid</span>
+                </div>
+             </div>
+          </div>
+        )}
 
         {/* --- INDUSTRY STANDARD: LOT SPECIFICATIONS --- */}
         <div className="grid grid-cols-2 gap-3 mb-5">

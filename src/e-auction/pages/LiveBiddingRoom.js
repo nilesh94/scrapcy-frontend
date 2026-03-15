@@ -54,7 +54,15 @@ const LiveBiddingRoom = () => {
           setServerTime(new Date(localTime + calculatedOffset));
         }
 
-        setAuction(summary.auction);
+        // --- NEW: FETCH RICH AUCTION DETAILS ---
+        try {
+          const richDetails = await auctionAPI.getOpenAuctionDetails(auctionId);
+          setAuction({ ...summary.auction, ...richDetails });
+        } catch (richErr) {
+          console.warn("Failed to load rich auction details, falling back to summary", richErr);
+          setAuction(summary.auction);
+        }
+
         setLots(summary.auction.items || []); 
 
         // Derive the current participant/user id from summary (backend contract)
@@ -201,6 +209,7 @@ const LiveBiddingRoom = () => {
               auctionId={auctionId}
               currentUserId={currentUserId}
               serverTime={serverTime}
+              auctionData={auction}
             />
           ))}
         </div>
