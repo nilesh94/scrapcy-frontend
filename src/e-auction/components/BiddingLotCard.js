@@ -371,7 +371,7 @@ const BiddingLotCard = ({ lot, auctionId, serverTime, currentUserId, auctionData
               <Package size={12} className="text-orange/70" /> Quantity
             </div>
             <p className="text-white font-black text-sm">
-              {lot.quantity} <span className="text-slate-400 text-[10px]">{lot.uom || 'Units'}</span>
+              {lot.quantity} <span className="text-slate-400 text-[10px]">{lot.uom || lot.unit || 'Units'}</span>
             </p>
           </div>
           <div className="bg-white/5 rounded-lg p-2.5 border border-white/5">
