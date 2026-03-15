@@ -53,14 +53,22 @@ const BiddingLotCard = ({ lot, auctionId, serverTime, currentUserId }) => {
     }
 
     const userId = effectiveUserId;
+    const token = localStorage.getItem('token');
 
     // Centralized WebSocket URL builder (kept in eAuctionAPI service)
-    const socketUrl = getLotBiddingWebSocketUrl(lot.id, userId);
+    const socketUrl = getLotBiddingWebSocketUrl(lot.id, userId, token);
     console.debug("Bidding WS connecting", { lotId: lot.id, socketUrl, userId });
     const socket = new WebSocket(socketUrl);
+    let heartbeatInterval;
 
     socket.onopen = () => {
       console.debug("Bidding WS open", { lotId: lot.id });
+      // SaaS Standard: Keep connection alive with a simple heartbeat string
+      heartbeatInterval = setInterval(() => {
+        if (socket.readyState === WebSocket.OPEN) {
+          socket.send("ping");
+        }
+      }, 30000); // Send every 30 seconds
     };
 
     socket.onerror = (err) => {
@@ -69,6 +77,13 @@ const BiddingLotCard = ({ lot, auctionId, serverTime, currentUserId }) => {
 
     socket.onclose = (evt) => {
       console.debug("Bidding WS closed", { lotId: lot.id, code: evt.code, reason: evt.reason });
+      if (heartbeatInterval) clearInterval(heartbeatInterval);
+
+      // SaaS Standard: Handle specific business-logic closure reasons from backend
+      if (evt.reason && evt.reason.includes("EMD Payment required")) {
+        alert("EMD Payment Required: You must complete registration to bid on this lot.");
+        window.location.href = `/e-auction/auction/${auctionId}/participation`;
+      }
     };
 
     // Initialize winning state from lot data if backend provided it

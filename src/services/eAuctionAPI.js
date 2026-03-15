@@ -12,10 +12,15 @@ const WS_BASE = (process.env.REACT_APP_WS_URL || API_URL).replace(/^http/, 'ws')
 
 /**
  * Build WebSocket URL for live lot bidding.
- * Backend contract: /api/v1/e-auction/ws/lots/{lotId}/bids?user_id={userId}
+ * Backend contract: /api/v1/e-auction/ws/lots/{lotId}/bids?user_id={userId}&token={token}
  */
-export const getLotBiddingWebSocketUrl = (lotId, userId) =>
-  `${WS_BASE}/api/v1/e-auction/ws/lots/${lotId}/bids?user_id=${userId}`;
+export const getLotBiddingWebSocketUrl = (lotId, userId, token) => {
+  let url = `${WS_BASE}/api/v1/e-auction/ws/lots/${lotId}/bids?user_id=${userId}`;
+  if (token) {
+    url += `&token=${token}`;
+  }
+  return url;
+};
 
 // Create axios instance with interceptor for JWT
 const api = axios.create({
