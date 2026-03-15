@@ -128,9 +128,9 @@ const LiveBiddingRoom = () => {
 
             <div className="bg-white/5 px-4 py-1.5 rounded-lg border border-white/10 flex items-center gap-3 shadow-inner">
               <div className="text-right">
-                <span className="text-[8px] text-slate-500 font-black uppercase block leading-none mb-0.5">Server Time (UTC)</span>
+                <span className="text-[8px] text-slate-500 font-black uppercase block leading-none mb-0.5">Your Local Time</span>
                 <span className="text-orange font-mono font-black text-xl tracking-tighter">
-                  {serverTime?.toISOString ? serverTime.toISOString().split('T')[1].split('.')[0] : "SYNCING..."}
+                  {serverTime ? serverTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }) : "SYNCING..."}
                 </span>
               </div>
               <Clock className="text-orange/50 w-4 h-4" />

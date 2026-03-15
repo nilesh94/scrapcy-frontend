@@ -228,11 +228,23 @@ const BiddingLotCard = ({ lot, auctionId, serverTime, currentUserId }) => {
         setIsCritical(false);
         clearInterval(timer);
       } else {
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
         const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
         const secs = Math.floor((diff % (1000 * 60)) / 1000);
         
-        setIsCritical(diff < 60000);
-        setTimeLeft(`${mins}:${secs < 10 ? '0' : ''}${secs}`);
+        setIsCritical(diff < 60000); // Critical if less than 1 minute
+
+        let displayTime = "";
+        if (days > 0) {
+          displayTime = `${days}d ${hours}h`;
+        } else if (hours > 0) {
+          displayTime = `${hours}h ${mins}m`;
+        } else {
+          displayTime = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+        }
+        
+        setTimeLeft(displayTime);
       }
     }, 1000);
 
