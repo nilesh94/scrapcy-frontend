@@ -15,7 +15,8 @@ const WS_BASE = (process.env.REACT_APP_WS_URL || API_URL).replace(/^http/, 'ws')
  * Backend contract: /api/v1/e-auction/ws/lots/{lotId}/bids?user_id={userId}&token={token}
  */
 export const getLotBiddingWebSocketUrl = (lotId, userId, token) => {
-  let url = `${WS_BASE}/api/v1/e-auction/ws/lots/${lotId}/bids?user_id=${userId}`;
+  // SaaS Standard: Added trailing slash to bids/ to satisfy some proxy/backend requirements
+  let url = `${WS_BASE}/api/v1/e-auction/ws/lots/${lotId}/bids/?user_id=${userId}`;
   if (token) {
     url += `&token=${token}`;
   }

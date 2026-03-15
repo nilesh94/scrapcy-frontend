@@ -53,6 +53,7 @@ const LiveBiddingRoom = () => {
           summary.user?.id ??
           summary.current_user_id;
         if (derivedUserId) {
+          console.debug("LiveBiddingRoom: derived user id", derivedUserId);
           setCurrentUserId(Number(derivedUserId));
         }
       } catch (err) {
