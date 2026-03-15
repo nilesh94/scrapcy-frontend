@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Gavel, Clock, TrendingUp, Shield, Trophy } from 'lucide-react';
+import { Gavel, Clock, TrendingUp, Shield, Trophy, MapPin, Package, Info, ChevronDown, ChevronUp } from 'lucide-react';
 import { auctionAPI, getLotBiddingWebSocketUrl } from '../../services/eAuctionAPI';
 
 const BiddingLotCard = ({ lot, auctionId, serverTime, currentUserId }) => {
@@ -12,6 +12,7 @@ const BiddingLotCard = ({ lot, auctionId, serverTime, currentUserId }) => {
   const [timeLeft, setTimeLeft] = useState("");
   const [isCritical, setIsCritical] = useState(false);
   const [priceFlash, setPriceFlash] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
   // SaaS Standard: Keep track of the current increment for UI calculation as a Number
   const [minIncrement, setMinIncrement] = useState(Number(lot.min_increment_amount || 0));
   // Initialize lastUserBid from server-provided value when available
@@ -282,11 +283,17 @@ const BiddingLotCard = ({ lot, auctionId, serverTime, currentUserId }) => {
 
   const statusColor = timeLeft === "CLOSED" ? 'bg-slate-800' : isWinning ? 'bg-green-600' : 'bg-navy';
 
+  // --- QUICK BID HANDLER ---
+  const handleQuickBid = (multiplier) => {
+    const amount = Number(currentPrice) + (Number(minIncrement) * multiplier);
+    setBidAmount(amount.toString());
+  };
+
   return (
     <div className={`bg-[#111827] rounded-xl shadow-2xl overflow-hidden border border-white/5 transition-all duration-500 ${isWinning && timeLeft !== "CLOSED" ? 'ring-2 ring-green-500 shadow-[0_0_30px_rgba(34,197,94,0.2)]' : ''}`}>
       <div className={`p-4 border-b border-white/5 flex justify-between items-center ${isCritical ? 'bg-red-950/30 animate-pulse' : 'bg-white/5'}`}>
         <div className="flex items-center gap-2">
-          <span className="font-black text-white text-xs tracking-widest uppercase">Lot #{lot.lot_number}</span>
+          <span className="font-black text-white text-[10px] tracking-widest uppercase bg-white/10 px-2 py-0.5 rounded">Lot #{lot.lot_number}</span>
           {isWinning && timeLeft !== "CLOSED" && <Trophy size={14} className="text-yellow-500" />}
         </div>
         <div className={`flex items-center gap-1.5 font-mono font-black text-sm ${timeLeft === "CLOSED" ? 'text-slate-500' : isCritical ? 'text-red-500' : 'text-orange'}`}>
@@ -294,40 +301,102 @@ const BiddingLotCard = ({ lot, auctionId, serverTime, currentUserId }) => {
         </div>
       </div>
       
-      <div className="p-6">
-        <h3 className="text-white font-bold truncate mb-5 tracking-tight">{lot.item_name}</h3>
+      <div className="p-5">
+        <div className="flex justify-between items-start gap-4 mb-4">
+          <h3 className="text-white font-bold text-lg leading-tight tracking-tight">{lot.item_name}</h3>
+          <button 
+            onClick={() => setShowDetails(!showDetails)}
+            className="text-slate-500 hover:text-white transition-colors"
+          >
+            {showDetails ? <ChevronUp size={20} /> : <Info size={20} />}
+          </button>
+        </div>
+
+        {/* --- INDUSTRY STANDARD: LOT SPECIFICATIONS --- */}
+        <div className="grid grid-cols-2 gap-3 mb-5">
+          <div className="bg-white/5 rounded-lg p-2.5 border border-white/5">
+            <div className="flex items-center gap-2 text-[10px] text-slate-500 font-black uppercase mb-1">
+              <Package size={12} className="text-orange/70" /> Quantity
+            </div>
+            <p className="text-white font-black text-sm">
+              {lot.quantity} <span className="text-slate-400 text-[10px]">{lot.uom || 'Units'}</span>
+            </p>
+          </div>
+          <div className="bg-white/5 rounded-lg p-2.5 border border-white/5">
+            <div className="flex items-center gap-2 text-[10px] text-slate-500 font-black uppercase mb-1">
+              <MapPin size={12} className="text-orange/70" /> Location
+            </div>
+            <p className="text-white font-black text-sm truncate">{lot.location || 'Not Specified'}</p>
+          </div>
+        </div>
+
+        {showDetails && (
+          <div className="bg-white/5 rounded-lg p-4 mb-5 border border-orange/10 animate-in slide-in-from-top-2 duration-300">
+             <div className="space-y-3 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-slate-500 uppercase font-bold">Category:</span>
+                  <span className="text-slate-300 font-bold">{lot.material_category || 'N/A'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500 uppercase font-bold">Starting Bid:</span>
+                  <span className="text-slate-300 font-bold">₹{Number(lot.starting_bid_amount).toLocaleString()}</span>
+                </div>
+                {lot.seller_notes && (
+                  <div className="pt-2 border-t border-white/5">
+                    <span className="text-slate-500 uppercase font-bold block mb-1">Seller Notes:</span>
+                    <p className="text-slate-400 leading-relaxed italic">"{lot.seller_notes}"</p>
+                  </div>
+                )}
+             </div>
+          </div>
+        )}
         
-        <div className={`${statusColor} ${priceFlash ? 'scale-105 shadow-[0_0_40px_rgba(255,255,255,0.2)]' : ''} p-6 rounded-xl mb-6 text-center transition-all duration-300 relative overflow-hidden`}>
+        <div className={`${statusColor} ${priceFlash ? 'scale-105 shadow-[0_0_40px_rgba(255,255,255,0.2)]' : ''} p-5 rounded-xl mb-5 text-center transition-all duration-300 relative overflow-hidden`}>
             <div className="absolute inset-0 opacity-10 pointer-events-none">
                 <TrendingUp className="w-32 h-32 -rotate-12 -ml-10 -mt-10" />
             </div>
             
-            <span className="text-[10px] uppercase font-black text-white/50 block mb-2 tracking-[0.2em]">
+            <span className="text-[10px] uppercase font-black text-white/50 block mb-1 tracking-[0.2em]">
               {timeLeft === "CLOSED" ? "FINAL SOLD PRICE" : isWinning ? "YOU ARE LEADING" : "CURRENT HIGHEST BID"}
             </span>
-            <span className={`text-4xl font-black text-white tracking-tighter transition-opacity ${priceFlash ? 'opacity-50' : 'opacity-100'}`}>
+            <span className={`text-3xl font-black text-white tracking-tighter transition-opacity ${priceFlash ? 'opacity-50' : 'opacity-100'}`}>
               ₹{Number(currentPrice).toLocaleString()}
             </span>
         </div>
 
         <div className="space-y-4">
+            {/* --- INDUSTRY STANDARD: QUICK BID BUTTONS --- */}
+            {timeLeft !== "CLOSED" && (
+              <div className="grid grid-cols-3 gap-2">
+                 {[1, 2, 5].map((mult) => (
+                   <button 
+                    key={mult}
+                    onClick={() => handleQuickBid(mult)}
+                    className="bg-white/5 hover:bg-orange/20 border border-white/10 hover:border-orange/50 text-white py-1.5 rounded-lg text-[10px] font-black transition-all"
+                   >
+                     +{ (Number(minIncrement) * mult).toLocaleString() }
+                   </button>
+                 ))}
+              </div>
+            )}
+
             <div className="flex gap-2">
-                <div className="relative flex-grow">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-bold">₹</span>
+                <div className="relative flex-1">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-black text-xs">₹</span>
                     <input 
                       type="number" 
                       value={bidAmount}
                       onChange={(e) => setBidAmount(e.target.value)}
                       // UI uses Increment to show min required value (Explicitly casting both to Number)
                       placeholder={`Min: ${(Number(currentPrice) + Number(minIncrement)).toLocaleString()}`}
-                      className="w-full pl-7 p-3.5 bg-white/5 border border-white/10 rounded-lg text-white font-black outline-none focus:border-orange focus:ring-1 focus:ring-orange transition-all"
+                      className="w-full pl-7 p-3 bg-white/5 border border-white/10 rounded-lg text-white font-black text-sm outline-none focus:border-orange focus:ring-1 focus:ring-orange transition-all"
                       disabled={timeLeft === "CLOSED"}
                     />
                 </div>
                 <button 
                   onClick={handlePlaceBid}
                   disabled={timeLeft === "CLOSED"}
-                  className={`px-8 py-3.5 rounded-lg font-black uppercase text-xs tracking-widest flex items-center gap-2 transition-all ${
+                  className={`px-6 py-3 rounded-lg font-black uppercase text-xs tracking-widest flex items-center gap-2 transition-all ${
                     timeLeft === "CLOSED" 
                     ? 'bg-slate-800 text-slate-600 cursor-not-allowed' 
                     : isWinning 
@@ -335,12 +404,12 @@ const BiddingLotCard = ({ lot, auctionId, serverTime, currentUserId }) => {
                       : 'bg-orange text-white hover:bg-white hover:text-navy active:scale-95 shadow-lg shadow-orange/20'
                   }`}
                 >
-                    <Gavel size={18} /> Bid
+                    <Gavel size={16} /> Bid
                 </button>
             </div>
 
             {timeLeft !== "CLOSED" && (
-                <div className={`flex items-center justify-center gap-2 py-2.5 rounded-lg border text-[10px] font-black uppercase tracking-widest transition-colors ${
+                <div className={`flex items-center justify-center gap-2 py-2 rounded-lg border text-[9px] font-black uppercase tracking-widest transition-colors ${
                   isWinning 
                   ? 'bg-green-500/10 border-green-500/20 text-green-500' 
                   : 'bg-orange/10 border-orange/20 text-orange'
@@ -355,16 +424,16 @@ const BiddingLotCard = ({ lot, auctionId, serverTime, currentUserId }) => {
         </div>
         
         {timeLeft !== "CLOSED" && (
-          <div className="mt-3 text-center text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center justify-center gap-2">
+          <div className="mt-3 text-center text-[9px] font-black uppercase tracking-widest text-slate-400 flex items-center justify-center gap-2">
             {lastUserBid ? (
               <>
-                {isWinning && <Trophy size={12} className="text-yellow-400" />}
+                {isWinning && <Trophy size={10} className="text-yellow-400" />}
                 <span>Your last bid:</span>
                 <span className="text-white">₹{Number(lastUserBid).toLocaleString()}</span>
                 {isWinning && <span className="text-green-400">(Winning)</span>}
               </>
             ) : (
-              "You have not placed a bid yet."
+              "No bids placed yet."
             )}
           </div>
         )}
